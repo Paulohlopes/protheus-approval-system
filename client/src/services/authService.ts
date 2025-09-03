@@ -14,7 +14,40 @@ export const authService = {
   // Protheus OAuth2 login usando GET conforme documentação
   async loginProtheus(credentials: ProtheusLoginCredentials): Promise<ProtheusAuthResponse> {
     try {
-      // Construir URL com parâmetros para requisição GET
+      // Primeiro tentar autenticação Basic do Protheus
+      const basicAuth = btoa(`${credentials.username}:${credentials.password}`);
+      
+      try {
+        // Tentar autenticação Basic primeiro
+        const basicResponse = await authApi.get('/api/framework/v1/users', {
+          headers: {
+            'Authorization': `Basic ${basicAuth}`,
+            'Accept': 'application/json'
+          }
+        });
+        
+        // Se Basic funcionar, usar o token Basic como access_token
+        if (basicResponse.status === 200) {
+          return {
+            access_token: basicAuth,
+            refresh_token: basicAuth,
+            token_type: 'Basic',
+            expires_in: 86400,
+            user: {
+              id: credentials.username,
+              username: credentials.username,
+              name: credentials.username,
+              email: '',
+              groups: [],
+              permissions: []
+            }
+          };
+        }
+      } catch (basicError) {
+        console.log('Basic auth falhou, tentando OAuth2...');
+      }
+      
+      // Se Basic falhar, tentar OAuth2
       const params = new URLSearchParams({
         grant_type: 'password',
         username: credentials.username,

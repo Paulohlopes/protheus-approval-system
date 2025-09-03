@@ -44,7 +44,8 @@ export const useAuthStore = create<AuthStore>()(
           tokenManager.setTokens(
             response.access_token, 
             response.refresh_token, 
-            response.user
+            response.user,
+            response.token_type
           );
           
           set({

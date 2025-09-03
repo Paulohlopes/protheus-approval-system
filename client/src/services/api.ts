@@ -28,7 +28,7 @@ export const authApi: AxiosInstance = axios.create({
 export const tokenManager = {
   getToken: (): string | null => localStorage.getItem('access_token'),
   getRefreshToken: (): string | null => localStorage.getItem('refresh_token'),
-  setTokens: (accessToken: string, refreshToken?: string, user?: any) => {
+  setTokens: (accessToken: string, refreshToken?: string, user?: any, tokenType?: string) => {
     localStorage.setItem('access_token', accessToken);
     if (refreshToken) {
       localStorage.setItem('refresh_token', refreshToken);
@@ -36,11 +36,15 @@ export const tokenManager = {
     if (user) {
       localStorage.setItem('user', JSON.stringify(user));
     }
+    if (tokenType) {
+      localStorage.setItem('token_type', tokenType);
+    }
   },
   removeTokens: () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('token_type');
   },
 };
 
@@ -48,8 +52,15 @@ export const tokenManager = {
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = tokenManager.getToken();
+    const tokenType = localStorage.getItem('token_type') || 'Bearer';
+    
     if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Se for Basic auth, usar diretamente, senão usar Bearer
+      if (tokenType === 'Basic') {
+        config.headers.Authorization = `Basic ${token}`;
+      } else {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
