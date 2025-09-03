@@ -24,7 +24,7 @@ interface LoginFormProps {
   error?: string | null;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, loading, error }) => {
+const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, error }) => {
   const [tabValue, setTabValue] = useState(0);
   
   const {
@@ -205,6 +205,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, loading, error }) => {
       </Box>
     </Container>
   );
-};
+});
 
 export default LoginForm;

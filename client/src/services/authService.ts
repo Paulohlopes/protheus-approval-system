@@ -1,25 +1,27 @@
 import api from './api';
+import { config, logger } from '../config/environment';
+import { loginSchema, ValidationUtils } from '../schemas/validation';
 import type { 
   ProtheusLoginCredentials, 
   ProtheusAuthResponse,
   ProtheusUser
 } from '../types/auth';
 
-// Protheus Base URL
-const PROTHEUS_BASE_URL = import.meta.env.VITE_PROTHEUS_BASE_URL || 'http://brsvcub050:3079/rest';
-
 export const authService = {
   // Protheus Basic Authentication
   async loginProtheus(credentials: ProtheusLoginCredentials): Promise<ProtheusAuthResponse> {
     try {
-      console.log('Tentando autenticação Basic no Protheus...');
+      // Validate input data
+      const validatedCredentials = ValidationUtils.validate(loginSchema, credentials);
+      
+      logger.info('Tentando autenticação Basic no Protheus...');
       
       // Criar token Basic Auth (usuário:senha em base64)
-      const basicToken = btoa(`${credentials.username}:${credentials.password}`);
+      const basicToken = btoa(`${validatedCredentials.username}:${validatedCredentials.password}`);
       
       // Testar a autenticação fazendo uma requisição simples
       // O Protheus valida o Basic Auth em qualquer endpoint
-      const testResponse = await api.get('/api/framework/v1/users', {
+      const testResponse = await api.get(config.api.users, {
         headers: {
           'Authorization': `Basic ${basicToken}`,
           'Accept': 'application/json'
@@ -27,18 +29,18 @@ export const authService = {
       });
 
       // Se chegou aqui, a autenticação foi bem sucedida
-      console.log('Autenticação Basic bem sucedida');
+      logger.info('Autenticação Basic bem sucedida');
       
       // Retornar o token Basic para ser usado nas próximas requisições
       return {
         access_token: basicToken,
         refresh_token: basicToken, // No Basic não há refresh
         token_type: 'Basic',
-        expires_in: 86400, // 24 horas
+        expires_in: config.security.sessionTimeout / 1000, // Convert to seconds
         user: {
-          id: credentials.username,
-          username: credentials.username,
-          name: credentials.username,
+          id: validatedCredentials.username,
+          username: validatedCredentials.username,
+          name: validatedCredentials.username,
           email: '',
           groups: [],
           permissions: []
@@ -46,7 +48,7 @@ export const authService = {
       };
 
     } catch (error: any) {
-      console.error('Erro na autenticação Protheus:', error);
+      logger.error('Erro na autenticação Protheus:', error);
       
       if (error.response?.status === 401) {
         throw new Error('Credenciais inválidas. Verifique usuário e senha.');
@@ -75,7 +77,7 @@ export const authService = {
   // Buscar informações do usuário autenticado
   async getUserInfo(accessToken: string): Promise<ProtheusUser> {
     try {
-      const response = await api.get('/api/framework/v1/users', {
+      const response = await api.get(config.api.users, {
         headers: {
           'Accept': 'application/json',
           'Authorization': `Basic ${accessToken}`
@@ -95,7 +97,7 @@ export const authService = {
       };
 
     } catch (error) {
-      console.warn('Erro ao buscar informações do usuário:', error);
+      logger.warn('Erro ao buscar informações do usuário:', error);
       throw error;
     }
   },
@@ -104,16 +106,16 @@ export const authService = {
   async logout(): Promise<void> {
     try {
       // Limpar tokens do localStorage
-      console.log('Logout realizado - tokens removidos localmente');
+      logger.info('Logout realizado - tokens removidos localmente');
     } catch (error) {
-      console.warn('Erro durante logout:', error);
+      logger.warn('Erro durante logout:', error);
     }
   },
 
   // Validar se token ainda é válido
   async validateToken(accessToken: string): Promise<boolean> {
     try {
-      await api.get('/api/framework/v1/users', {
+      await api.get(config.api.users, {
         headers: {
           'Accept': 'application/json',
           'Authorization': `Basic ${accessToken}`
@@ -137,7 +139,7 @@ export const authService = {
       const userStr = localStorage.getItem('user');
       return userStr ? JSON.parse(userStr) : null;
     } catch (error) {
-      console.warn('Erro ao recuperar usuário do localStorage:', error);
+      logger.warn('Erro ao recuperar usuário do localStorage:', error);
       return null;
     }
   }

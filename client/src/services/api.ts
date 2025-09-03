@@ -1,13 +1,13 @@
 import axios, { type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
+import { config, logger } from '../config/environment';
 
 // Base API configuration for Protheus ERP
-const PROTHEUS_BASE_URL = import.meta.env.VITE_PROTHEUS_BASE_URL || 'http://brsvcub050:3079/rest';
-const API_BASE_URL = PROTHEUS_BASE_URL; // Direct connection to Protheus
+const API_BASE_URL = config.protheus.baseUrl;
 
 // Create axios instance for Protheus API
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000, // Increased timeout for ERP operations
+  timeout: config.protheus.apiTimeout,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -16,43 +16,22 @@ const api: AxiosInstance = axios.create({
 
 // Create direct axios instance for authentication (bypasses proxy)
 export const authApi: AxiosInstance = axios.create({
-  baseURL: PROTHEUS_BASE_URL,
-  timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
+  baseURL: config.protheus.baseUrl,
+  timeout: config.protheus.apiTimeout,
   headers: {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Accept': 'application/json',
   },
 });
 
-// Token management
-export const tokenManager = {
-  getToken: (): string | null => localStorage.getItem('access_token'),
-  getRefreshToken: (): string | null => localStorage.getItem('refresh_token'),
-  setTokens: (accessToken: string, refreshToken?: string, user?: any, tokenType?: string) => {
-    localStorage.setItem('access_token', accessToken);
-    if (refreshToken) {
-      localStorage.setItem('refresh_token', refreshToken);
-    }
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-    }
-    if (tokenType) {
-      localStorage.setItem('token_type', tokenType);
-    }
-  },
-  removeTokens: () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('token_type');
-  },
-};
+// Import secure token manager
+import { tokenManager } from '../utils/secureStorage';
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = tokenManager.getToken();
-    const tokenType = localStorage.getItem('token_type') || 'Bearer';
+    const tokenType = tokenManager.getTokenType() || 'Bearer';
     
     if (token && config.headers) {
       // Verificar o tipo de token (Basic ou Bearer)

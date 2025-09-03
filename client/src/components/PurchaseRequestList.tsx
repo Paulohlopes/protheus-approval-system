@@ -32,7 +32,7 @@ interface PurchaseRequestListProps {
   onPageChange?: (page: number, pageSize: number) => void;
 }
 
-export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = ({
+export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = React.memo(({
   requests,
   loading = false,
   hasNext = false,
@@ -269,4 +269,4 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = ({
       )}
     </Paper>
   );
-};
+});

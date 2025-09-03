@@ -12,12 +12,12 @@ import { Refresh, TrendingUp } from '@mui/icons-material';
 import AppLayout from '../components/AppLayout';
 import DashboardStats from '../components/DashboardStats';
 import DocumentList from '../components/DocumentList';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const DashboardPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   return (
     <AppLayout>

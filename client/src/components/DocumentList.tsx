@@ -31,7 +31,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useDocuments, useApproveDocument, useRejectDocument } from '../hooks/useDocuments';
 import { useDocumentStore } from '../stores/documentStore';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 import type { ProtheusDocument } from '../types/auth';
 
 // Priority colors
@@ -105,7 +105,7 @@ interface DocumentCardProps {
   loading?: boolean;
 }
 
-const DocumentCard: React.FC<DocumentCardProps> = ({ 
+const DocumentCard: React.FC<DocumentCardProps> = React.memo(({ 
   document, 
   onApprove, 
   onReject, 
@@ -218,10 +218,10 @@ const DocumentCard: React.FC<DocumentCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+});
 
 const DocumentList: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const { filters, pagination, setFilters, setPagination } = useDocumentStore();
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
   

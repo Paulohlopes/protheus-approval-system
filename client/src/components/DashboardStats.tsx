@@ -25,7 +25,7 @@ interface StatCardProps {
   loading?: boolean;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, loading }) => {
+const StatCard: React.FC<StatCardProps> = React.memo(({ title, value, icon, color, loading }) => {
   return (
     <Card>
       <CardContent>
@@ -62,7 +62,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, loading 
       </CardContent>
     </Card>
   );
-};
+});
 
 const DashboardStats: React.FC = () => {
   const { data: stats, isLoading, error } = useDashboardStats();

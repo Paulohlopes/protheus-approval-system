@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authService } from '../services/authService';
-import { tokenManager } from '../services/api';
+import { tokenManager } from '../utils/secureStorage';
 import type { 
   ProtheusUser, 
   ProtheusLoginCredentials, 
@@ -40,13 +40,17 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const response = await authService.loginProtheus(credentials);
           
-          // Salvar tokens e usuário usando tokenManager
-          tokenManager.setTokens(
+          // Salvar tokens e usuário usando secure tokenManager
+          const success = tokenManager.setTokens(
             response.access_token, 
             response.refresh_token, 
             response.user,
             response.token_type
           );
+
+          if (!success) {
+            throw new Error('Falha ao salvar credenciais de autenticação');
+          }
           
           set({
             user: response.user || null,
@@ -147,10 +151,10 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       checkAuth: () => {
-        const isAuthenticated = authService.isAuthenticated();
-        const user = authService.getCurrentUser();
-        const token = localStorage.getItem('access_token');
-        const refreshToken = localStorage.getItem('refresh_token');
+        const token = tokenManager.getToken();
+        const refreshToken = tokenManager.getRefreshToken();
+        const user = tokenManager.getUser();
+        const isAuthenticated = tokenManager.isAuthenticated();
 
         set({
           user,

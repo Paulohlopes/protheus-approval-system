@@ -8,42 +8,6 @@ import type {
   ApiResponse 
 } from '../types/auth';
 
-// Mock data generation helpers
-const generateMockDocument = (id?: string): ProtheusDocument => {
-  const types = ['purchase_order', 'invoice', 'expense_report', 'contract'];
-  const statuses: ProtheusDocument['status'][] = ['pending', 'approved', 'rejected'];
-  const priorities: ProtheusDocument['priority'][] = ['low', 'medium', 'high', 'urgent'];
-  
-  const randomId = id || Math.random().toString(36).substr(2, 9);
-  const randomType = types[Math.floor(Math.random() * types.length)];
-  const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-  const randomPriority = priorities[Math.floor(Math.random() * priorities.length)];
-  
-  return {
-    id: randomId,
-    type: randomType,
-    number: `${randomType.toUpperCase()}-${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}`,
-    series: 'A',
-    description: `${randomType.replace('_', ' ')} description for ${randomId}`,
-    value: Math.floor(Math.random() * 100000) + 1000,
-    currency: 'BRL',
-    requestDate: new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)).toISOString(),
-    dueDate: new Date(Date.now() + Math.floor(Math.random() * 15 * 24 * 60 * 60 * 1000)).toISOString(),
-    requester: {
-      id: `user_${Math.floor(Math.random() * 100)}`,
-      name: `User ${Math.floor(Math.random() * 100)}`,
-      department: 'Purchasing',
-    },
-    status: randomStatus,
-    priority: randomPriority,
-    comments: Math.random() > 0.5 ? 'Sample comment' : undefined,
-  };
-};
-
-const generateMockDocuments = (count: number = 10): ProtheusDocument[] => {
-  return Array.from({ length: count }, () => generateMockDocument());
-};
-
 export const documentService = {
   // Get documents with filters and pagination
   async getDocuments(
@@ -87,49 +51,51 @@ export const documentService = {
         params.append('search', filters.search);
       }
 
-      // Real API call (comment out for mock)
-      // const response = await api.get(`/documents?${params}`);
-      // return response.data;
+      console.log('Fetching documents from Protheus...', params.toString());
       
-      // Mock implementation with realistic delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await api.get<ApiResponse<ProtheusDocument[]>>(`/api/documents?${params}`);
       
-      const mockDocuments = generateMockDocuments(pagination.limit);
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to fetch documents');
+      }
       
-      return {
-        success: true,
-        data: mockDocuments,
-        message: 'Documents retrieved successfully',
-        pagination: {
-          page: pagination.page,
-          limit: pagination.limit,
-          total: 50, // Mock total
-          totalPages: Math.ceil(50 / pagination.limit)
-        }
-      };
+      return response.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        'Erro ao buscar documentos.'
-      );
+      console.error('Error fetching documents:', error);
+      
+      if (error.response?.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Sem permissão para acessar documentos.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Erro ao buscar documentos.');
+      }
     }
   },
 
   // Get single document by ID
   async getDocument(id: string): Promise<ProtheusDocument> {
     try {
-      // Real API call (comment out for mock)
-      // const response = await api.get(`/documents/${id}`);
-      // return response.data.data;
+      console.log('Fetching document from Protheus:', id);
       
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return generateMockDocument(id);
+      const response = await api.get<{ data: ProtheusDocument }>(`/api/documents/${id}`);
+      return response.data.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        'Erro ao buscar documento.'
-      );
+      console.error('Error fetching document:', error);
+      
+      if (error.response?.status === 404) {
+        throw new Error('Documento não encontrado.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Sem permissão para acessar este documento.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Erro ao buscar documento.');
+      }
     }
   },
 
@@ -146,47 +112,50 @@ export const documentService = {
         timestamp: new Date().toISOString()
       };
 
-      // Real API call (comment out for mock)
-      // const response = await api.post(`/documents/${documentId}/process`, payload);
-      // return response.data;
+      console.log('Processing document in Protheus:', documentId, action);
       
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return {
-        success: true,
-        message: `Documento ${action === 'approve' ? 'aprovado' : 'rejeitado'} com sucesso.`
-      };
-    } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        `Erro ao ${action === 'approve' ? 'aprovar' : 'rejeitar'} documento.`
+      const response = await api.post<{ success: boolean; message: string }>(
+        `/api/documents/${documentId}/process`, 
+        payload
       );
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error processing document:', error);
+      
+      if (error.response?.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Sem permissão para processar este documento.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Documento não encontrado.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error(`Erro ao ${action === 'approve' ? 'aprovar' : 'rejeitar'} documento.`);
+      }
     }
   },
 
   // Get dashboard statistics
   async getDashboardStats(): Promise<DashboardStats> {
     try {
-      // Real API call (comment out for mock)
-      // const response = await api.get('/dashboard/stats');
-      // return response.data.data;
+      console.log('Fetching dashboard stats from Protheus...');
       
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      return {
-        totalPending: 15,
-        totalApproved: 125,
-        totalRejected: 8,
-        highPriority: 3,
-        expiringSoon: 5,
-      };
+      const response = await api.get<{ data: DashboardStats }>('/api/dashboard/stats');
+      return response.data.data;
     } catch (error: any) {
-      throw new Error(
-        error.response?.data?.message || 
-        'Erro ao buscar estatísticas do dashboard.'
-      );
+      console.error('Error fetching dashboard stats:', error);
+      
+      if (error.response?.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Sem permissão para acessar estatísticas do dashboard.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Erro ao buscar estatísticas do dashboard.');
+      }
     }
   }
 };

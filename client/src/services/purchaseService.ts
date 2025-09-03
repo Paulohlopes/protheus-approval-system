@@ -1,4 +1,6 @@
 import api from './api';
+import ProtheusQueryBuilder, { type WhereCondition, type QueryOptions } from '../utils/queryBuilder';
+import { purchaseRequestFiltersSchema, ValidationUtils } from '../schemas/validation';
 import type { PurchaseRequest, PurchaseRequestsResponse, PurchaseRequestFilters } from '../types/purchase';
 
 const PURCHASE_REQUESTS_URL = import.meta.env.VITE_API_PURCHASE_REQUESTS;
@@ -7,47 +9,65 @@ export const purchaseService = {
   // Buscar todas as solicitações de compra com paginação
   async getPurchaseRequests(filters?: PurchaseRequestFilters): Promise<PurchaseRequestsResponse> {
     try {
-      let url = PURCHASE_REQUESTS_URL;
-      const params = new URLSearchParams();
-      
-      // Construir query base
-      params.set('tables', 'SC1');
-      params.set('fields', 'C1_FILIAL,C1_NUM,C1_ITEM,C1_PRODUTO,C1_DESCRI,C1_QUANT,C1_UM,C1_DATPRF,C1_OBS,C1_CC,C1_EMISSAO,C1_SOLICIT,C1_TOTAL');
-      
-      // Aplicar filtros onde
-      const whereConditions: string[] = ["SC1.D_E_L_E_T_=' '"];
-      
+      // Validate input filters
+      let validatedFilters: PurchaseRequestFilters | undefined;
       if (filters) {
-        if (filters.filial) {
-          whereConditions.push(`c1_filial='${filters.filial}'`);
+        validatedFilters = ValidationUtils.validate(purchaseRequestFiltersSchema, filters);
+      }
+
+      // Build secure query using query builder
+      const whereConditions: WhereCondition[] = [];
+      
+      if (validatedFilters) {
+        if (validatedFilters.filial) {
+          whereConditions.push({
+            field: 'C1_FILIAL',
+            operator: 'eq',
+            value: validatedFilters.filial
+          });
         }
         
-        if (filters.solicitante) {
-          whereConditions.push(`c1_solicit LIKE '%${filters.solicitante}%'`);
+        if (validatedFilters.solicitante) {
+          whereConditions.push({
+            field: 'C1_SOLICIT',
+            operator: 'like',
+            value: validatedFilters.solicitante
+          });
         }
         
-        if (filters.numeroSC) {
-          whereConditions.push(`c1_num='${filters.numeroSC}'`);
+        if (validatedFilters.numeroSC) {
+          whereConditions.push({
+            field: 'C1_NUM',
+            operator: 'eq',
+            value: validatedFilters.numeroSC
+          });
         }
         
-        if (filters.dataInicio && filters.dataFim) {
-          whereConditions.push(`c1_emissao>='${filters.dataInicio}' AND c1_emissao<='${filters.dataFim}'`);
-        }
-        
-        // Parâmetros de paginação
-        if (filters.page && filters.page > 1) {
-          params.set('page', filters.page.toString());
-        }
-        
-        if (filters.pageSize) {
-          params.set('pageSize', filters.pageSize.toString());
+        if (validatedFilters.dataInicio && validatedFilters.dataFim) {
+          whereConditions.push({
+            field: 'C1_EMISSAO',
+            operator: 'between',
+            value: [validatedFilters.dataInicio, validatedFilters.dataFim]
+          });
         }
       }
+
+      const queryOptions: QueryOptions = {
+        tables: 'SC1',
+        fields: [
+          'C1_FILIAL', 'C1_NUM', 'C1_ITEM', 'C1_PRODUTO', 
+          'C1_DESCRI', 'C1_QUANT', 'C1_UM', 'C1_DATPRF', 
+          'C1_OBS', 'C1_CC', 'C1_EMISSAO', 'C1_SOLICIT', 'C1_TOTAL'
+        ],
+        where: whereConditions,
+        page: validatedFilters?.page,
+        pageSize: validatedFilters?.pageSize
+      };
+
+      const queryString = ProtheusQueryBuilder.buildQuery(queryOptions);
+      const url = `/api/framework/v1/genericQuery?${queryString}`;
       
-      params.set('where', whereConditions.join(' AND '));
-      url = `/api/framework/v1/genericQuery?${params.toString()}`;
-      
-      console.log('Buscando solicitações de compra...', url);
+      console.log('Buscando solicitações de compra (secure query)...', url);
       
       const response = await api.get<PurchaseRequestsResponse>(url);
       

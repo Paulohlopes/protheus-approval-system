@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStore } from '../stores/authStore';
 import LoginForm from '../components/LoginForm';
 import type { ProtheusLoginFormData } from '../schemas/loginSchema';
 
 const LoginPage: React.FC = () => {
-  const { login, isAuthenticated, isLoading, error, clearError } = useAuth();
+  const { login, isAuthenticated, isLoading, error, clearError } = useAuthStore();
   const location = useLocation();
   
   // Get the intended destination or default to dashboard
