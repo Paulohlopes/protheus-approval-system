@@ -1,9 +1,18 @@
 import api from './api';
 import ProtheusQueryBuilder, { type WhereCondition, type QueryOptions } from '../utils/queryBuilder';
-import { purchaseRequestFiltersSchema, ValidationUtils } from '../schemas/validation';
-import type { PurchaseRequest, PurchaseRequestsResponse, PurchaseRequestFilters } from '../types/purchase';
+import { purchaseRequestFiltersSchema, purchaseOrderFiltersSchema, ValidationUtils } from '../schemas/validation';
+import type { 
+  PurchaseRequest, 
+  PurchaseRequestsResponse, 
+  PurchaseRequestFilters,
+  PurchaseOrder,
+  PurchaseOrdersResponse,
+  PurchaseOrderFilters
+} from '../types/purchase';
 
+// URLs das APIs
 const PURCHASE_REQUESTS_URL = import.meta.env.VITE_API_PURCHASE_REQUESTS;
+const GENERIC_QUERY_URL = '/api/framework/v1/genericQuery';
 
 export const purchaseService = {
   // Buscar todas as solicitações de compra com paginação
@@ -120,6 +129,129 @@ export const purchaseService = {
       return await this.getPurchaseRequests(filters);
     } catch (error) {
       console.error('Erro ao buscar solicitações por período:', error);
+      throw error;
+    }
+  },
+
+  // ===== PEDIDOS DE COMPRA (PC) =====
+
+  // Buscar todos os pedidos de compra com paginação
+  async getPurchaseOrders(filters?: PurchaseOrderFilters): Promise<PurchaseOrdersResponse> {
+    try {
+      // Validate input filters
+      let validatedFilters: PurchaseOrderFilters | undefined;
+      if (filters) {
+        validatedFilters = ValidationUtils.validate(purchaseOrderFiltersSchema, filters);
+      }
+
+      // Build URL parameters for genericQuery
+      const params = new URLSearchParams();
+      
+      // FromQry com JOIN
+      params.append('FromQry', 'SC7010 SC7 LEFT JOIN SYS_USR USR ON C7_USER=USR_ID AND USR.D_E_L_E_T_=\'\'');
+      
+      // Tables
+      params.append('tables', 'SC7,SYS_USR');
+      
+      // Fields
+      const fields = [
+        'C7_FILIAL', 'C7_NUM', 'C7_ITEM', 'C7_FORNECE', 'C7_LOJA',
+        'C7_PRODUTO', 'C7_DESCRI', 'C7_QUANT', 'C7_UM', 'C7_DATPRF',
+        'C7_OBS', 'C7_CC', 'C7_CER', 'C7_ITEMCER', 'C7_EMISSAO',
+        'C7_SOLICIT', 'USR_CODIGO', 'C7_TOTAL', 'C7_COND'
+      ];
+      params.append('fields', fields.join(', '));
+      
+      // Where conditions
+      let whereConditions = ['SC7.D_E_L_E_T_=\'\'', 'C7_CONAPRO <> \'L\''];
+      
+      if (validatedFilters) {
+        if (validatedFilters.filial) {
+          whereConditions.push(`C7_FILIAL = '${validatedFilters.filial}'`);
+        }
+        
+        if (validatedFilters.solicitante) {
+          whereConditions.push(`C7_SOLICIT LIKE '%${validatedFilters.solicitante}%'`);
+        }
+        
+        if (validatedFilters.numeroPC) {
+          whereConditions.push(`C7_NUM = '${validatedFilters.numeroPC}'`);
+        }
+        
+        if (validatedFilters.fornecedor) {
+          whereConditions.push(`C7_FORNECE = '${validatedFilters.fornecedor}'`);
+        }
+        
+        if (validatedFilters.dataInicio && validatedFilters.dataFim) {
+          whereConditions.push(`C7_EMISSAO BETWEEN '${validatedFilters.dataInicio}' AND '${validatedFilters.dataFim}'`);
+        }
+      }
+      
+      params.append('where', whereConditions.join(' AND '));
+      
+      // Pagination
+      if (validatedFilters?.page) {
+        params.append('page', validatedFilters.page.toString());
+      }
+      if (validatedFilters?.pageSize) {
+        params.append('pageSize', validatedFilters.pageSize.toString());
+      }
+
+      const url = `${GENERIC_QUERY_URL}?${params.toString()}`;
+      
+      console.log('Buscando pedidos de compra...', url);
+      
+      const response = await api.get<PurchaseOrdersResponse>(url);
+      
+      console.log(`${response.data.items?.length || 0} pedidos encontrados, hasNext: ${response.data.hasNext}, remaining: ${response.data.remainingRecords}`);
+      return response.data;
+      
+    } catch (error: any) {
+      console.error('Erro ao buscar pedidos de compra:', error);
+      
+      if (error.response?.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Sem permissão para acessar pedidos de compra.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Erro ao carregar pedidos de compra.');
+      }
+    }
+  },
+
+  // Buscar pedido específico por número
+  async getPurchaseOrderByNumber(numero: string, filial?: string): Promise<PurchaseOrdersResponse> {
+    try {
+      const filters: PurchaseOrderFilters = { numeroPC: numero };
+      if (filial) filters.filial = filial;
+      
+      return await this.getPurchaseOrders(filters);
+    } catch (error) {
+      console.error('Erro ao buscar pedido específico:', error);
+      throw error;
+    }
+  },
+
+  // Buscar pedidos por solicitante
+  async getPurchaseOrdersByUser(solicitante: string, page?: number, pageSize?: number): Promise<PurchaseOrdersResponse> {
+    try {
+      const filters: PurchaseOrderFilters = { solicitante, page, pageSize };
+      return await this.getPurchaseOrders(filters);
+    } catch (error) {
+      console.error('Erro ao buscar pedidos do usuário:', error);
+      throw error;
+    }
+  },
+
+  // Buscar pedidos por período
+  async getPurchaseOrdersByPeriod(dataInicio: string, dataFim: string, page?: number, pageSize?: number): Promise<PurchaseOrdersResponse> {
+    try {
+      const filters: PurchaseOrderFilters = { dataInicio, dataFim, page, pageSize };
+      return await this.getPurchaseOrders(filters);
+    } catch (error) {
+      console.error('Erro ao buscar pedidos por período:', error);
       throw error;
     }
   }
