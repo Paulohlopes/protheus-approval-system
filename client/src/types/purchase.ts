@@ -1,17 +1,17 @@
 export interface PurchaseRequest {
-  C1_FILIAL: string;     // Filial
-  C1_NUM: string;        // Número da SC
-  C1_ITEM: string;       // Item
-  C1_PRODUTO: string;    // Código do produto
-  C1_DESCRI: string;     // Descrição do produto
-  C1_QUANT: number;      // Quantidade
-  C1_UM: string;         // Unidade de medida
-  C1_DATPRF: string;     // Data necessidade
-  C1_OBS: string;        // Observações
-  C1_CC: string;         // Centro de custo
-  C1_EMISSAO: string;    // Data emissão
-  C1_SOLICIT: string;    // Solicitante
-  C1_TOTAL: number;      // Valor total
+  c1_filial: string;     // Filial
+  c1_num: string;        // Número da SC
+  c1_item: string;       // Item
+  c1_produto: string;    // Código do produto
+  c1_descri: string;     // Descrição do produto
+  c1_quant: number;      // Quantidade
+  c1_um: string;         // Unidade de medida
+  c1_datprf: string;     // Data necessidade
+  c1_obs: string;        // Observações
+  c1_cc: string;         // Centro de custo
+  c1_emissao: string;    // Data emissão
+  c1_solicit: string;    // Solicitante
+  c1_total: number;      // Valor total
 }
 
 export interface PurchaseRequestsResponse {

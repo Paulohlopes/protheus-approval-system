@@ -43,14 +43,14 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = ({
   const filteredRequests = useMemo(() => {
     return requests.filter(request => {
       const matchesSearch = searchTerm === '' || 
-        request.C1_DESCRI.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        request.C1_PRODUTO.toLowerCase().includes(searchTerm.toLowerCase());
+        request.c1_descri.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.c1_produto.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesSolicitante = filterSolicitante === '' ||
-        request.C1_SOLICIT.toLowerCase().includes(filterSolicitante.toLowerCase());
+        request.c1_solicit.toLowerCase().includes(filterSolicitante.toLowerCase());
       
       const matchesNumero = filterNumero === '' ||
-        request.C1_NUM.includes(filterNumero);
+        request.c1_num.includes(filterNumero);
       
       return matchesSearch && matchesSolicitante && matchesNumero;
     });
@@ -185,35 +185,35 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = ({
               filteredRequests
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((request, index) => (
-                  <TableRow key={`${request.C1_NUM}-${request.C1_ITEM}-${index}`} hover>
+                  <TableRow key={`${request.c1_num}-${request.c1_item}-${index}`} hover>
                     <TableCell>
-                      <Chip label={request.C1_FILIAL} size="small" color="primary" />
+                      <Chip label={request.c1_filial} size="small" color="primary" />
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight="bold">
-                        {request.C1_NUM}
+                        {request.c1_num}
                       </Typography>
                     </TableCell>
-                    <TableCell>{request.C1_ITEM}</TableCell>
+                    <TableCell>{request.c1_item}</TableCell>
                     <TableCell>
                       <Typography variant="body2" fontFamily="monospace">
-                        {request.C1_PRODUTO}
+                        {request.c1_produto}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ maxWidth: 200 }}>
-                        {request.C1_DESCRI}
+                        {request.c1_descri}
                       </Typography>
                     </TableCell>
                     <TableCell align="right">
-                      {request.C1_QUANT?.toLocaleString('pt-BR')}
+                      {request.c1_quant?.toLocaleString('pt-BR')}
                     </TableCell>
-                    <TableCell>{request.C1_UM}</TableCell>
-                    <TableCell>{request.C1_SOLICIT}</TableCell>
-                    <TableCell>{formatDate(request.C1_EMISSAO)}</TableCell>
-                    <TableCell>{formatDate(request.C1_DATPRF)}</TableCell>
+                    <TableCell>{request.c1_um}</TableCell>
+                    <TableCell>{request.c1_solicit}</TableCell>
+                    <TableCell>{formatDate(request.c1_emissao)}</TableCell>
+                    <TableCell>{formatDate(request.c1_datprf)}</TableCell>
                     <TableCell align="right">
-                      {formatCurrency(request.C1_TOTAL)}
+                      {formatCurrency(request.c1_total)}
                     </TableCell>
                     <TableCell align="center">
                       {onViewDetails && (

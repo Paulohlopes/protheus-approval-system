@@ -111,7 +111,7 @@ export const PurchaseRequestsPage: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          Detalhes da Solicitação - SC {selectedRequest?.C1_NUM}
+          Detalhes da Solicitação - SC {selectedRequest?.c1_num}
         </DialogTitle>
         
         <DialogContent>
@@ -129,7 +129,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                         Filial:
                       </Typography>
                       <Typography variant="body1">
-                        {selectedRequest.C1_FILIAL}
+                        {selectedRequest.c1_filial}
                       </Typography>
                     </Box>
                     
@@ -138,7 +138,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                         Número SC:
                       </Typography>
                       <Typography variant="body1" fontWeight="bold">
-                        {selectedRequest.C1_NUM}
+                        {selectedRequest.c1_num}
                       </Typography>
                     </Box>
                     
@@ -147,7 +147,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                         Item:
                       </Typography>
                       <Typography variant="body1">
-                        {selectedRequest.C1_ITEM}
+                        {selectedRequest.c1_item}
                       </Typography>
                     </Box>
                     
@@ -156,7 +156,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                         Solicitante:
                       </Typography>
                       <Typography variant="body1">
-                        {selectedRequest.C1_SOLICIT}
+                        {selectedRequest.c1_solicit}
                       </Typography>
                     </Box>
                     
@@ -165,7 +165,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                         Centro de Custo:
                       </Typography>
                       <Typography variant="body1">
-                        {selectedRequest.C1_CC}
+                        {selectedRequest.c1_cc}
                       </Typography>
                     </Box>
                   </CardContent>
@@ -184,7 +184,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                         Código:
                       </Typography>
                       <Typography variant="body1" fontFamily="monospace">
-                        {selectedRequest.C1_PRODUTO}
+                        {selectedRequest.c1_produto}
                       </Typography>
                     </Box>
                     
@@ -193,7 +193,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                         Descrição:
                       </Typography>
                       <Typography variant="body1">
-                        {selectedRequest.C1_DESCRI}
+                        {selectedRequest.c1_descri}
                       </Typography>
                     </Box>
                     
@@ -202,7 +202,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                         Quantidade:
                       </Typography>
                       <Typography variant="body1">
-                        {selectedRequest.C1_QUANT?.toLocaleString('pt-BR')} {selectedRequest.C1_UM}
+                        {selectedRequest.c1_quant?.toLocaleString('pt-BR')} {selectedRequest.c1_um}
                       </Typography>
                     </Box>
                     
@@ -211,7 +211,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                         Valor Total:
                       </Typography>
                       <Typography variant="body1" fontWeight="bold" color="primary.main">
-                        {formatCurrency(selectedRequest.C1_TOTAL)}
+                        {formatCurrency(selectedRequest.c1_total)}
                       </Typography>
                     </Box>
                   </CardContent>
@@ -232,7 +232,7 @@ export const PurchaseRequestsPage: React.FC = () => {
                             Data de Emissão:
                           </Typography>
                           <Typography variant="body1">
-                            {formatDate(selectedRequest.C1_EMISSAO)}
+                            {formatDate(selectedRequest.c1_emissao)}
                           </Typography>
                         </Box>
                       </Grid>
@@ -243,19 +243,19 @@ export const PurchaseRequestsPage: React.FC = () => {
                             Data de Necessidade:
                           </Typography>
                           <Typography variant="body1">
-                            {formatDate(selectedRequest.C1_DATPRF)}
+                            {formatDate(selectedRequest.c1_datprf)}
                           </Typography>
                         </Box>
                       </Grid>
                     </Grid>
                     
-                    {selectedRequest.C1_OBS && (
+                    {selectedRequest.c1_obs && (
                       <Box sx={{ mt: 2 }}>
                         <Typography variant="body2" color="text.secondary">
                           Observações:
                         </Typography>
                         <Typography variant="body1">
-                          {selectedRequest.C1_OBS}
+                          {selectedRequest.c1_obs}
                         </Typography>
                       </Box>
                     )}

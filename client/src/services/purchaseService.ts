@@ -14,19 +14,19 @@ export const purchaseService = {
         const whereConditions: string[] = ["SC1.D_E_L_E_T_=' '"];
         
         if (filters.filial) {
-          whereConditions.push(`C1_FILIAL='${filters.filial}'`);
+          whereConditions.push(`c1_filial='${filters.filial}'`);
         }
         
         if (filters.solicitante) {
-          whereConditions.push(`C1_SOLICIT LIKE '%${filters.solicitante}%'`);
+          whereConditions.push(`c1_solicit LIKE '%${filters.solicitante}%'`);
         }
         
         if (filters.numeroSC) {
-          whereConditions.push(`C1_NUM='${filters.numeroSC}'`);
+          whereConditions.push(`c1_num='${filters.numeroSC}'`);
         }
         
         if (filters.dataInicio && filters.dataFim) {
-          whereConditions.push(`C1_EMISSAO>='${filters.dataInicio}' AND C1_EMISSAO<='${filters.dataFim}'`);
+          whereConditions.push(`c1_emissao>='${filters.dataInicio}' AND c1_emissao<='${filters.dataFim}'`);
         }
         
         const whereClause = whereConditions.join(' AND ');
