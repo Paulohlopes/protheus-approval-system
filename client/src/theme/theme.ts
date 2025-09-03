@@ -1,6 +1,8 @@
-import { createTheme, ThemeOptions } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 
 type PaletteMode = 'light' | 'dark';
+type ThemeOptions = Parameters<typeof createTheme>[0];
 
 const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
   palette: {
