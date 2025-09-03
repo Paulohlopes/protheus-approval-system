@@ -11,23 +11,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 3001,
     host: true,
     open: false,
     proxy: {
-      '/api/system': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-        configure: (proxy, options) => {
-          proxy.on('error', (err, req, res) => {
-            console.log('Windows info proxy error:', err);
-          });
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('Sending Request to Windows Server:', req.method, req.url);
-          });
-        },
-      },
       '/api': {
         target: 'http://brsvcub050:3079/rest',
         changeOrigin: true,
@@ -35,10 +22,13 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
         configure: (proxy, options) => {
           proxy.on('error', (err, req, res) => {
-            console.log('Protheus proxy error:', err);
+            console.log('Proxy error:', err);
           });
           proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('Sending Request to Protheus:', req.method, req.url);
+            console.log('Sending Request to the Target:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
           });
         },
       },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -14,13 +14,9 @@ import {
   Tab,
   Container,
   Stack,
-  Chip,
-  FormControlLabel,
-  Checkbox,
 } from '@mui/material';
-import { Business, Person, Lock, Computer, Email } from '@mui/icons-material';
+import { Business, Person, Lock } from '@mui/icons-material';
 import { protheusLoginSchema, type ProtheusLoginFormData } from '../schemas/loginSchema';
-import { useWindowsAuth } from '../hooks/useWindowsAuth';
 
 interface LoginFormProps {
   onSubmit: (data: ProtheusLoginFormData) => Promise<void>;
@@ -30,8 +26,6 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, error }) => {
   const [tabValue, setTabValue] = useState(0);
-  const [rememberMe, setRememberMe] = useState(false);
-  const { windowsInfo, autoFillLogin, hasWindowsInfo } = useWindowsAuth();
   
   const {
     control,
@@ -48,13 +42,6 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
     },
   });
 
-  // Auto-preencher com informações do Windows
-  useEffect(() => {
-    const loginData = autoFillLogin();
-    if (loginData?.username) {
-      setValue('username', loginData.username);
-    }
-  }, []);
 
   const handleFormSubmit = async (data: ProtheusLoginFormData) => {
     try {
@@ -117,82 +104,6 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
             </Typography>
           </Box>
 
-          {/* Windows User Info Display */}
-          {hasWindowsInfo && windowsInfo && (
-            <Box sx={{ mb: 3, p: 2, bgcolor: 'primary.50', borderRadius: 1, border: '1px solid', borderColor: 'primary.200' }}>
-              <Stack direction="row" alignItems="center" spacing={2}>
-                <Computer sx={{ color: 'primary.main' }} />
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="body2" fontWeight={500} color="primary.dark">
-                    Usuário Windows Detectado
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                    <Chip 
-                      size="small" 
-                      label={windowsInfo.username} 
-                      icon={<Person />}
-                      sx={{ bgcolor: 'primary.100', color: 'primary.dark' }}
-                    />
-                    {windowsInfo.email && (
-                      <Chip 
-                        size="small" 
-                        label={windowsInfo.email} 
-                        icon={<Email />}
-                        sx={{ bgcolor: 'success.100', color: 'success.dark' }}
-                      />
-                    )}
-                  </Stack>
-                </Box>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => {
-                    const newUsername = prompt('Digite seu nome de usuário Windows:', windowsInfo.username);
-                    if (newUsername) {
-                      localStorage.setItem('windows-username', newUsername);
-                      window.location.reload();
-                    }
-                  }}
-                  sx={{ fontSize: '0.75rem', px: 1, py: 0.5 }}
-                >
-                  Alterar
-                </Button>
-              </Stack>
-            </Box>
-          )}
-
-          {/* Botão para configurar usuário Windows se não detectado */}
-          {!hasWindowsInfo && (
-            <Box sx={{ mb: 3, p: 2, bgcolor: 'warning.50', borderRadius: 1, border: '1px solid', borderColor: 'warning.200' }}>
-              <Stack direction="row" alignItems="center" spacing={2}>
-                <Computer sx={{ color: 'warning.main' }} />
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="body2" fontWeight={500} color="warning.dark">
-                    Usuário Windows não detectado
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Configure seu usuário para auto-preenchimento
-                  </Typography>
-                </Box>
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="warning"
-                  onClick={() => {
-                    const username = prompt('Digite seu nome de usuário Windows:', 'paulo');
-                    if (username) {
-                      localStorage.setItem('windows-username', username);
-                      localStorage.setItem('username-prompt-shown', 'true');
-                      window.location.reload();
-                    }
-                  }}
-                  sx={{ fontSize: '0.75rem' }}
-                >
-                  Configurar
-                </Button>
-              </Stack>
-            </Box>
-          )}
 
           {/* Login Type Tabs */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
