@@ -29,18 +29,21 @@ class WindowsInfoService {
       // Se estiver no Windows, tentar capturar mais informações
       if (os.platform() === 'win32') {
         try {
-          // Capturar nome completo do usuário
-          const fullNameCmd = `wmic useraccount where name="${userInfo.username}" get fullname /value`;
-          const fullNameResult = execSync(fullNameCmd, { encoding: 'utf8' });
-          const fullNameMatch = fullNameResult.match(/FullName=(.+)/);
-          if (fullNameMatch) {
-            userInfo.fullName = fullNameMatch[1].trim();
+          // Tentar capturar nome completo via PowerShell (mais moderno que wmic)
+          try {
+            const fullNameCmd = `powershell -Command "Get-LocalUser -Name '${userInfo.username}' | Select-Object -ExpandProperty FullName"`;
+            const fullNameResult = execSync(fullNameCmd, { encoding: 'utf8', timeout: 3000 });
+            if (fullNameResult.trim()) {
+              userInfo.fullName = fullNameResult.trim();
+            }
+          } catch (psError) {
+            console.log('PowerShell Get-LocalUser não disponível');
           }
 
           // Tentar capturar informações do Active Directory (se disponível)
           try {
             const adCmd = `powershell -Command "Get-ADUser -Identity ${userInfo.username} -Properties EmailAddress, Department, Title | Select-Object EmailAddress, Department, Title | ConvertTo-Json"`;
-            const adResult = execSync(adCmd, { encoding: 'utf8' });
+            const adResult = execSync(adCmd, { encoding: 'utf8', timeout: 3000 });
             const adData = JSON.parse(adResult);
             
             userInfo.email = adData.EmailAddress || '';
@@ -55,13 +58,14 @@ class WindowsInfoService {
           if (!userInfo.email) {
             try {
               const regCmd = 'reg query "HKEY_CURRENT_USER\\Software\\Microsoft\\Office\\16.0\\Common\\Identity" /v ADUserEmail';
-              const regResult = execSync(regCmd, { encoding: 'utf8' });
+              const regResult = execSync(regCmd, { encoding: 'utf8', timeout: 3000 });
               const emailMatch = regResult.match(/ADUserEmail\s+REG_SZ\s+(.+)/);
               if (emailMatch) {
                 userInfo.email = emailMatch[1].trim();
               }
             } catch (regError) {
               // Registro não encontrado
+              console.log('Registro Office não encontrado');
             }
           }
 
@@ -69,9 +73,13 @@ class WindowsInfoService {
           if (!userInfo.email) {
             try {
               const outlookCmd = 'powershell -Command "$outlook = New-Object -ComObject Outlook.Application; $outlook.Session.CurrentUser.Address"';
-              userInfo.email = execSync(outlookCmd, { encoding: 'utf8' }).trim();
+              const outlookResult = execSync(outlookCmd, { encoding: 'utf8', timeout: 5000 }).trim();
+              if (outlookResult) {
+                userInfo.email = outlookResult;
+              }
             } catch (outlookError) {
               // Outlook não disponível
+              console.log('Outlook não disponível');
             }
           }
 
