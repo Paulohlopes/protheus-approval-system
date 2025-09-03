@@ -143,6 +143,53 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
                     )}
                   </Stack>
                 </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    const newUsername = prompt('Digite seu nome de usuário Windows:', windowsInfo.username);
+                    if (newUsername) {
+                      localStorage.setItem('windows-username', newUsername);
+                      window.location.reload();
+                    }
+                  }}
+                  sx={{ fontSize: '0.75rem', px: 1, py: 0.5 }}
+                >
+                  Alterar
+                </Button>
+              </Stack>
+            </Box>
+          )}
+
+          {/* Botão para configurar usuário Windows se não detectado */}
+          {!hasWindowsInfo && (
+            <Box sx={{ mb: 3, p: 2, bgcolor: 'warning.50', borderRadius: 1, border: '1px solid', borderColor: 'warning.200' }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Computer sx={{ color: 'warning.main' }} />
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body2" fontWeight={500} color="warning.dark">
+                    Usuário Windows não detectado
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Configure seu usuário para auto-preenchimento
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="warning"
+                  onClick={() => {
+                    const username = prompt('Digite seu nome de usuário Windows:', 'paulo');
+                    if (username) {
+                      localStorage.setItem('windows-username', username);
+                      localStorage.setItem('username-prompt-shown', 'true');
+                      window.location.reload();
+                    }
+                  }}
+                  sx={{ fontSize: '0.75rem' }}
+                >
+                  Configurar
+                </Button>
               </Stack>
             </Box>
           )}
