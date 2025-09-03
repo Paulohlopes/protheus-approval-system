@@ -15,9 +15,11 @@ export interface PurchaseRequest {
 }
 
 export interface PurchaseRequestsResponse {
-  success: boolean;
-  data: PurchaseRequest[];
-  message?: string;
+  items: PurchaseRequest[];
+  hasNext: boolean;
+  remainingRecords: number;
+  protectedDataFields: string[];
+  nivelFields: string[];
 }
 
 export interface PurchaseRequestFilters {
@@ -26,4 +28,6 @@ export interface PurchaseRequestFilters {
   dataInicio?: string;
   dataFim?: string;
   numeroSC?: string;
+  page?: number;
+  pageSize?: number;
 }

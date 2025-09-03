@@ -25,25 +25,46 @@ export const PurchaseRequestsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  
+  // Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [hasNext, setHasNext] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   // Carregar solicitações na montagem do componente
   useEffect(() => {
     loadPurchaseRequests();
-  }, []);
+  }, [currentPage, pageSize]);
 
   const loadPurchaseRequests = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const data = await purchaseService.getPurchaseRequests();
-      setRequests(data);
+      const response = await purchaseService.getPurchaseRequests({
+        page: currentPage,
+        pageSize: pageSize
+      });
+      
+      setRequests(response.items || []);
+      setHasNext(response.hasNext || false);
+      setTotalRecords(response.remainingRecords || 0);
       
     } catch (error: any) {
       console.error('Erro ao carregar solicitações:', error);
       setError(error.message || 'Erro ao carregar solicitações de compra');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePageChange = (page: number, newPageSize: number) => {
+    if (newPageSize !== pageSize) {
+      setPageSize(newPageSize);
+      setCurrentPage(1); // Reset para primeira página quando muda o tamanho
+    } else {
+      setCurrentPage(page);
     }
   };
 
@@ -99,8 +120,13 @@ export const PurchaseRequestsPage: React.FC = () => {
       <PurchaseRequestList
         requests={requests}
         loading={loading}
+        hasNext={hasNext}
+        totalRecords={totalRecords + requests.length} // Total aproximado
+        currentPage={currentPage}
+        pageSize={pageSize}
         onRefresh={loadPurchaseRequests}
         onViewDetails={handleViewDetails}
+        onPageChange={handlePageChange}
       />
 
       {/* Dialog de detalhes */}

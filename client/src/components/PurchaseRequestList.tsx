@@ -23,23 +23,31 @@ import type { PurchaseRequest } from '../types/purchase';
 interface PurchaseRequestListProps {
   requests: PurchaseRequest[];
   loading?: boolean;
+  hasNext?: boolean;
+  totalRecords?: number;
+  currentPage?: number;
+  pageSize?: number;
   onRefresh?: () => void;
   onViewDetails?: (request: PurchaseRequest) => void;
+  onPageChange?: (page: number, pageSize: number) => void;
 }
 
 export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = ({
   requests,
   loading = false,
+  hasNext = false,
+  totalRecords = 0,
+  currentPage = 0,
+  pageSize = 10,
   onRefresh,
-  onViewDetails
+  onViewDetails,
+  onPageChange
 }) => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSolicitante, setFilterSolicitante] = useState('');
   const [filterNumero, setFilterNumero] = useState('');
 
-  // Filtrar dados baseado nos filtros
+  // Filtrar dados baseado nos filtros (apenas localmente)
   const filteredRequests = useMemo(() => {
     return requests.filter(request => {
       const matchesSearch = searchTerm === '' || 
@@ -57,12 +65,16 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = ({
   }, [requests, searchTerm, filterSolicitante, filterNumero]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
+    if (onPageChange) {
+      onPageChange(newPage + 1, pageSize); // API usa 1-based indexing
+    }
   };
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    const newPageSize = parseInt(event.target.value, 10);
+    if (onPageChange) {
+      onPageChange(1, newPageSize); // Resetar para primeira página
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -183,7 +195,6 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = ({
               </TableRow>
             ) : (
               filteredRequests
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((request, index) => (
                   <TableRow key={`${request.c1_num}-${request.c1_item}-${index}`} hover>
                     <TableCell>
@@ -235,19 +246,25 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = ({
       </TableContainer>
 
       {/* Paginação */}
-      {filteredRequests.length > 0 && (
+      {(requests.length > 0 || hasNext) && (
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25, 50]}
+          rowsPerPageOptions={[10, 25, 50, 100]}
           component="div"
-          count={filteredRequests.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
+          count={totalRecords > 0 ? totalRecords : -1}
+          rowsPerPage={pageSize}
+          page={Math.max(0, currentPage - 1)} // API usa 1-based, componente usa 0-based
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
           labelRowsPerPage="Linhas por página:"
-          labelDisplayedRows={({ from, to, count }) =>
-            `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
-          }
+          labelDisplayedRows={({ from, to, count }) => {
+            if (count > 0) {
+              return `${from}-${to} de ${count}`;
+            } else if (hasNext) {
+              return `${from}-${to} de ${totalRecords}+ registros`;
+            } else {
+              return `${from}-${to}`;
+            }
+          }}
         />
       )}
     </Paper>

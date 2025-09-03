@@ -4,15 +4,20 @@ import type { PurchaseRequest, PurchaseRequestsResponse, PurchaseRequestFilters 
 const PURCHASE_REQUESTS_URL = import.meta.env.VITE_API_PURCHASE_REQUESTS;
 
 export const purchaseService = {
-  // Buscar todas as solicitações de compra
-  async getPurchaseRequests(filters?: PurchaseRequestFilters): Promise<PurchaseRequest[]> {
+  // Buscar todas as solicitações de compra com paginação
+  async getPurchaseRequests(filters?: PurchaseRequestFilters): Promise<PurchaseRequestsResponse> {
     try {
       let url = PURCHASE_REQUESTS_URL;
+      const params = new URLSearchParams();
       
-      // Aplicar filtros se fornecidos
+      // Construir query base
+      params.set('tables', 'SC1');
+      params.set('fields', 'C1_FILIAL,C1_NUM,C1_ITEM,C1_PRODUTO,C1_DESCRI,C1_QUANT,C1_UM,C1_DATPRF,C1_OBS,C1_CC,C1_EMISSAO,C1_SOLICIT,C1_TOTAL');
+      
+      // Aplicar filtros onde
+      const whereConditions: string[] = ["SC1.D_E_L_E_T_=' '"];
+      
       if (filters) {
-        const whereConditions: string[] = ["SC1.D_E_L_E_T_=' '"];
-        
         if (filters.filial) {
           whereConditions.push(`c1_filial='${filters.filial}'`);
         }
@@ -29,30 +34,25 @@ export const purchaseService = {
           whereConditions.push(`c1_emissao>='${filters.dataInicio}' AND c1_emissao<='${filters.dataFim}'`);
         }
         
-        const whereClause = whereConditions.join(' AND ');
-        url = `/api/framework/v1/genericQuery?tables=SC1&fields=C1_FILIAL,C1_NUM,C1_ITEM,C1_PRODUTO,C1_DESCRI,C1_QUANT,C1_UM,C1_DATPRF,C1_OBS,C1_CC,C1_EMISSAO,C1_SOLICIT,C1_TOTAL&where=${encodeURIComponent(whereClause)}`;
+        // Parâmetros de paginação
+        if (filters.page && filters.page > 1) {
+          params.set('page', filters.page.toString());
+        }
+        
+        if (filters.pageSize) {
+          params.set('pageSize', filters.pageSize.toString());
+        }
       }
+      
+      params.set('where', whereConditions.join(' AND '));
+      url = `/api/framework/v1/genericQuery?${params.toString()}`;
       
       console.log('Buscando solicitações de compra...', url);
       
-      const response = await api.get(url);
+      const response = await api.get<PurchaseRequestsResponse>(url);
       
-      // A resposta pode vir em diferentes formatos dependendo da versão do Protheus
-      let data: PurchaseRequest[] = [];
-      
-      if (response.data?.data) {
-        data = response.data.data;
-      } else if (response.data?.items) {
-        data = response.data.items;
-      } else if (Array.isArray(response.data)) {
-        data = response.data;
-      } else {
-        console.warn('Formato de resposta não reconhecido:', response.data);
-        data = [];
-      }
-      
-      console.log(`${data.length} solicitações encontradas`);
-      return data;
+      console.log(`${response.data.items?.length || 0} solicitações encontradas, hasNext: ${response.data.hasNext}, remaining: ${response.data.remainingRecords}`);
+      return response.data;
       
     } catch (error: any) {
       console.error('Erro ao buscar solicitações de compra:', error);
@@ -70,7 +70,7 @@ export const purchaseService = {
   },
 
   // Buscar solicitação específica por número
-  async getPurchaseRequestByNumber(numero: string, filial?: string): Promise<PurchaseRequest[]> {
+  async getPurchaseRequestByNumber(numero: string, filial?: string): Promise<PurchaseRequestsResponse> {
     try {
       const filters: PurchaseRequestFilters = { numeroSC: numero };
       if (filial) filters.filial = filial;
@@ -83,9 +83,9 @@ export const purchaseService = {
   },
 
   // Buscar solicitações por solicitante
-  async getPurchaseRequestsByUser(solicitante: string): Promise<PurchaseRequest[]> {
+  async getPurchaseRequestsByUser(solicitante: string, page?: number, pageSize?: number): Promise<PurchaseRequestsResponse> {
     try {
-      const filters: PurchaseRequestFilters = { solicitante };
+      const filters: PurchaseRequestFilters = { solicitante, page, pageSize };
       return await this.getPurchaseRequests(filters);
     } catch (error) {
       console.error('Erro ao buscar solicitações do usuário:', error);
@@ -94,9 +94,9 @@ export const purchaseService = {
   },
 
   // Buscar solicitações por período
-  async getPurchaseRequestsByPeriod(dataInicio: string, dataFim: string): Promise<PurchaseRequest[]> {
+  async getPurchaseRequestsByPeriod(dataInicio: string, dataFim: string, page?: number, pageSize?: number): Promise<PurchaseRequestsResponse> {
     try {
-      const filters: PurchaseRequestFilters = { dataInicio, dataFim };
+      const filters: PurchaseRequestFilters = { dataInicio, dataFim, page, pageSize };
       return await this.getPurchaseRequests(filters);
     } catch (error) {
       console.error('Erro ao buscar solicitações por período:', error);
