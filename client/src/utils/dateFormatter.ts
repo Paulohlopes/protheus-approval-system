@@ -3,61 +3,15 @@
  */
 
 /**
- * Formata uma data do Protheus (YYYYMMDD) para formato brasileiro (DD/MM/YYYY)
- * @param dateString - Data no formato YYYYMMDD ou DD/MM/YYYY
- * @returns Data formatada como DD/MM/YYYY ou string vazia se inválida
+ * Formata uma data do Protheus mantendo como string
+ * @param dateString - Data no formato que vem da API (ex: 2020-1-28, YYYYMMDD, etc)
+ * @returns Data como string ou vazia se inválida
  */
 export const formatProtheusDate = (dateString: string): string => {
   if (!dateString || dateString === '0' || dateString === '00000000') return '';
   
-  try {
-    // Se for formato YYYYMMDD (8 dígitos)
-    if (dateString.length === 8 && /^\d{8}$/.test(dateString)) {
-      const year = dateString.substring(0, 4);
-      const month = dateString.substring(4, 6);
-      const day = dateString.substring(6, 8);
-      
-      // Validar se são números válidos
-      const yearNum = parseInt(year);
-      const monthNum = parseInt(month);
-      const dayNum = parseInt(day);
-      
-      if (yearNum > 1900 && monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31) {
-        // Verificar se a data é realmente válida usando o objeto Date
-        const dateObj = new Date(yearNum, monthNum - 1, dayNum);
-        if (dateObj.getFullYear() === yearNum && 
-            dateObj.getMonth() === monthNum - 1 && 
-            dateObj.getDate() === dayNum) {
-          return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
-        }
-      }
-    }
-    
-    // Se já estiver em formato DD/MM/YYYY, verificar se é válido
-    if (dateString.includes('/')) {
-      const parts = dateString.split('/');
-      if (parts.length === 3) {
-        const [day, month, year] = parts;
-        const dayNum = parseInt(day);
-        const monthNum = parseInt(month);
-        const yearNum = parseInt(year);
-        
-        if (yearNum > 1900 && monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31) {
-          // Verificar se a data é realmente válida
-          const dateObj = new Date(yearNum, monthNum - 1, dayNum);
-          if (dateObj.getFullYear() === yearNum && 
-              dateObj.getMonth() === monthNum - 1 && 
-              dateObj.getDate() === dayNum) {
-            return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
-          }
-        }
-      }
-    }
-    
-    return '';
-  } catch {
-    return '';
-  }
+  // Retornar a data como string, apenas limpando valores inválidos
+  return dateString;
 };
 
 /**
