@@ -5,12 +5,17 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import { PurchaseRequestsPage } from './pages/PurchaseRequestsPage';
+import { useAppShortcuts } from './hooks/useKeyboardShortcuts';
+import { useShortcutsHelp } from './components/KeyboardShortcutsHelp';
 
 function App() {
+  const { showHelp, ShortcutsHelpDialog } = useShortcutsHelp();
+  useAppShortcuts(showHelp);
+
   return (
     <ErrorBoundary level="critical">
       <Router>
-          <div className="App">
+          <div>
             <Routes>
               {/* Public routes */}
               <Route 
@@ -64,6 +69,7 @@ function App() {
             </Routes>
           </div>
         </Router>
+        <ShortcutsHelpDialog />
     </ErrorBoundary>
   );
 }

@@ -32,6 +32,10 @@ import { ptBR } from 'date-fns/locale';
 import { useDocuments, useApproveDocument, useRejectDocument } from '../hooks/useDocuments';
 import { useDocumentStore } from '../stores/documentStore';
 import { useAuthStore } from '../stores/authStore';
+import { useLiveRegion } from '../hooks/useLiveRegion';
+import ConfirmationDialog from './ConfirmationDialog';
+import { EmptyState } from './EmptyState';
+import { DensityToggle, useDensity } from './DensityToggle';
 import type { ProtheusDocument } from '../types/auth';
 
 // Priority colors
@@ -105,11 +109,22 @@ interface DocumentCardProps {
   loading?: boolean;
 }
 
-const DocumentCard: React.FC<DocumentCardProps> = React.memo(({ 
+interface DocumentCardWithDensityProps extends DocumentCardProps {
+  densityStyles: {
+    cardSpacing: number;
+    cardPadding: number;
+    textSpacing: number;
+    chipSize: 'small' | 'medium';
+    avatarSize: number;
+  };
+}
+
+const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({ 
   document, 
   onApprove, 
   onReject, 
-  loading 
+  loading,
+  densityStyles
 }) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -123,8 +138,8 @@ const DocumentCard: React.FC<DocumentCardProps> = React.memo(({
   };
 
   return (
-    <Card sx={{ mb: 2, position: 'relative' }}>
-      <CardContent>
+    <Card sx={{ mb: densityStyles.cardSpacing, position: 'relative' }}>
+      <CardContent sx={{ p: densityStyles.cardPadding }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h6" component="div" gutterBottom>
@@ -141,12 +156,12 @@ const DocumentCard: React.FC<DocumentCardProps> = React.memo(({
             <Chip
               label={getPriorityLabel(document.priority)}
               color={getPriorityColor(document.priority)}
-              size="small"
+              size={densityStyles.chipSize}
             />
             <Chip
               label={getStatusLabel(document.status)}
               color={getStatusColor(document.status)}
-              size="small"
+              size={densityStyles.chipSize}
             />
             <IconButton size="small">
               <MoreVert />
@@ -200,6 +215,10 @@ const DocumentCard: React.FC<DocumentCardProps> = React.memo(({
               onClick={() => onApprove(document.id)}
               disabled={loading}
               size="small"
+              aria-label={`Aprovar documento ${document.number} no valor de ${new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: document.currency || 'BRL'
+              }).format(document.value)}`}
             >
               Aprovar
             </Button>
@@ -210,6 +229,10 @@ const DocumentCard: React.FC<DocumentCardProps> = React.memo(({
               onClick={() => onReject(document.id)}
               disabled={loading}
               size="small"
+              aria-label={`Rejeitar documento ${document.number} no valor de ${new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: document.currency || 'BRL'
+              }).format(document.value)}`}
             >
               Rejeitar
             </Button>
@@ -224,31 +247,82 @@ const DocumentList: React.FC = () => {
   const { user } = useAuthStore();
   const { filters, pagination, setFilters, setPagination } = useDocumentStore();
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    action: 'approve' | 'reject';
+    document: ProtheusDocument | null;
+  }>({ open: false, action: 'approve', document: null });
+  
+  const { message, announce, liveRegionProps } = useLiveRegion({ politeness: 'assertive' });
+  const { density, setDensity, styles: densityStyles } = useDensity('documents-density');
   
   const { data: documentsResponse, isLoading, error, refetch } = useDocuments(filters, pagination);
   const approveDocument = useApproveDocument();
   const rejectDocument = useRejectDocument();
 
   const handleApprove = (documentId: string) => {
-    if (user) {
-      approveDocument.mutate({
-        documentId,
+    const document = documentsResponse?.data?.find(doc => doc.id === documentId);
+    if (document) {
+      setConfirmDialog({
+        open: true,
         action: 'approve',
-        approverId: user.id,
-        comments: '',
+        document
       });
     }
   };
 
   const handleReject = (documentId: string) => {
-    if (user) {
+    const document = documentsResponse?.data?.find(doc => doc.id === documentId);
+    if (document) {
+      setConfirmDialog({
+        open: true,
+        action: 'reject',
+        document
+      });
+    }
+  };
+
+  const handleConfirmAction = () => {
+    if (!confirmDialog.document || !user) return;
+
+    const document = confirmDialog.document;
+    const action = confirmDialog.action;
+
+    if (action === 'approve') {
+      approveDocument.mutate({
+        documentId: document.id,
+        action: 'approve',
+        approverId: user.id,
+        comments: '',
+      }, {
+        onSuccess: () => {
+          announce(`Documento ${document.number} aprovado com sucesso`);
+        },
+        onError: () => {
+          announce(`Erro ao aprovar documento ${document.number}`);
+        }
+      });
+    } else {
       rejectDocument.mutate({
-        documentId,
+        documentId: document.id,
         action: 'reject',
         approverId: user.id,
         comments: 'Rejeitado pelo aprovador',
+      }, {
+        onSuccess: () => {
+          announce(`Documento ${document.number} rejeitado com sucesso`);
+        },
+        onError: () => {
+          announce(`Erro ao rejeitar documento ${document.number}`);
+        }
       });
     }
+
+    setConfirmDialog({ open: false, action: 'approve', document: null });
+  };
+
+  const handleCloseDialog = () => {
+    setConfirmDialog({ open: false, action: 'approve', document: null });
   };
 
   const handleSearch = (event: React.FormEvent) => {
@@ -277,9 +351,13 @@ const DocumentList: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box component="section" aria-label="Lista de documentos para aprovação">
+      {/* Live Region para anúncios de acessibilidade */}
+      <div {...liveRegionProps}>
+        {message}
+      </div>
       {/* Filters */}
-      <Card sx={{ mb: 3 }}>
+      <Card sx={{ mb: 3 }} role="search" aria-label="Filtros de busca de documentos">
         <CardContent>
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
             <Box component="form" onSubmit={handleSearch} sx={{ flex: 1, minWidth: 200 }}>
@@ -289,10 +367,11 @@ const DocumentList: React.FC = () => {
                 placeholder="Buscar documentos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Campo de busca por documentos"
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Search />
+                      <Search aria-hidden="true" />
                     </InputAdornment>
                   ),
                 }}
@@ -300,11 +379,13 @@ const DocumentList: React.FC = () => {
             </Box>
             
             <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel>Status</InputLabel>
+              <InputLabel id="status-filter-label">Status</InputLabel>
               <Select
+                labelId="status-filter-label"
                 value={filters.status?.[0] || 'all'}
                 label="Status"
                 onChange={(e) => handleStatusFilter(e.target.value)}
+                aria-label="Filtro por status do documento"
               >
                 <MenuItem value="all">Todos</MenuItem>
                 <MenuItem value="pending">Pendentes</MenuItem>
@@ -313,7 +394,16 @@ const DocumentList: React.FC = () => {
               </Select>
             </FormControl>
 
-            <IconButton onClick={() => refetch()}>
+            <DensityToggle
+              density={density}
+              onDensityChange={setDensity}
+            />
+
+            <IconButton 
+              onClick={() => refetch()}
+              aria-label="Atualizar lista de documentos"
+              title="Atualizar lista de documentos"
+            >
               <Refresh />
             </IconButton>
           </Stack>
@@ -345,6 +435,7 @@ const DocumentList: React.FC = () => {
               onApprove={handleApprove}
               onReject={handleReject}
               loading={approveDocument.isPending || rejectDocument.isPending}
+              densityStyles={densityStyles}
             />
           ))}
           
@@ -361,17 +452,37 @@ const DocumentList: React.FC = () => {
           )}
         </>
       ) : (
-        <Card>
-          <CardContent>
-            <Typography variant="h6" align="center" color="text.secondary">
-              Nenhum documento encontrado
-            </Typography>
-            <Typography variant="body2" align="center" color="text.secondary" sx={{ mt: 1 }}>
-              Tente ajustar os filtros de busca
-            </Typography>
-          </CardContent>
-        </Card>
+        <EmptyState
+          type={searchTerm || filters.status?.length ? 'no-results' : 'no-documents'}
+          action={{
+            label: 'Atualizar',
+            onClick: () => refetch(),
+          }}
+          secondaryAction={searchTerm || filters.status?.length ? {
+            label: 'Limpar filtros',
+            onClick: () => {
+              setSearchTerm('');
+              setFilters({ ...filters, search: '', status: [] });
+            },
+          } : undefined}
+        />
       )}
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        onClose={handleCloseDialog}
+        onConfirm={handleConfirmAction}
+        action={confirmDialog.action}
+        documentNumber={confirmDialog.document?.number}
+        documentValue={confirmDialog.document ? 
+          new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: confirmDialog.document.currency || 'BRL'
+          }).format(confirmDialog.document.value) : undefined
+        }
+        loading={approveDocument.isPending || rejectDocument.isPending}
+      />
     </Box>
   );
 };

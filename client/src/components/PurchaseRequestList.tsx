@@ -15,9 +15,21 @@ import {
   Button,
   Chip,
   IconButton,
-  Tooltip
+  Tooltip,
+  useMediaQuery,
+  useTheme,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
-import { Search, Refresh, Visibility } from '@mui/icons-material';
+import { 
+  Search, 
+  Refresh, 
+  Visibility, 
+  ViewList, 
+  ViewModule 
+} from '@mui/icons-material';
+import { PurchaseRequestCard } from './PurchaseRequestCard';
+import { EmptyState } from './EmptyState';
 import type { PurchaseRequest } from '../types/purchase';
 
 interface PurchaseRequestListProps {
@@ -43,9 +55,12 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = React.mem
   onViewDetails,
   onPageChange
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSolicitante, setFilterSolicitante] = useState('');
   const [filterNumero, setFilterNumero] = useState('');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
   // Filtrar dados baseado nos filtros (apenas localmente)
   const filteredRequests = useMemo(() => {
@@ -109,16 +124,39 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = React.mem
             Solicitações de Compra ({filteredRequests.length})
           </Typography>
           
-          {onRefresh && (
-            <Button
-              variant="outlined"
-              startIcon={<Refresh />}
-              onClick={onRefresh}
-              disabled={loading}
-            >
-              Atualizar
-            </Button>
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* View Mode Toggle - apenas em desktop */}
+            {!isMobile && (
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, newMode) => newMode && setViewMode(newMode)}
+                size="small"
+              >
+                <ToggleButton value="table" aria-label="visualização em tabela">
+                  <Tooltip title="Visualização em tabela">
+                    <ViewList />
+                  </Tooltip>
+                </ToggleButton>
+                <ToggleButton value="cards" aria-label="visualização em cards">
+                  <Tooltip title="Visualização em cards">
+                    <ViewModule />
+                  </Tooltip>
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
+            
+            {onRefresh && (
+              <Button
+                variant="outlined"
+                startIcon={<Refresh />}
+                onClick={onRefresh}
+                disabled={loading}
+              >
+                Atualizar
+              </Button>
+            )}
+          </Box>
         </Box>
 
         {/* Filtros */}
@@ -161,9 +199,40 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = React.mem
         </Grid>
       </Box>
 
-      {/* Tabela */}
-      <TableContainer>
-        <Table stickyHeader>
+      {/* Conteúdo - Tabela ou Cards baseado no modo e dispositivo */}
+      {(isMobile || viewMode === 'cards') ? (
+        <Box sx={{ p: 3 }}>
+          {loading ? (
+            <Typography>Carregando...</Typography>
+          ) : filteredRequests.length === 0 ? (
+            <EmptyState
+              type={searchTerm || filterSolicitante || filterNumero ? 'no-results' : 'no-purchase-requests'}
+              action={onRefresh ? {
+                label: 'Atualizar',
+                onClick: onRefresh,
+              } : undefined}
+              secondaryAction={searchTerm || filterSolicitante || filterNumero ? {
+                label: 'Limpar filtros',
+                onClick: () => {
+                  setSearchTerm('');
+                  setFilterSolicitante('');
+                  setFilterNumero('');
+                },
+              } : undefined}
+            />
+          ) : (
+            filteredRequests.map((request, index) => (
+              <PurchaseRequestCard
+                key={`${request.c1_num}-${request.c1_item}-${index}`}
+                request={request}
+                onViewDetails={onViewDetails}
+              />
+            ))
+          )}
+        </Box>
+      ) : (
+        <TableContainer>
+          <Table stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Filial</TableCell>
@@ -244,6 +313,7 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = React.mem
           </TableBody>
         </Table>
       </TableContainer>
+      )}
 
       {/* Paginação */}
       {(requests.length > 0 || hasNext) && (

@@ -28,8 +28,13 @@ import {
   Notifications,
   Business,
   ShoppingCart,
+  DarkMode,
+  LightMode,
+  Help,
 } from '@mui/icons-material';
 import { useAuthStore } from '../stores/authStore';
+import { useAppTheme } from '../hooks/useTheme';
+import { useShortcutsHelp } from './KeyboardShortcutsHelp';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const drawerWidth = 240;
@@ -42,6 +47,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { user, logout } = useAuthStore();
+  const { toggleTheme, isDarkMode } = useAppTheme();
+  const { showHelp, ShortcutsHelpDialog } = useShortcutsHelp();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -130,6 +137,28 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               sx={{ mr: 2, color: 'white', borderColor: 'white' }}
             />
           )}
+
+          {/* Help Button */}
+          <IconButton
+            color="inherit"
+            onClick={showHelp}
+            sx={{ mr: 1 }}
+            aria-label="Ajuda e atalhos do teclado"
+            title="Ajuda (Pressione ? para ver atalhos)"
+          >
+            <Help />
+          </IconButton>
+
+          {/* Theme Toggle */}
+          <IconButton 
+            color="inherit" 
+            onClick={toggleTheme}
+            sx={{ mr: 1 }}
+            aria-label={isDarkMode ? "Mudar para tema claro" : "Mudar para tema escuro"}
+            title={isDarkMode ? "Tema claro" : "Tema escuro"}
+          >
+            {isDarkMode ? <LightMode /> : <DarkMode />}
+          </IconButton>
 
           {/* Notifications */}
           <IconButton color="inherit" sx={{ mr: 1 }}>
@@ -235,6 +264,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <Toolbar />
         {children}
       </Box>
+      
+      {/* Shortcuts Help Dialog */}
+      <ShortcutsHelpDialog />
     </Box>
   );
 };
