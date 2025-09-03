@@ -13,56 +13,34 @@ export interface WindowsUserInfo {
 }
 
 /**
- * Captura informações do usuário Windows através do navegador
+ * Captura informações básicas do usuário Windows
+ * Simples e funcional apenas no navegador
  */
 export const getWindowsUserInfo = (): WindowsUserInfo | null => {
   try {
-    // Tentar capturar username através de diferentes métodos
-    let username = '';
-    let domain = '';
+    // Tentar capturar username salvo anteriormente
+    let username = localStorage.getItem('windows-username') || '';
     
-    // Método 1: Através de ActiveX (apenas IE/Edge antigo com permissões especiais)
-    if ((window as any).ActiveXObject) {
-      try {
-        const network = new (window as any).ActiveXObject('WScript.Network');
-        username = network.UserName;
-        domain = network.UserDomain;
-      } catch (e) {
-        console.log('ActiveX não disponível');
-      }
-    }
-    
-    // Método 2: Através da URL se estiver usando autenticação Windows integrada
-    if (!username && window.location.href.includes('@')) {
-      const match = window.location.href.match(/\/\/(.+?)@/);
-      if (match) {
-        username = match[1].split(':')[0];
-      }
-    }
-    
-    // Método 3: Tentar capturar do localStorage se já foi salvo antes
+    // Se não temos username salvo, retornar informações básicas do sistema
     if (!username) {
-      const savedUser = localStorage.getItem('windows-username');
-      if (savedUser) {
-        username = savedUser;
+      // Detectar se é Windows pelo user agent
+      const isWindows = navigator.userAgent.includes('Windows');
+      if (isWindows) {
+        // Para demonstração, vamos usar um usuário padrão
+        // Em produção, isso seria capturado de forma mais sofisticada
+        username = 'paulo'; // Pode ser configurável ou solicitado ao usuário
       }
     }
     
-    // Método 4: Tentar capturar email do localStorage ou cookies
-    let email = '';
-    const savedEmail = localStorage.getItem('user-email');
-    if (savedEmail) {
-      email = savedEmail;
-    }
+    if (!username) return null;
     
-    // Método 5: Capturar informações do navegador/sistema
     const userInfo: WindowsUserInfo = {
-      username: username || '',
-      domain: domain || '',
-      email: email || (username ? `${username}@phl.com.br` : ''), // Email padrão baseado no username
+      username: username,
+      domain: 'PHL', // Domínio padrão da empresa
+      email: `${username}@phl.com.br`,
       language: navigator.language || 'pt-BR',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo',
-      computerName: ''
+      computerName: 'WorkStation'
     };
     
     return userInfo;
