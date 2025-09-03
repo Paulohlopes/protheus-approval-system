@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Visibility } from '@mui/icons-material';
+import { formatProtheusDate } from '../utils/dateFormatter';
 import type { PurchaseRequest } from '../types/purchase';
 
 interface PurchaseRequestCardProps {
@@ -21,20 +22,6 @@ export const PurchaseRequestCard: React.FC<PurchaseRequestCardProps> = React.mem
   request,
   onViewDetails
 }) => {
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    try {
-      if (dateString.length === 8) {
-        const year = dateString.substring(0, 4);
-        const month = dateString.substring(4, 6);
-        const day = dateString.substring(6, 8);
-        return `${day}/${month}/${year}`;
-      }
-      return dateString;
-    } catch {
-      return dateString;
-    }
-  };
 
   const formatCurrency = (value: number | string) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -166,7 +153,7 @@ export const PurchaseRequestCard: React.FC<PurchaseRequestCardProps> = React.mem
               Data Necessidade
             </Typography>
             <Typography variant="body2" fontWeight="medium">
-              {formatDate(request.c1_datprf)}
+              {formatProtheusDate(request.c1_datprf)}
             </Typography>
           </Grid>
         </Grid>

@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 import { PurchaseRequestCard } from './PurchaseRequestCard';
 import { EmptyState } from './EmptyState';
+import { formatProtheusDate } from '../utils/dateFormatter';
 import type { PurchaseRequest } from '../types/purchase';
 
 interface PurchaseRequestListProps {
@@ -92,21 +93,6 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = React.mem
     }
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    try {
-      // Assumindo formato YYYYMMDD do Protheus
-      if (dateString.length === 8) {
-        const year = dateString.substring(0, 4);
-        const month = dateString.substring(4, 6);
-        const day = dateString.substring(6, 8);
-        return `${day}/${month}/${year}`;
-      }
-      return dateString;
-    } catch {
-      return dateString;
-    }
-  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -290,8 +276,8 @@ export const PurchaseRequestList: React.FC<PurchaseRequestListProps> = React.mem
                     </TableCell>
                     <TableCell>{request.c1_um}</TableCell>
                     <TableCell>{request.c1_solicit}</TableCell>
-                    <TableCell>{formatDate(request.c1_emissao)}</TableCell>
-                    <TableCell>{formatDate(request.c1_datprf)}</TableCell>
+                    <TableCell>{formatProtheusDate(request.c1_emissao)}</TableCell>
+                    <TableCell>{formatProtheusDate(request.c1_datprf)}</TableCell>
                     <TableCell align="right">
                       {formatCurrency(request.c1_total)}
                     </TableCell>
