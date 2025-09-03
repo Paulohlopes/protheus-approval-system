@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PaletteMode } from '@mui/material';
 import { createAppTheme } from '../theme/theme';
+
+type PaletteMode = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'protheus-theme-mode';
 
