@@ -11,56 +11,25 @@ const OAUTH2_TOKEN_URL = import.meta.env.VITE_OAUTH2_TOKEN_URL || '/tlpp/oauth2/
 const OAUTH2_REFRESH_URL = import.meta.env.VITE_OAUTH2_REFRESH_URL || '/tlpp/oauth2/token';
 
 export const authService = {
-  // Protheus OAuth2 login usando GET conforme documentação
+  // Protheus OAuth2 login usando GET conforme documentação TOTVS
   async loginProtheus(credentials: ProtheusLoginCredentials): Promise<ProtheusAuthResponse> {
     try {
-      // Primeiro tentar autenticação Basic do Protheus
-      const basicAuth = btoa(`${credentials.username}:${credentials.password}`);
-      
-      try {
-        // Tentar autenticação Basic primeiro
-        const basicResponse = await authApi.get('/api/framework/v1/users', {
-          headers: {
-            'Authorization': `Basic ${basicAuth}`,
-            'Accept': 'application/json'
-          }
-        });
-        
-        // Se Basic funcionar, usar o token Basic como access_token
-        if (basicResponse.status === 200) {
-          return {
-            access_token: basicAuth,
-            refresh_token: basicAuth,
-            token_type: 'Basic',
-            expires_in: 86400,
-            user: {
-              id: credentials.username,
-              username: credentials.username,
-              name: credentials.username,
-              email: '',
-              groups: [],
-              permissions: []
-            }
-          };
-        }
-      } catch (basicError) {
-        console.log('Basic auth falhou, tentando OAuth2...');
-      }
-      
-      // Se Basic falhar, tentar OAuth2
+      // Usar OAuth2 conforme documentação TOTVS
+      // Requisição GET com parâmetros na URL
       const params = new URLSearchParams({
         grant_type: 'password',
         username: credentials.username,
         password: credentials.password
       });
 
-      // Requisição GET para obter access_token conforme documentação
+      console.log('Tentando autenticação OAuth2 no Protheus...');
+      
+      // Requisição GET para /tlpp/oauth2/token conforme documentação
       const response = await authApi.get<ProtheusAuthResponse>(
         `${OAUTH2_TOKEN_URL}?${params.toString()}`,
         {
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Accept': 'application/json'
           }
         }
       );
@@ -111,7 +80,7 @@ export const authService = {
     }
   },
 
-  // Refresh token usando POST conforme documentação
+  // Refresh token usando POST conforme documentação TOTVS
   async refreshToken(refreshToken: string): Promise<ProtheusAuthResponse> {
     try {
       // Construir URL com parâmetros para requisição POST
@@ -120,14 +89,15 @@ export const authService = {
         refresh_token: refreshToken
       });
 
-      // Requisição POST para renovar access_token conforme documentação
+      console.log('Renovando token de acesso...');
+      
+      // Requisição POST para /tlpp/oauth2/token conforme documentação
       const response = await authApi.post<ProtheusAuthResponse>(
         `${OAUTH2_REFRESH_URL}?${params.toString()}`,
         null, // Body vazio, parâmetros na URL
         {
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Accept': 'application/json'
           }
         }
       );

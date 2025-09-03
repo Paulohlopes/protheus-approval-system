@@ -52,15 +52,10 @@ export const tokenManager = {
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = tokenManager.getToken();
-    const tokenType = localStorage.getItem('token_type') || 'Bearer';
     
     if (token && config.headers) {
-      // Se for Basic auth, usar diretamente, senão usar Bearer
-      if (tokenType === 'Basic') {
-        config.headers.Authorization = `Basic ${token}`;
-      } else {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+      // Sempre usar Bearer token conforme documentação TOTVS
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
