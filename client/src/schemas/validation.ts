@@ -72,6 +72,56 @@ export const purchaseRequestFiltersSchema = z.object({
 
 export type PurchaseRequestFiltersInput = z.infer<typeof purchaseRequestFiltersSchema>;
 
+// Purchase Order Filters validation
+export const purchaseOrderFiltersSchema = z.object({
+  filial: z.string()
+    .max(10, 'Filial deve ter no máximo 10 caracteres')
+    .regex(/^[A-Z0-9]*$/, 'Filial deve conter apenas letras maiúsculas e números')
+    .optional(),
+  
+  solicitante: z.string()
+    .max(50, 'Nome do solicitante deve ter no máximo 50 caracteres')
+    .regex(/^[a-zA-Z0-9\s._-]*$/, 'Solicitante contém caracteres inválidos')
+    .optional(),
+  
+  numeroPC: z.string()
+    .max(20, 'Número do PC deve ter no máximo 20 caracteres')
+    .regex(/^[A-Z0-9]*$/, 'Número do PC deve conter apenas letras maiúsculas e números')
+    .optional(),
+  
+  fornecedor: z.string()
+    .max(15, 'Código do fornecedor deve ter no máximo 15 caracteres')
+    .regex(/^[A-Z0-9]*$/, 'Código do fornecedor deve conter apenas letras maiúsculas e números')
+    .optional(),
+  
+  dataInicio: dateString.optional(),
+  
+  dataFim: dateString.optional(),
+  
+  page: z.number()
+    .int('Página deve ser um número inteiro')
+    .min(1, 'Página deve ser maior que 0')
+    .max(10000, 'Página deve ser menor que 10000')
+    .optional(),
+  
+  pageSize: z.number()
+    .int('Tamanho da página deve ser um número inteiro')
+    .min(1, 'Tamanho da página deve ser maior que 0')
+    .max(1000, 'Tamanho da página deve ser menor que 1000')
+    .optional()
+}).refine((data) => {
+  // Validate date range
+  if (data.dataInicio && data.dataFim) {
+    return new Date(data.dataInicio) <= new Date(data.dataFim);
+  }
+  return true;
+}, {
+  message: 'Data de início deve ser anterior à data de fim',
+  path: ['dataInicio']
+});
+
+export type PurchaseOrderFiltersInput = z.infer<typeof purchaseOrderFiltersSchema>;
+
 // Document Filters validation
 export const documentFiltersSchema = z.object({
   status: z.enum(['pending', 'approved', 'rejected', 'in_review'])
