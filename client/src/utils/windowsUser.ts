@@ -59,7 +59,7 @@ export const getWindowsUserInfo = (): WindowsUserInfo | null => {
     const userInfo: WindowsUserInfo = {
       username: username || '',
       domain: domain || '',
-      email: email || '',
+      email: email || (username ? `${username}@phl.com.br` : ''), // Email padrão baseado no username
       language: navigator.language || 'pt-BR',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo',
       computerName: ''

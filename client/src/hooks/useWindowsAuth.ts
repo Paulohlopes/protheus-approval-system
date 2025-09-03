@@ -29,30 +29,23 @@ interface WindowsUserData {
 export const useWindowsAuth = () => {
   const [localWindowsInfo, setLocalWindowsInfo] = useState(() => getWindowsUserInfo());
 
-  // Buscar informações do servidor local (mais confiável)
-  const { data: serverWindowsInfo, isLoading, error } = useQuery({
-    queryKey: ['windows-user'],
-    queryFn: async (): Promise<WindowsUserData> => {
-      const response = await localApi.get('/api/system/windows-user');
-      return response.data.data;
-    },
-    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
-    retry: false
-  });
+  // Usar apenas as informações do cliente (sem servidor local)
+  const [isLoading] = useState(false);
+  const [error] = useState(null);
+  
+  // Simular configurações sugeridas baseadas no cliente
+  const suggestedSettings = localWindowsInfo ? {
+    username: localWindowsInfo.username,
+    email: localWindowsInfo.email,
+    fullName: localWindowsInfo.fullName,
+    language: 'pt-BR',
+    timezone: 'America/Sao_Paulo',
+    dateFormat: 'DD/MM/YYYY',
+    numberFormat: 'pt-BR'
+  } : null;
 
-  // Buscar configurações sugeridas
-  const { data: suggestedSettings } = useQuery({
-    queryKey: ['suggested-settings'],
-    queryFn: async () => {
-      const response = await localApi.get('/api/system/suggested-settings');
-      return response.data.data;
-    },
-    staleTime: 10 * 60 * 1000,
-    retry: false
-  });
-
-  // Combinar informações do cliente e servidor
-  const windowsInfo = serverWindowsInfo || localWindowsInfo;
+  // Usar apenas informações locais
+  const windowsInfo = localWindowsInfo;
 
   // Salvar username quando disponível
   useEffect(() => {
@@ -79,15 +72,20 @@ export const useWindowsAuth = () => {
    * Valida se o usuário Windows corresponde ao usuário Protheus
    */
   const validateWindowsUser = async (protheusUsername: string): Promise<boolean> => {
-    try {
-      const response = await localApi.post('/api/system/validate-windows-user', {
-        protheusUsername
-      });
-      return response.data.data.isValid;
-    } catch (error) {
-      console.error('Erro ao validar usuário Windows:', error);
-      return false;
-    }
+    if (!windowsInfo?.username) return false;
+    
+    // Normalizar usernames (remover domínio, converter para minúscula)
+    const normalizeUsername = (username: string) => {
+      return username
+        .toLowerCase()
+        .replace(/^.*\\/, '') // Remove domínio se presente
+        .trim();
+    };
+
+    const normalizedWindows = normalizeUsername(windowsInfo.username);
+    const normalizedProtheus = normalizeUsername(protheusUsername);
+
+    return normalizedWindows === normalizedProtheus;
   };
 
   /**
