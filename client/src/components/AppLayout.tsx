@@ -27,6 +27,7 @@ import {
   Logout,
   Notifications,
   Business,
+  ShoppingCart,
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -65,6 +66,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
     { text: 'Documentos', icon: <Assignment />, path: '/documents' },
+    { text: 'Solicitações de Compra', icon: <ShoppingCart />, path: '/purchase-requests' },
     { text: 'Configurações', icon: <Settings />, path: '/settings' },
   ];
 

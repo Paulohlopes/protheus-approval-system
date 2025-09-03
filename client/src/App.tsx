@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
+import { PurchaseRequestsPage } from './pages/PurchaseRequestsPage';
 
 function App() {
   return (
@@ -29,6 +30,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <DocumentsPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/purchase-requests" 
+              element={
+                <ProtectedRoute>
+                  <PurchaseRequestsPage />
                 </ProtectedRoute>
               } 
             />
