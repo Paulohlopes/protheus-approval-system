@@ -15,6 +15,7 @@ import {
   CardContent
 } from '@mui/material';
 import { ShoppingCart } from '@mui/icons-material';
+import AppLayout from '../components/AppLayout';
 import { PurchaseRequestList } from '../components/PurchaseRequestList';
 import { purchaseService } from '../services/purchaseService';
 import type { PurchaseRequest } from '../types/purchase';
@@ -101,7 +102,8 @@ export const PurchaseRequestsPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl">
+    <AppLayout>
+      <Container maxWidth="xl">
       {/* Header */}
       <Box sx={{ py: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -314,6 +316,7 @@ export const PurchaseRequestsPage: React.FC = () => {
           {error}
         </Alert>
       </Snackbar>
-    </Container>
+      </Container>
+    </AppLayout>
   );
 };

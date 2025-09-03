@@ -15,6 +15,7 @@ import {
   CardContent
 } from '@mui/material';
 import { Receipt, Business } from '@mui/icons-material';
+import AppLayout from '../components/AppLayout';
 import { PurchaseOrderList } from '../components/PurchaseOrderList';
 import { purchaseService } from '../services/purchaseService';
 import type { PurchaseOrder } from '../types/purchase';
@@ -87,7 +88,8 @@ export const PurchaseOrdersPage: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl">
+    <AppLayout>
+      <Container maxWidth="xl">
       {/* Header */}
       <Box sx={{ py: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -377,6 +379,7 @@ export const PurchaseOrdersPage: React.FC = () => {
           {error}
         </Alert>
       </Snackbar>
-    </Container>
+      </Container>
+    </AppLayout>
   );
 };

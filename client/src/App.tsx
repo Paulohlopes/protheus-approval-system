@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import { PurchaseRequestsPage } from './pages/PurchaseRequestsPage';
+import { PurchaseOrdersPage } from './pages/PurchaseOrdersPage';
 import { useAppShortcuts } from './hooks/useKeyboardShortcuts';
 import { useShortcutsHelp } from './components/KeyboardShortcutsHelp';
 
@@ -56,6 +57,17 @@ function App() {
                   <ErrorBoundary level="page">
                     <ProtectedRoute>
                       <PurchaseRequestsPage />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } 
+              />
+              
+              <Route 
+                path="/purchase-orders" 
+                element={
+                  <ErrorBoundary level="page">
+                    <ProtectedRoute>
+                      <PurchaseOrdersPage />
                     </ProtectedRoute>
                   </ErrorBoundary>
                 } 

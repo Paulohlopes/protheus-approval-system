@@ -28,6 +28,7 @@ import {
   Notifications,
   Business,
   ShoppingCart,
+  Receipt,
   DarkMode,
   LightMode,
   Help,
@@ -74,6 +75,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard' },
     { text: 'Documentos', icon: <Assignment />, path: '/documents' },
     { text: 'Solicitações de Compra', icon: <ShoppingCart />, path: '/purchase-requests' },
+    { text: 'Pedidos de Compra', icon: <Receipt />, path: '/purchase-orders' },
     { text: 'Configurações', icon: <Settings />, path: '/settings' },
   ];
 
