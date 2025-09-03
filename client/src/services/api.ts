@@ -52,10 +52,15 @@ export const tokenManager = {
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = tokenManager.getToken();
+    const tokenType = localStorage.getItem('token_type') || 'Bearer';
     
     if (token && config.headers) {
-      // Sempre usar Bearer token conforme documentação TOTVS
-      config.headers.Authorization = `Bearer ${token}`;
+      // Verificar o tipo de token (Basic ou Bearer)
+      if (tokenType === 'Basic') {
+        config.headers.Authorization = `Basic ${token}`;
+      } else {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -64,43 +69,15 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor to handle auth errors
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      const refreshToken = tokenManager.getRefreshToken();
-      if (refreshToken) {
-        try {
-          // Use Protheus refresh token endpoint
-          const refreshUrl = import.meta.env.VITE_OAUTH2_REFRESH_URL || '/tlpp/oauth2/token';
-          const refreshResponse = await authApi.post(
-            `${refreshUrl}?grant_type=refresh_token&refresh_token=${refreshToken}`
-          );
-          
-          const { access_token, refresh_token: newRefreshToken } = refreshResponse.data;
-          tokenManager.setTokens(access_token, newRefreshToken || refreshToken);
-          
-          // Retry the original request with new token
-          if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${access_token}`;
-          }
-          return api(originalRequest);
-        } catch (refreshError) {
-          // Refresh failed, redirect to login
-          tokenManager.removeTokens();
-          window.location.href = '/login';
-          return Promise.reject(refreshError);
-        }
-      } else {
-        // No refresh token, redirect to login
-        tokenManager.removeTokens();
-        window.location.href = '/login';
-      }
+    // Para Basic Auth, se der 401 é porque as credenciais expiraram ou são inválidas
+    if (error.response?.status === 401) {
+      // Limpar tokens e redirecionar para login
+      tokenManager.removeTokens();
+      window.location.href = '/login';
     }
 
     return Promise.reject(error);

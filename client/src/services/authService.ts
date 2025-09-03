@@ -1,68 +1,48 @@
-import api, { authApi } from './api';
+import api from './api';
 import type { 
   ProtheusLoginCredentials, 
   ProtheusAuthResponse,
   ProtheusUser
 } from '../types/auth';
 
-// Protheus OAuth2 URLs
+// Protheus Base URL
 const PROTHEUS_BASE_URL = import.meta.env.VITE_PROTHEUS_BASE_URL || 'http://brsvcub050:3079/rest';
-const OAUTH2_TOKEN_URL = import.meta.env.VITE_OAUTH2_TOKEN_URL || '/tlpp/oauth2/token';
-const OAUTH2_REFRESH_URL = import.meta.env.VITE_OAUTH2_REFRESH_URL || '/tlpp/oauth2/token';
 
 export const authService = {
-  // Protheus OAuth2 login usando GET conforme documentação TOTVS
+  // Protheus Basic Authentication
   async loginProtheus(credentials: ProtheusLoginCredentials): Promise<ProtheusAuthResponse> {
     try {
-      // Usar OAuth2 conforme documentação TOTVS
-      // Requisição GET com parâmetros na URL
-      const params = new URLSearchParams({
-        grant_type: 'password',
-        username: credentials.username,
-        password: credentials.password
+      console.log('Tentando autenticação Basic no Protheus...');
+      
+      // Criar token Basic Auth (usuário:senha em base64)
+      const basicToken = btoa(`${credentials.username}:${credentials.password}`);
+      
+      // Testar a autenticação fazendo uma requisição simples
+      // O Protheus valida o Basic Auth em qualquer endpoint
+      const testResponse = await api.get('/api/framework/v1/users', {
+        headers: {
+          'Authorization': `Basic ${basicToken}`,
+          'Accept': 'application/json'
+        }
       });
 
-      console.log('Tentando autenticação OAuth2 no Protheus...');
+      // Se chegou aqui, a autenticação foi bem sucedida
+      console.log('Autenticação Basic bem sucedida');
       
-      // Requisição GET para /tlpp/oauth2/token conforme documentação
-      const response = await authApi.get<ProtheusAuthResponse>(
-        `${OAUTH2_TOKEN_URL}?${params.toString()}`,
-        {
-          headers: {
-            'Accept': 'application/json'
-          }
-        }
-      );
-
-      // Validar se recebemos o access_token
-      if (!response.data.access_token) {
-        throw new Error('Token de acesso não retornado pelo servidor');
-      }
-
-      // Buscar informações do usuário se necessário
-      let userInfo: ProtheusUser | null = null;
-      try {
-        const userResponse = await this.getUserInfo(response.data.access_token);
-        userInfo = userResponse;
-      } catch (userError) {
-        console.warn('Não foi possível obter informações do usuário:', userError);
-        // Criar usuário básico com as informações do login
-        userInfo = {
+      // Retornar o token Basic para ser usado nas próximas requisições
+      return {
+        access_token: basicToken,
+        refresh_token: basicToken, // No Basic não há refresh
+        token_type: 'Basic',
+        expires_in: 86400, // 24 horas
+        user: {
           id: credentials.username,
           username: credentials.username,
           name: credentials.username,
           email: '',
           groups: [],
           permissions: []
-        };
-      }
-
-      return {
-        access_token: response.data.access_token,
-        refresh_token: response.data.refresh_token,
-        token_type: response.data.token_type || 'Bearer',
-        expires_in: response.data.expires_in || 3600,
-        user: userInfo
+        }
       };
 
     } catch (error: any) {
@@ -72,57 +52,24 @@ export const authService = {
         throw new Error('Credenciais inválidas. Verifique usuário e senha.');
       } else if (error.response?.status === 403) {
         throw new Error('Acesso negado. Usuário não autorizado.');
-      } else if (error.response?.data?.error_description) {
-        throw new Error(error.response.data.error_description);
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
       } else {
         throw new Error('Erro na comunicação com o servidor Protheus.');
       }
     }
   },
 
-  // Refresh token usando POST conforme documentação TOTVS
+  // No Basic Auth não há refresh token real, mas mantemos para compatibilidade
   async refreshToken(refreshToken: string): Promise<ProtheusAuthResponse> {
-    try {
-      // Construir URL com parâmetros para requisição POST
-      const params = new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken
-      });
-
-      console.log('Renovando token de acesso...');
-      
-      // Requisição POST para /tlpp/oauth2/token conforme documentação
-      const response = await authApi.post<ProtheusAuthResponse>(
-        `${OAUTH2_REFRESH_URL}?${params.toString()}`,
-        null, // Body vazio, parâmetros na URL
-        {
-          headers: {
-            'Accept': 'application/json'
-          }
-        }
-      );
-
-      if (!response.data.access_token) {
-        throw new Error('Token de acesso não retornado na renovação');
-      }
-
-      return {
-        access_token: response.data.access_token,
-        refresh_token: response.data.refresh_token || refreshToken,
-        token_type: response.data.token_type || 'Bearer',
-        expires_in: response.data.expires_in || 3600,
-        user: response.data.user
-      };
-
-    } catch (error: any) {
-      console.error('Erro ao renovar token:', error);
-      
-      if (error.response?.status === 401) {
-        throw new Error('Refresh token expirado. Faça login novamente.');
-      } else {
-        throw new Error('Erro ao renovar token de acesso.');
-      }
-    }
+    // Como é Basic Auth, o "refresh" apenas retorna o mesmo token
+    return {
+      access_token: refreshToken,
+      refresh_token: refreshToken,
+      token_type: 'Basic',
+      expires_in: 86400,
+      user: null
+    };
   },
 
   // Buscar informações do usuário autenticado
@@ -131,7 +78,7 @@ export const authService = {
       const response = await api.get('/api/framework/v1/users', {
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Basic ${accessToken}`
         }
       });
 
@@ -153,11 +100,10 @@ export const authService = {
     }
   },
 
-  // Logout (opcional, pode limpar cache local)
+  // Logout (limpa dados locais)
   async logout(): Promise<void> {
     try {
-      // Limpar tokens do localStorage/sessionStorage se necessário
-      // O Protheus não possui endpoint específico de logout para JWT
+      // Limpar tokens do localStorage
       console.log('Logout realizado - tokens removidos localmente');
     } catch (error) {
       console.warn('Erro durante logout:', error);
@@ -170,7 +116,7 @@ export const authService = {
       await api.get('/api/framework/v1/users', {
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Basic ${accessToken}`
         }
       });
       return true;
