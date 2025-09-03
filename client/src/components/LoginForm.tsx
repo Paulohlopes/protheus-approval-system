@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -14,9 +14,13 @@ import {
   Tab,
   Container,
   Stack,
+  Chip,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
-import { Business, Person, Lock } from '@mui/icons-material';
+import { Business, Person, Lock, Computer, Email } from '@mui/icons-material';
 import { protheusLoginSchema, type ProtheusLoginFormData } from '../schemas/loginSchema';
+import { useWindowsAuth } from '../hooks/useWindowsAuth';
 
 interface LoginFormProps {
   onSubmit: (data: ProtheusLoginFormData) => Promise<void>;
@@ -26,12 +30,15 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, error }) => {
   const [tabValue, setTabValue] = useState(0);
+  const [rememberMe, setRememberMe] = useState(false);
+  const { windowsInfo, autoFillLogin, hasWindowsInfo } = useWindowsAuth();
   
   const {
     control,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<ProtheusLoginFormData>({
     resolver: zodResolver(protheusLoginSchema),
     mode: 'onChange',
@@ -40,6 +47,14 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
       password: '',
     },
   });
+
+  // Auto-preencher com informações do Windows
+  useEffect(() => {
+    const loginData = autoFillLogin();
+    if (loginData?.username) {
+      setValue('username', loginData.username);
+    }
+  }, []);
 
   const handleFormSubmit = async (data: ProtheusLoginFormData) => {
     try {
@@ -101,6 +116,36 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
               Conecte-se ao Protheus ERP para acessar o sistema
             </Typography>
           </Box>
+
+          {/* Windows User Info Display */}
+          {hasWindowsInfo && windowsInfo && (
+            <Box sx={{ mb: 3, p: 2, bgcolor: 'primary.50', borderRadius: 1, border: '1px solid', borderColor: 'primary.200' }}>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Computer sx={{ color: 'primary.main' }} />
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="body2" fontWeight={500} color="primary.dark">
+                    Usuário Windows Detectado
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                    <Chip 
+                      size="small" 
+                      label={windowsInfo.username} 
+                      icon={<Person />}
+                      sx={{ bgcolor: 'primary.100', color: 'primary.dark' }}
+                    />
+                    {windowsInfo.email && (
+                      <Chip 
+                        size="small" 
+                        label={windowsInfo.email} 
+                        icon={<Email />}
+                        sx={{ bgcolor: 'success.100', color: 'success.dark' }}
+                      />
+                    )}
+                  </Stack>
+                </Box>
+              </Stack>
+            </Box>
+          )}
 
           {/* Login Type Tabs */}
           <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
