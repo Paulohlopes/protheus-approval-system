@@ -1,31 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   Button,
   Typography,
   Box,
   CircularProgress,
-  Chip,
-  Tooltip,
   Stack,
-  TablePagination,
-  IconButton
+  Pagination,
+  IconButton,
+  Tooltip,
+  ToggleButton,
+  ToggleButtonGroup,
+  Grid
 } from '@mui/material';
 import { 
-  Visibility, 
   Refresh, 
-  Business,
-  Receipt
+  Receipt,
+  ViewList,
+  ViewModule
 } from '@mui/icons-material';
 import { EmptyState } from './EmptyState';
+import { PurchaseOrderCard } from './PurchaseOrderCard';
 import type { PurchaseOrder } from '../types/purchase';
-import { formatProtheusDate } from '../utils/dateFormatter';
 
 interface PurchaseOrderListProps {
   orders: PurchaseOrder[];
@@ -50,21 +46,13 @@ export const PurchaseOrderList: React.FC<PurchaseOrderListProps> = ({
   onViewDetails,
   onPageChange
 }) => {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value || 0);
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, newPage: number) => {
+    onPageChange?.(newPage, pageSize);
   };
 
-  const handlePageChange = (event: unknown, newPage: number) => {
-    onPageChange?.(newPage + 1, pageSize);
-  };
-
-  const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newPageSize = parseInt(event.target.value, 10);
-    onPageChange?.(1, newPageSize);
-  };
+  const totalPages = Math.ceil(totalRecords / pageSize);
 
   if (loading && orders.length === 0) {
     return (
@@ -96,9 +84,9 @@ export const PurchaseOrderList: React.FC<PurchaseOrderListProps> = ({
   }
 
   return (
-    <Paper sx={{ width: '100%' }}>
-      {/* Header com estatísticas */}
-      <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+    <Box sx={{ width: '100%' }}>
+      {/* Header com estatísticas e controles */}
+      <Paper sx={{ p: 2, mb: 2 }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Box>
             <Typography variant="h6" component="h2">
@@ -110,6 +98,25 @@ export const PurchaseOrderList: React.FC<PurchaseOrderListProps> = ({
           </Box>
           
           <Stack direction="row" spacing={1} alignItems="center">
+            {/* Toggle View Mode */}
+            <ToggleButtonGroup
+              value={viewMode}
+              exclusive
+              onChange={(_, newMode) => newMode && setViewMode(newMode)}
+              size="small"
+            >
+              <ToggleButton value="cards" aria-label="visualização em cards">
+                <Tooltip title="Visualização em Cards">
+                  <ViewModule />
+                </Tooltip>
+              </ToggleButton>
+              <ToggleButton value="list" aria-label="visualização em lista">
+                <Tooltip title="Visualização em Lista">
+                  <ViewList />
+                </Tooltip>
+              </ToggleButton>
+            </ToggleButtonGroup>
+
             {loading && <CircularProgress size={20} />}
             {onRefresh && (
               <Tooltip title="Atualizar lista">
@@ -120,142 +127,44 @@ export const PurchaseOrderList: React.FC<PurchaseOrderListProps> = ({
             )}
           </Stack>
         </Stack>
-      </Box>
+      </Paper>
 
-      <TableContainer>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Tipo</TableCell>
-              <TableCell>Filial</TableCell>
-              <TableCell>Número</TableCell>
-              <TableCell>Item</TableCell>
-              <TableCell>Fornecedor</TableCell>
-              <TableCell>Produto</TableCell>
-              <TableCell>Descrição</TableCell>
-              <TableCell align="right">Quantidade</TableCell>
-              <TableCell>UM</TableCell>
-              <TableCell>Entrega</TableCell>
-              <TableCell>Solicitante</TableCell>
-              <TableCell align="right">Total</TableCell>
-              <TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {orders.map((order, index) => (
-              <TableRow key={`${order.c7_num}-${order.c7_item}-${index}`} hover>
-                <TableCell>
-                  <Chip
-                    label="PC"
-                    size="small"
-                    color="primary"
-                    icon={<Business />}
-                    sx={{ fontWeight: 600 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontFamily="monospace">
-                    {order.c7_filial}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight={600}>
-                    {order.c7_num}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {order.c7_item}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontFamily="monospace">
-                    {order.c7_fornece}
-                    {order.c7_loja && `/${order.c7_loja}`}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontFamily="monospace">
-                    {order.c7_produto}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Tooltip title={order.c7_descri} arrow>
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        maxWidth: 200,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {order.c7_descri}
-                    </Typography>
-                  </Tooltip>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2">
-                    {order.c7_quant?.toLocaleString('pt-BR') || '0'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {order.c7_um}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {formatProtheusDate(order.c7_datprf)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {order.c7_solicit}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" fontWeight={600} color="primary.main">
-                    {formatCurrency(order.c7_total)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={0.5}>
-                    {onViewDetails && (
-                      <Tooltip title="Ver detalhes">
-                        <IconButton 
-                          size="small" 
-                          onClick={() => onViewDetails(order)}
-                          color="primary"
-                        >
-                          <Visibility fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* Cards Layout */}
+      {viewMode === 'cards' && (
+        <Grid container spacing={2}>
+          {orders.map((order, index) => (
+            <Grid item xs={12} md={6} lg={4} key={`${order.c7_num}-${order.c7_item}-${index}`}>
+              <PurchaseOrderCard
+                order={order}
+                onViewDetails={onViewDetails}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      )}
+
+      {/* List Layout - mantendo a opção para futuro uso */}
+      {viewMode === 'list' && (
+        <Paper sx={{ p: 2 }}>
+          <Typography variant="body1" color="text.secondary" textAlign="center">
+            Visualização em lista será implementada em breve...
+          </Typography>
+        </Paper>
+      )}
 
       {/* Paginação */}
-      {onPageChange && (
-        <TablePagination
-          component="div"
-          count={totalRecords > 0 ? totalRecords : orders.length}
-          page={currentPage - 1}
-          onPageChange={handlePageChange}
-          rowsPerPage={pageSize}
-          onRowsPerPageChange={handleRowsPerPageChange}
-          rowsPerPageOptions={[5, 10, 25, 50]}
-          labelDisplayedRows={({ from, to, count }) => 
-            `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
-          }
-          labelRowsPerPage="Itens por página:"
-        />
+      {onPageChange && totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+          <Pagination
+            count={totalPages}
+            page={currentPage}
+            onChange={handlePageChange}
+            color="primary"
+            showFirstButton
+            showLastButton
+          />
+        </Box>
       )}
-    </Paper>
+    </Box>
   );
 };
