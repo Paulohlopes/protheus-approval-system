@@ -8,7 +8,8 @@ import {
 } from '@mui/material';
 import { ShoppingCart } from '@mui/icons-material';
 import AppLayout from '../components/AppLayout';
-import { PurchaseRequestList } from '../components/PurchaseRequestList';
+import { DocumentListView, DocumentColumn, DocumentFilter } from '../components/DocumentListView';
+import { DocumentCard } from '../components/DocumentCard';
 import { DocumentDetailsDialog } from '../components/DocumentDetailsDialog';
 import { purchaseService } from '../services/purchaseService';
 import type { PurchaseRequest } from '../types/purchase';
@@ -91,16 +92,84 @@ export const PurchaseRequestsPage: React.FC = () => {
       </Box>
 
       {/* Lista de solicitações */}
-      <PurchaseRequestList
-        requests={requests}
+      <DocumentListView<PurchaseRequest>
+        items={requests}
         loading={loading}
+        title="Solicitações de Compra"
+        subtitle={`Página ${currentPage} de ${Math.ceil((totalRecords + requests.length) / pageSize)}`}
+        columns={[
+          { id: 'filial', label: 'Filial', field: 'c1_filial', format: 'chip', chipColor: 'primary' },
+          { id: 'numero', label: 'SC', field: 'c1_num' },
+          { id: 'item', label: 'Item', field: 'c1_item', align: 'center' },
+          { id: 'produto', label: 'Produto', field: 'c1_produto', format: 'monospace' },
+          { id: 'descricao', label: 'Descrição', field: 'c1_descri', width: 250 },
+          { id: 'quantidade', label: 'Qtd', field: 'c1_quant', align: 'right', format: 'number' },
+          { id: 'um', label: 'UM', field: 'c1_um', align: 'center' },
+          { id: 'solicitante', label: 'Solicitante', field: 'c1_solicit' },
+          { id: 'emissao', label: 'Emissão', field: 'c1_emissao', format: 'date' },
+          { id: 'necessidade', label: 'Necessidade', field: 'c1_datprf', format: 'date' },
+          { id: 'valor', label: 'Valor Total', field: 'c1_total', align: 'right', format: 'currency' }
+        ]}
+        filters={[
+          { id: 'numero', label: 'Número SC', gridSize: 3 },
+          { id: 'solicitante', label: 'Solicitante', gridSize: 3 },
+          { id: 'produto', label: 'Produto', gridSize: 3 }
+        ]}
+        getItemKey={(item, index) => `${item.c1_num}-${item.c1_item}-${index}`}
+        CardComponent={({ item, onViewDetails }) => (
+          <DocumentCard
+            title={`SC ${item.c1_num} - Item ${item.c1_item}`}
+            subtitle={item.c1_descri}
+            badge={{
+              label: item.c1_filial,
+              color: 'primary'
+            }}
+            icon={<ShoppingCart />}
+            sections={[
+              {
+                fields: [
+                  { label: 'Produto', value: item.c1_produto, format: 'monospace' },
+                  { label: 'Quantidade', value: `${item.c1_quant?.toLocaleString('pt-BR')} ${item.c1_um}` }
+                ],
+                direction: 'row'
+              },
+              {
+                fields: [
+                  { label: 'Solicitante', value: item.c1_solicit },
+                  { label: 'Centro de Custo', value: item.c1_cc }
+                ],
+                direction: 'row'
+              },
+              {
+                fields: [
+                  { label: 'Emissão', value: item.c1_emissao, format: 'date' },
+                  { label: 'Necessidade', value: item.c1_datprf, format: 'date' }
+                ],
+                direction: 'row'
+              },
+              {
+                fields: [
+                  { label: 'Valor Total', value: item.c1_total, format: 'currency', bold: true, color: 'primary' }
+                ]
+              }
+            ]}
+            onViewDetails={onViewDetails ? () => onViewDetails(item) : undefined}
+          />
+        )}
         hasNext={hasNext}
-        totalRecords={totalRecords + requests.length} // Total aproximado
+        totalRecords={totalRecords + requests.length}
         currentPage={currentPage}
         pageSize={pageSize}
+        onPageChange={handlePageChange}
         onRefresh={loadPurchaseRequests}
         onViewDetails={handleViewDetails}
-        onPageChange={handlePageChange}
+        emptyStateType="no-purchase-requests"
+        emptyStateTitle="Nenhuma solicitação encontrada"
+        emptyStateSubtitle="Não há solicitações de compra disponíveis"
+        defaultViewMode="table"
+        showViewToggle={true}
+        showFilters={true}
+        cardGridSizes={{ xs: 12, md: 6, lg: 4 }}
       />
 
       {/* Dialog de detalhes */}
