@@ -125,21 +125,20 @@ export function DocumentListView<T>({
   const [viewMode, setViewMode] = useState<'table' | 'cards'>(() => {
     // Se for mobile, sempre usar cards
     // Se não for mobile, usar o defaultViewMode passado como prop
-    const initialMode = isMobile ? 'cards' : defaultViewMode;
-    console.log('DocumentListView - Initial viewMode:', initialMode, 'isMobile:', isMobile, 'defaultViewMode:', defaultViewMode);
-    return initialMode;
+    return isMobile ? 'cards' : defaultViewMode;
   });
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [localSearch, setLocalSearch] = useState('');
 
-  // Atualizar viewMode quando o breakpoint mudar
+  // Atualizar viewMode apenas quando o breakpoint mudar (não quando o usuário faz toggle)
   useEffect(() => {
     if (isMobile && viewMode === 'table') {
+      // Forçar cards quando estiver em mobile
       setViewMode('cards');
-    } else if (!isMobile && viewMode === 'cards' && defaultViewMode === 'table') {
-      setViewMode('table');
     }
-  }, [isMobile, viewMode, defaultViewMode]);
+    // Removido: não forçar de volta para table quando sair do mobile
+    // O usuário deve poder escolher o modo de visualização
+  }, [isMobile]);
 
   // Aplicar filtros locais
   const filteredItems = useMemo(() => {
@@ -271,10 +270,7 @@ export function DocumentListView<T>({
               <ToggleButtonGroup
                 value={viewMode}
                 exclusive
-                onChange={(_, newMode) => {
-                  console.log('DocumentListView - Toggle onChange:', { currentMode: viewMode, newMode });
-                  if (newMode) setViewMode(newMode);
-                }}
+                onChange={(_, newMode) => newMode && setViewMode(newMode)}
                 size="small"
               >
                 <ToggleButton value="table" aria-label="visualização em tabela">
@@ -366,11 +362,7 @@ export function DocumentListView<T>({
             } : undefined}
           />
         </Box>
-      ) : (() => {
-        const showCards = isMobile || viewMode === 'cards';
-        console.log('DocumentListView - Renderização:', { isMobile, viewMode, showCards, filteredItemsLength: filteredItems.length });
-        return showCards;
-      })() ? (
+      ) : (isMobile || viewMode === 'cards') ? (
         // Cards View
         <Box sx={{ p: 3 }}>
           <Grid container spacing={2}>
