@@ -4,22 +4,14 @@ import {
   Typography,
   Box,
   Alert,
-  Snackbar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Grid,
-  Card,
-  CardContent
+  Snackbar
 } from '@mui/material';
-import { Receipt, Business } from '@mui/icons-material';
+import { Receipt } from '@mui/icons-material';
 import AppLayout from '../components/AppLayout';
 import { PurchaseOrderList } from '../components/PurchaseOrderList';
+import { DocumentDetailsDialog } from '../components/DocumentDetailsDialog';
 import { purchaseService } from '../services/purchaseService';
 import type { PurchaseOrder } from '../types/purchase';
-import { formatProtheusDate } from '../utils/dateFormatter';
 
 export const PurchaseOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -80,12 +72,6 @@ export const PurchaseOrdersPage: React.FC = () => {
     setSelectedOrder(null);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value || 0);
-  };
 
   return (
     <AppLayout>
@@ -118,242 +104,69 @@ export const PurchaseOrdersPage: React.FC = () => {
       />
 
       {/* Dialog de detalhes */}
-      <Dialog 
-        open={detailsOpen} 
-        onClose={handleCloseDetails}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Business sx={{ mr: 1 }} />
-            Detalhes do Pedido - PC {selectedOrder?.c7_num}
-          </Box>
-        </DialogTitle>
-        
-        <DialogContent>
-          {selectedOrder && (
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Informações Gerais
-                    </Typography>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Filial:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_filial}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Número PC:
-                      </Typography>
-                      <Typography variant="body1" fontWeight="bold">
-                        {selectedOrder.c7_num}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Item:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_item}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Solicitante:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_solicit}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Centro de Custo:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_cc}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Fornecedor
-                    </Typography>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Código:
-                      </Typography>
-                      <Typography variant="body1" fontFamily="monospace">
-                        {selectedOrder.c7_fornece}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Loja:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_loja}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Condição Pagamento:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_cond}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Produto
-                    </Typography>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Código:
-                      </Typography>
-                      <Typography variant="body1" fontFamily="monospace">
-                        {selectedOrder.c7_produto}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Descrição:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_descri}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Quantidade:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_quant?.toLocaleString('pt-BR')} {selectedOrder.c7_um}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Valor Total:
-                      </Typography>
-                      <Typography variant="body1" fontWeight="bold" color="primary.main">
-                        {formatCurrency(selectedOrder.c7_total)}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      CER
-                    </Typography>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        CER:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_cer || 'N/A'}
-                      </Typography>
-                    </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Item CER:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.c7_itemcer || 'N/A'}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-              
-              <Grid item xs={12}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      Datas e Observações
-                    </Typography>
-                    
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <Box sx={{ mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Data de Emissão:
-                          </Typography>
-                          <Typography variant="body1">
-                            {formatProtheusDate(selectedOrder.c7_emissao)}
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      
-                      <Grid item xs={6}>
-                        <Box sx={{ mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Data de Entrega:
-                          </Typography>
-                          <Typography variant="body1">
-                            {formatProtheusDate(selectedOrder.c7_datprf)}
-                          </Typography>
-                        </Box>
-                      </Grid>
-                    </Grid>
-                    
-                    {selectedOrder.c7_obs && (
-                      <Box sx={{ mt: 2 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Observações:
-                        </Typography>
-                        <Typography variant="body1">
-                          {selectedOrder.c7_obs}
-                        </Typography>
-                      </Box>
-                    )}
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          )}
-        </DialogContent>
-        
-        <DialogActions>
-          <Button onClick={handleCloseDetails}>
-            Fechar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {selectedOrder && (
+        <DocumentDetailsDialog
+          open={detailsOpen}
+          onClose={handleCloseDetails}
+          title={`Pedido de Compra - PC ${selectedOrder.c7_num}`}
+          subtitle={`Item ${selectedOrder.c7_item} - ${selectedOrder.c7_descri}`}
+          icon={<Receipt sx={{ fontSize: 28, color: 'primary.main' }} />}
+          sections={[
+            {
+              title: 'Informações Gerais',
+              fields: [
+                { label: 'Filial', value: selectedOrder.c7_filial },
+                { label: 'Número PC', value: selectedOrder.c7_num, bold: true, color: 'primary' },
+                { label: 'Item', value: selectedOrder.c7_item },
+                { label: 'Solicitante', value: selectedOrder.c7_solicit },
+                { label: 'Centro de Custo', value: selectedOrder.c7_cc }
+              ]
+            },
+            {
+              title: 'Fornecedor',
+              fields: [
+                { label: 'Código', value: selectedOrder.c7_fornece, type: 'monospace' },
+                { label: 'Loja', value: selectedOrder.c7_loja },
+                { label: 'Condição de Pagamento', value: selectedOrder.c7_cond }
+              ]
+            },
+            {
+              title: 'Produto',
+              fields: [
+                { label: 'Código', value: selectedOrder.c7_produto, type: 'monospace' },
+                { label: 'Descrição', value: selectedOrder.c7_descri },
+                { 
+                  label: 'Quantidade', 
+                  value: `${selectedOrder.c7_quant?.toLocaleString('pt-BR')} ${selectedOrder.c7_um}`
+                },
+                { label: 'Valor Total', value: selectedOrder.c7_total, type: 'currency', bold: true, color: 'primary' }
+              ]
+            },
+            {
+              title: 'CER - Controle de Empenho de Recursos',
+              fields: [
+                { label: 'Número CER', value: selectedOrder.c7_cer || 'N/A' },
+                { label: 'Item CER', value: selectedOrder.c7_itemcer || 'N/A' }
+              ]
+            },
+            {
+              title: 'Datas e Prazos',
+              gridSize: 6,
+              fields: [
+                { label: 'Data de Emissão', value: selectedOrder.c7_emissao, type: 'date' },
+                { label: 'Data de Entrega', value: selectedOrder.c7_datprf, type: 'date' }
+              ]
+            },
+            {
+              title: 'Observações',
+              gridSize: 6,
+              fields: selectedOrder.c7_obs ? [
+                { label: 'Observações', value: selectedOrder.c7_obs }
+              ] : []
+            }
+          ]}
+        />
+      )}
 
       {/* Snackbar para erros */}
       <Snackbar
