@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Paper,
   Table,
@@ -122,9 +122,22 @@ export function DocumentListView<T>({
 }: DocumentListViewProps<T>) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>(isMobile ? 'cards' : defaultViewMode);
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>(() => {
+    // Se for mobile, sempre usar cards
+    // Se não for mobile, usar o defaultViewMode passado como prop
+    return isMobile ? 'cards' : defaultViewMode;
+  });
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [localSearch, setLocalSearch] = useState('');
+
+  // Atualizar viewMode quando o breakpoint mudar
+  useEffect(() => {
+    if (isMobile && viewMode === 'table') {
+      setViewMode('cards');
+    } else if (!isMobile && viewMode === 'cards' && defaultViewMode === 'table') {
+      setViewMode('table');
+    }
+  }, [isMobile, viewMode, defaultViewMode]);
 
   // Aplicar filtros locais
   const filteredItems = useMemo(() => {
