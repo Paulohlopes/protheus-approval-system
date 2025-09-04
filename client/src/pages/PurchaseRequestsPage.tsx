@@ -9,7 +9,7 @@ import {
 import { ShoppingCart } from '@mui/icons-material';
 import AppLayout from '../components/AppLayout';
 import { DocumentListView } from '../components/DocumentListView';
-import { DocumentCard } from '../components/DocumentCard';
+import DocumentCard from '../components/DocumentCard';
 import { DocumentDetailsDialog } from '../components/DocumentDetailsDialog';
 import { purchaseService } from '../services/purchaseService';
 import type { PurchaseRequest } from '../types/purchase';

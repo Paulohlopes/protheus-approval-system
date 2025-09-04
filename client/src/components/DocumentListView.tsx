@@ -125,7 +125,9 @@ export function DocumentListView<T>({
   const [viewMode, setViewMode] = useState<'table' | 'cards'>(() => {
     // Se for mobile, sempre usar cards
     // Se não for mobile, usar o defaultViewMode passado como prop
-    return isMobile ? 'cards' : defaultViewMode;
+    const initialMode = isMobile ? 'cards' : defaultViewMode;
+    console.log('DocumentListView - Initial viewMode:', initialMode, 'isMobile:', isMobile, 'defaultViewMode:', defaultViewMode);
+    return initialMode;
   });
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [localSearch, setLocalSearch] = useState('');
@@ -269,7 +271,10 @@ export function DocumentListView<T>({
               <ToggleButtonGroup
                 value={viewMode}
                 exclusive
-                onChange={(_, newMode) => newMode && setViewMode(newMode)}
+                onChange={(_, newMode) => {
+                  console.log('DocumentListView - Toggle onChange:', { currentMode: viewMode, newMode });
+                  if (newMode) setViewMode(newMode);
+                }}
                 size="small"
               >
                 <ToggleButton value="table" aria-label="visualização em tabela">
@@ -361,7 +366,11 @@ export function DocumentListView<T>({
             } : undefined}
           />
         </Box>
-      ) : (isMobile || viewMode === 'cards') ? (
+      ) : (() => {
+        const showCards = isMobile || viewMode === 'cards';
+        console.log('DocumentListView - Renderização:', { isMobile, viewMode, showCards, filteredItemsLength: filteredItems.length });
+        return showCards;
+      })() ? (
         // Cards View
         <Box sx={{ p: 3 }}>
           <Grid container spacing={2}>

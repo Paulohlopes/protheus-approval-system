@@ -228,3 +228,5 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
     </Card>
   );
 };
+
+export default DocumentCard;
