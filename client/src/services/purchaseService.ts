@@ -66,7 +66,7 @@ export const purchaseService = {
         fields: [
           'C1_FILIAL', 'C1_NUM', 'C1_ITEM', 'C1_PRODUTO', 
           'C1_DESCRI', 'C1_QUANT', 'C1_UM', 'C1_DATPRF', 
-          'C1_OBS', 'C1_CC', 'C1_EMISSAO', 'C1_SOLICIT', 'C1_TOTAL'
+          'C1_OBS', 'C1_CC', 'C1_EMISSAO', 'C1_SOLICIT', 'C1_TOTAL', 'C1_CODCOMP'
         ],
         where: whereConditions,
         page: validatedFilters?.page,
@@ -155,7 +155,7 @@ export const purchaseService = {
         'C7_FILIAL', 'C7_NUM', 'C7_ITEM', 'C7_FORNECE', 'C7_LOJA',
         'C7_PRODUTO', 'C7_DESCRI', 'C7_QUANT', 'C7_UM', 'C7_DATPRF',
         'C7_OBS', 'C7_CC', 'C7_CER', 'C7_ITEMCER', 'C7_EMISSAO',
-        'C7_SOLICIT', 'C7_TOTAL', 'C7_COND'
+        'C7_SOLICIT', 'C7_TOTAL', 'C7_COND', 'C7_USER'
       ];
       params.append('fields', fields.join(', '));
       
