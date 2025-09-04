@@ -147,23 +147,20 @@ export const purchaseService = {
       // Build URL parameters for genericQuery
       const params = new URLSearchParams();
       
-      // FromQry com JOIN
-      params.append('FromQry', 'SC7010 SC7 LEFT JOIN SYS_USR USR ON C7_USER=USR_ID AND USR.D_E_L_E_T_=\'\'');
-      
       // Tables
-      params.append('tables', 'SC7,SYS_USR');
+      params.append('tables', 'SC7');
       
       // Fields
       const fields = [
         'C7_FILIAL', 'C7_NUM', 'C7_ITEM', 'C7_FORNECE', 'C7_LOJA',
         'C7_PRODUTO', 'C7_DESCRI', 'C7_QUANT', 'C7_UM', 'C7_DATPRF',
         'C7_OBS', 'C7_CC', 'C7_CER', 'C7_ITEMCER', 'C7_EMISSAO',
-        'C7_SOLICIT', 'USR_CODIGO', 'C7_TOTAL', 'C7_COND'
+        'C7_SOLICIT', 'C7_TOTAL', 'C7_COND'
       ];
       params.append('fields', fields.join(', '));
       
       // Where conditions
-      let whereConditions = ['SC7.D_E_L_E_T_=\'\'', 'C7_CONAPRO <> \'L\''];
+      let whereConditions = ['SC7.D_E_L_E_T_=\' \''];
       
       if (validatedFilters) {
         if (validatedFilters.filial) {

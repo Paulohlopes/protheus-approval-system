@@ -137,7 +137,6 @@ export const PurchaseOrderList: React.FC<PurchaseOrderListProps> = ({
               <TableCell>UM</TableCell>
               <TableCell>Entrega</TableCell>
               <TableCell>Solicitante</TableCell>
-              <TableCell>Comprador</TableCell>
               <TableCell align="right">Total</TableCell>
               <TableCell>Ações</TableCell>
             </TableRow>
@@ -213,11 +212,6 @@ export const PurchaseOrderList: React.FC<PurchaseOrderListProps> = ({
                 <TableCell>
                   <Typography variant="body2">
                     {order.c7_solicit}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {order.usr_codigo || '-'}
                   </Typography>
                 </TableCell>
                 <TableCell align="right">

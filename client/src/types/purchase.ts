@@ -31,7 +31,6 @@ export interface PurchaseOrder {
   c7_itemcer: string;     // Item CER
   c7_emissao: string;     // Data de emissão
   c7_solicit: string;     // Solicitante
-  usr_codigo: string;     // Comprador
   c7_total: number;       // Valor total
   c7_cond: string;        // Condição de pagamento
 }

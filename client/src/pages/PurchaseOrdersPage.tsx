@@ -222,15 +222,6 @@ export const PurchaseOrdersPage: React.FC = () => {
                         {selectedOrder.c7_cond}
                       </Typography>
                     </Box>
-                    
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Comprador:
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedOrder.usr_codigo || 'N/A'}
-                      </Typography>
-                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
