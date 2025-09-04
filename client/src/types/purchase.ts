@@ -12,6 +12,7 @@ export interface PurchaseRequest {
   c1_emissao: string;    // Data emissão
   c1_solicit: string;    // Solicitante
   c1_total: number;      // Valor total
+  c1_codcomp: string;    // Comprador
 }
 
 export interface PurchaseOrder {
@@ -33,6 +34,7 @@ export interface PurchaseOrder {
   c7_solicit: string;     // Solicitante
   c7_total: number;       // Valor total
   c7_cond: string;        // Condição de pagamento
+  c7_user: string;        // Comprador
 }
 
 export interface PurchaseRequestsResponse {

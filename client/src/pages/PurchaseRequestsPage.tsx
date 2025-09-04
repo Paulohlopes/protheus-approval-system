@@ -106,6 +106,7 @@ export const PurchaseRequestsPage: React.FC = () => {
           { id: 'quantidade', label: 'Qtd', field: 'c1_quant', align: 'right', format: 'number' },
           { id: 'um', label: 'UM', field: 'c1_um', align: 'center' },
           { id: 'solicitante', label: 'Solicitante', field: 'c1_solicit' },
+          { id: 'comprador', label: 'Comprador', field: 'c1_codcomp' },
           { id: 'emissao', label: 'Emissão', field: 'c1_emissao', format: 'date' },
           { id: 'necessidade', label: 'Necessidade', field: 'c1_datprf', format: 'date' },
           { id: 'valor', label: 'Valor Total', field: 'c1_total', align: 'right', format: 'currency' }
@@ -139,6 +140,11 @@ export const PurchaseRequestsPage: React.FC = () => {
                   { label: 'Centro de Custo', value: item.c1_cc }
                 ],
                 direction: 'row'
+              },
+              {
+                fields: [
+                  { label: 'Comprador', value: item.c1_codcomp || 'N/A' }
+                ]
               },
               {
                 fields: [
@@ -188,7 +194,8 @@ export const PurchaseRequestsPage: React.FC = () => {
                 { label: 'Número SC', value: selectedRequest.c1_num, bold: true, color: 'primary' },
                 { label: 'Item', value: selectedRequest.c1_item },
                 { label: 'Solicitante', value: selectedRequest.c1_solicit },
-                { label: 'Centro de Custo', value: selectedRequest.c1_cc }
+                { label: 'Centro de Custo', value: selectedRequest.c1_cc },
+                { label: 'Comprador', value: selectedRequest.c1_codcomp || 'N/A' }
               ]
             },
             {

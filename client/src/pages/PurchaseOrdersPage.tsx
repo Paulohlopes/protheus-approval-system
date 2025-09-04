@@ -106,6 +106,7 @@ export const PurchaseOrdersPage: React.FC = () => {
           { id: 'descricao', label: 'Descrição', field: 'c7_descri', width: 250 },
           { id: 'quantidade', label: 'Qtd', field: 'c7_quant', align: 'right', format: 'number' },
           { id: 'um', label: 'UM', field: 'c7_um', align: 'center' },
+          { id: 'comprador', label: 'Comprador', field: 'c7_user' },
           { id: 'emissao', label: 'Emissão', field: 'c7_emissao', format: 'date' },
           { id: 'entrega', label: 'Entrega', field: 'c7_datprf', format: 'date' },
           { id: 'valor', label: 'Valor Total', field: 'c7_total', align: 'right', format: 'currency' }
@@ -132,6 +133,11 @@ export const PurchaseOrdersPage: React.FC = () => {
                   { label: 'Cond. Pagto', value: item.c7_cond }
                 ],
                 direction: 'row'
+              },
+              {
+                fields: [
+                  { label: 'Comprador', value: item.c7_user || 'N/A' }
+                ]
               },
               {
                 fields: [
@@ -195,7 +201,8 @@ export const PurchaseOrdersPage: React.FC = () => {
                 { label: 'Número PC', value: selectedOrder.c7_num, bold: true, color: 'primary' },
                 { label: 'Item', value: selectedOrder.c7_item },
                 { label: 'Solicitante', value: selectedOrder.c7_solicit },
-                { label: 'Centro de Custo', value: selectedOrder.c7_cc }
+                { label: 'Centro de Custo', value: selectedOrder.c7_cc },
+                { label: 'Comprador', value: selectedOrder.c7_user || 'N/A' }
               ]
             },
             {
