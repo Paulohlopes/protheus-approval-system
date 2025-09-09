@@ -5,11 +5,12 @@ import { config } from '../config/environment';
 // Criar interceptor para debug de headers
 const debugAxios = axios.create();
 debugAxios.interceptors.request.use((config) => {
-  console.log('🔍 INTERCEPTOR - Request being sent:');
+  const requestId = config.headers?.['X-Request-Id'] || 'unknown';
+  console.log(`🔍 INTERCEPTOR [${requestId}] - Request being sent:`);
   console.log('   URL:', config.url);
   console.log('   Method:', config.method?.toUpperCase());
   console.log('   Headers:', JSON.stringify(config.headers, null, 2));
-  console.log('   TenantId specifically:', config.headers?.['TenantId']);
+  console.log('   TenantId specifically:', JSON.stringify(config.headers?.['TenantId']));
   return config;
 });
 
@@ -172,10 +173,11 @@ export const documentService = {
         OBSERVACAO: action.comments || ''
       };
 
-      // TESTE: Adicionar quebra de linha no final como sugerido
+      // TESTE: Adicionar quebra de linha no final + identificador único
+      const requestId = Math.random().toString(36).substring(7);
       const tenantId = `01,${action.document.filial}\n`;
-      console.log('DEBUG APROVAÇÃO - TenantId com \\n:', JSON.stringify(tenantId));
-      console.log('DEBUG APROVAÇÃO - TenantId display:', tenantId);
+      console.log(`🚀 APROVAÇÃO [${requestId}] - TenantId com \\n:`, JSON.stringify(tenantId));
+      console.log(`🚀 APROVAÇÃO [${requestId}] - Documento: ${action.document.numero}`);
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -196,7 +198,8 @@ export const documentService = {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'Authorization': `Basic ${credentials}`,
-            'TenantId': tenantId
+            'TenantId': tenantId,
+            'X-Request-Id': requestId
           },
           timeout: 30000,
           validateStatus: () => true // Para podermos tratar erros manualmente
@@ -297,7 +300,8 @@ export const documentService = {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'Authorization': `Basic ${credentials}`,
-            'TenantId': tenantId
+            'TenantId': tenantId,
+            'X-Request-Id': requestId
           },
           timeout: 30000,
           validateStatus: () => true // Para podermos tratar erros manualmente
