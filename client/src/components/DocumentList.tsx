@@ -323,6 +323,16 @@ const DocumentList: React.FC = () => {
     setConfirmDialog({ open: false, action: 'approve', document: null });
   };
 
+  const formatDocumentValue = (document: ProtheusDocument | null): string | undefined => {
+    if (!document) return undefined;
+    
+    const numValue = parseFloat(document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(numValue);
+  };
+
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
     setFilters({ ...filters, search: searchTerm });
@@ -439,15 +449,7 @@ const DocumentList: React.FC = () => {
         onConfirm={handleConfirmAction}
         action={confirmDialog.action}
         documentNumber={confirmDialog.document?.numero.trim()}
-        documentValue={confirmDialog.document ? 
-          (() => {
-            const numValue = parseFloat(confirmDialog.document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
-            return new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(numValue);
-          })() : undefined
-        }
+        documentValue={formatDocumentValue(confirmDialog.document)}
         loading={approveDocument.isPending || rejectDocument.isPending}
       />
     </Box>
