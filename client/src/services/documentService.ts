@@ -144,8 +144,8 @@ export const documentService = {
         OBSERVACAO: action.comments || ''
       };
 
-      // Tentar apenas a filial sem o "01," 
-      const tenantId = action.document.filial;
+      // Criar tenantId no formato: 01,filial
+      const tenantId = `01,${action.document.filial}`;
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -242,8 +242,8 @@ export const documentService = {
         OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
       };
 
-      // Tentar apenas a filial sem o "01," 
-      const tenantId = action.document.filial;
+      // Criar tenantId no formato: 01,filial
+      const tenantId = `01,${action.document.filial}`;
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
