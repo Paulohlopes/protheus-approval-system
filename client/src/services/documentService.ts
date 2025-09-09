@@ -131,6 +131,8 @@ export const documentService = {
       );
 
       if (!currentApprover) {
+        console.log('Available approvers in alcada:', action.document.alcada);
+        console.log('Looking for user:', userEmail, 'split:', userEmail?.split('@')[0]);
         throw new Error('Aprovador não encontrado na alçada do documento');
       }
 
@@ -148,12 +150,14 @@ export const documentService = {
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
       
-      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/aprova_documento/`;
+      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/aprova_documento`;
       
       console.log('Calling approval API:', {
         url: apiUrl,
         tenantId,
-        body: requestBody
+        body: requestBody,
+        currentApprover: currentApprover,
+        userEmail: userEmail
       });
 
       const response = await fetch(apiUrl, {
@@ -164,7 +168,8 @@ export const documentService = {
           'Authorization': `Basic ${credentials}`,
           'tenantid': tenantId
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(30000)
       });
 
       if (!response.ok) {
@@ -180,7 +185,16 @@ export const documentService = {
       };
     } catch (error: any) {
       console.error('Error approving document:', error);
-      throw new Error(error.message || 'Erro ao aprovar documento.');
+      
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        throw new Error('Erro de conexão com o servidor. Verifique a conectividade de rede.');
+      } else if (error.name === 'TimeoutError') {
+        throw new Error('Timeout na requisição. O servidor pode estar sobrecarregado.');
+      } else if (error.message?.includes('CONNECTION_RESET')) {
+        throw new Error('Conexão resetada pelo servidor. Tente novamente.');
+      } else {
+        throw new Error(error.message || 'Erro ao aprovar documento.');
+      }
     }
   },
 
@@ -203,6 +217,8 @@ export const documentService = {
       );
 
       if (!currentApprover) {
+        console.log('Available approvers in alcada:', action.document.alcada);
+        console.log('Looking for user:', userEmail, 'split:', userEmail?.split('@')[0]);
         throw new Error('Aprovador não encontrado na alçada do documento');
       }
 
@@ -220,7 +236,7 @@ export const documentService = {
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
       
-      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/aprova_documento/`;
+      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/aprova_documento`;
       
       console.log('Calling rejection API:', {
         url: apiUrl,
@@ -236,7 +252,8 @@ export const documentService = {
           'Authorization': `Basic ${credentials}`,
           'tenantid': tenantId
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(30000)
       });
 
       if (!response.ok) {
@@ -252,7 +269,16 @@ export const documentService = {
       };
     } catch (error: any) {
       console.error('Error rejecting document:', error);
-      throw new Error(error.message || 'Erro ao rejeitar documento.');
+      
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        throw new Error('Erro de conexão com o servidor. Verifique a conectividade de rede.');
+      } else if (error.name === 'TimeoutError') {
+        throw new Error('Timeout na requisição. O servidor pode estar sobrecarregado.');
+      } else if (error.message?.includes('CONNECTION_RESET')) {
+        throw new Error('Conexão resetada pelo servidor. Tente novamente.');
+      } else {
+        throw new Error(error.message || 'Erro ao rejeitar documento.');
+      }
     }
   },
 
