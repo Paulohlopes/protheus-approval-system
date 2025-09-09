@@ -173,7 +173,15 @@ export const documentService = {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.log('Approval API Error Response:', errorData);
+          errorMessage += ` - ${JSON.stringify(errorData)}`;
+        } catch {
+          console.log('Could not parse error response as JSON');
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -257,7 +265,15 @@ export const documentService = {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          console.log('Rejection API Error Response:', errorData);
+          errorMessage += ` - ${JSON.stringify(errorData)}`;
+        } catch {
+          console.log('Could not parse error response as JSON');
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
