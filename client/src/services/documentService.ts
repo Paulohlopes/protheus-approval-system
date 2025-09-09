@@ -1,4 +1,5 @@
 import api from './api';
+import axios from 'axios';
 import { config } from '../config/environment';
 import type { 
   ProtheusDocument, 
@@ -153,7 +154,7 @@ export const documentService = {
       
       const apiUrl = `http://brsvawssaa06069:8029/rest/aprova_documento`;
       
-      console.log('Calling approval API:', {
+      console.log('Calling approval API with axios:', {
         url: apiUrl,
         tenantId,
         body: requestBody,
@@ -161,36 +162,40 @@ export const documentService = {
         userEmail: userEmail
       });
 
-      const headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${credentials}`,
-        'TenantId': tenantId
-      };
-      
-      console.log('DEBUG APROVAÇÃO - Headers completos:', headers);
+      try {
+        const response = await axios.post(apiUrl, requestBody, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${credentials}`,
+            'TenantId': tenantId
+          },
+          timeout: 30000,
+          validateStatus: () => true // Para podermos tratar erros manualmente
+        });
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: headers,
-        body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(30000)
-      });
+        console.log('DEBUG APROVAÇÃO - Response status:', response.status);
+        console.log('DEBUG APROVAÇÃO - Response headers:', response.headers);
 
-      if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          console.log('Approval API Error Response:', errorData);
-          errorMessage += ` - ${JSON.stringify(errorData)}`;
-        } catch {
-          console.log('Could not parse error response as JSON');
+        if (response.status !== 200 && response.status !== 201) {
+          console.log('Approval API Error Response:', response.data);
+          throw new Error(`HTTP ${response.status}: ${response.statusText || 'Request failed'} - ${JSON.stringify(response.data)}`);
         }
-        throw new Error(errorMessage);
-      }
 
-      const data = await response.json();
-      console.log('Approval API response:', data);
+        console.log('Approval API response:', response.data);
+        const data = response.data;
+      } catch (error: any) {
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error details:', {
+            message: error.message,
+            code: error.code,
+            response: error.response?.data,
+            headers: error.config?.headers
+          });
+          throw error;
+        }
+        throw error;
+      }
       
       return {
         success: true,
@@ -251,38 +256,46 @@ export const documentService = {
       
       const apiUrl = `http://brsvawssaa06069:8029/rest/aprova_documento`;
       
-      console.log('Calling rejection API:', {
+      console.log('Calling rejection API with axios:', {
         url: apiUrl,
         tenantId,
         body: requestBody
       });
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${credentials}`,
-          'TenantId': tenantId
-        },
-        body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(30000)
-      });
+      try {
+        const response = await axios.post(apiUrl, requestBody, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${credentials}`,
+            'TenantId': tenantId
+          },
+          timeout: 30000,
+          validateStatus: () => true // Para podermos tratar erros manualmente
+        });
 
-      if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          console.log('Rejection API Error Response:', errorData);
-          errorMessage += ` - ${JSON.stringify(errorData)}`;
-        } catch {
-          console.log('Could not parse error response as JSON');
+        console.log('DEBUG REJEIÇÃO - Response status:', response.status);
+        console.log('DEBUG REJEIÇÃO - Response headers:', response.headers);
+
+        if (response.status !== 200 && response.status !== 201) {
+          console.log('Rejection API Error Response:', response.data);
+          throw new Error(`HTTP ${response.status}: ${response.statusText || 'Request failed'} - ${JSON.stringify(response.data)}`);
         }
-        throw new Error(errorMessage);
-      }
 
-      const data = await response.json();
-      console.log('Rejection API response:', data);
+        console.log('Rejection API response:', response.data);
+        const data = response.data;
+      } catch (error: any) {
+        if (axios.isAxiosError(error)) {
+          console.error('Axios error details:', {
+            message: error.message,
+            code: error.code,
+            response: error.response?.data,
+            headers: error.config?.headers
+          });
+          throw error;
+        }
+        throw error;
+      }
       
       return {
         success: true,
