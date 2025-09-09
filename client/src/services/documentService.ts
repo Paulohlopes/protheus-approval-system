@@ -1,6 +1,30 @@
 import api from './api';
 import axios from 'axios';
 import { config } from '../config/environment';
+
+// Criar interceptor para debug de headers
+const debugAxios = axios.create();
+debugAxios.interceptors.request.use((config) => {
+  console.log('🔍 INTERCEPTOR - Request being sent:');
+  console.log('   URL:', config.url);
+  console.log('   Method:', config.method?.toUpperCase());
+  console.log('   Headers:', JSON.stringify(config.headers, null, 2));
+  console.log('   TenantId specifically:', config.headers?.['TenantId']);
+  return config;
+});
+
+debugAxios.interceptors.response.use(
+  (response) => {
+    console.log('✅ INTERCEPTOR - Response received:', response.status);
+    return response;
+  },
+  (error) => {
+    console.log('❌ INTERCEPTOR - Error response:');
+    console.log('   Status:', error.response?.status);
+    console.log('   Data:', error.response?.data);
+    return Promise.reject(error);
+  }
+);
 import type { 
   ProtheusDocument, 
   DocumentFilters, 
@@ -148,7 +172,7 @@ export const documentService = {
         OBSERVACAO: action.comments || ''
       };
 
-      // Usar o formato sem aspas, como confirmado pelo usuário
+      // Reverter para vírgula simples como solicitado
       const tenantId = `01,${action.document.filial}`;
       console.log('DEBUG APROVAÇÃO - TenantId sendo enviado:', tenantId);
       
@@ -166,7 +190,7 @@ export const documentService = {
       });
 
       try {
-        const response = await axios.post(apiUrl, requestBody, {
+        const response = await debugAxios.post(apiUrl, requestBody, {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
@@ -251,8 +275,9 @@ export const documentService = {
         OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
       };
 
-      // Usar o formato sem aspas, como confirmado pelo usuário
+      // Reverter para vírgula simples como solicitado
       const tenantId = `01,${action.document.filial}`;
+      console.log('DEBUG REJEIÇÃO - TenantId sendo enviado:', tenantId);
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -266,7 +291,7 @@ export const documentService = {
       });
 
       try {
-        const response = await axios.post(apiUrl, requestBody, {
+        const response = await debugAxios.post(apiUrl, requestBody, {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
