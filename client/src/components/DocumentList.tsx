@@ -36,77 +36,67 @@ import { useLiveRegion } from '../hooks/useLiveRegion';
 import ConfirmationDialog from './ConfirmationDialog';
 import { EmptyState } from './EmptyState';
 import { DensityToggle, useDensity } from './DensityToggle';
-import type { ProtheusDocument } from '../types/auth';
+import type { ProtheusDocument, DocumentApprovalLevel } from '../types/auth';
 
-// Priority colors
-const getPriorityColor = (priority: ProtheusDocument['priority']) => {
-  switch (priority) {
-    case 'urgent':
-      return 'error';
-    case 'high':
-      return 'warning';
-    case 'medium':
+// Type colors
+const getTypeColor = (type: ProtheusDocument['tipo']) => {
+  switch (type) {
+    case 'IP':
+      return 'primary';
+    case 'SC':
       return 'info';
-    case 'low':
-      return 'success';
-    default:
-      return 'default';
-  }
-};
-
-// Status colors
-const getStatusColor = (status: ProtheusDocument['status']) => {
-  switch (status) {
-    case 'approved':
-      return 'success';
-    case 'rejected':
-      return 'error';
-    case 'expired':
-      return 'error';
-    case 'pending':
+    case 'CP':
       return 'warning';
     default:
       return 'default';
   }
 };
 
-// Status labels
-const getStatusLabel = (status: ProtheusDocument['status']) => {
-  switch (status) {
-    case 'approved':
-      return 'Aprovado';
-    case 'rejected':
-      return 'Rejeitado';
-    case 'expired':
-      return 'Expirado';
-    case 'pending':
-      return 'Pendente';
+// Type labels
+const getTypeLabel = (type: ProtheusDocument['tipo']) => {
+  switch (type) {
+    case 'IP':
+      return 'Pedido de Compra';
+    case 'SC':
+      return 'Solicitação de Compra';
+    case 'CP':
+      return 'Contrato de Parceria';
     default:
-      return status;
+      return type;
   }
 };
 
-// Priority labels
-const getPriorityLabel = (priority: ProtheusDocument['priority']) => {
-  switch (priority) {
-    case 'urgent':
-      return 'Urgente';
-    case 'high':
-      return 'Alta';
-    case 'medium':
-      return 'Média';
-    case 'low':
-      return 'Baixa';
+// Status colors from approval level
+const getStatusColor = (situacao: string) => {
+  switch (situacao) {
+    case 'Liberado':
+      return 'success';
+    case 'Pendente':
+      return 'warning';
+    case 'Aguardando nivel anterior':
+      return 'info';
+    case 'Rejeitado':
+      return 'error';
     default:
-      return priority;
+      return 'default';
   }
+};
+
+// Get current approval status
+const getCurrentApprovalStatus = (alcada: DocumentApprovalLevel[], userEmail?: string) => {
+  const currentLevel = alcada.find(level => 
+    level.CIDENTIFICADOR === userEmail?.split('@')[0] ||
+    level.CNOME === userEmail?.split('@')[0]
+  );
+  return currentLevel || alcada[0];
 };
 
 interface DocumentCardProps {
   document: ProtheusDocument;
-  onApprove: (documentId: string) => void;
-  onReject: (documentId: string) => void;
+  onApprove: (documentNumber: string) => void;
+  onReject: (documentNumber: string) => void;
   loading?: boolean;
+  userEmail?: string;
 }
 
 interface DocumentCardWithDensityProps extends DocumentCardProps {
@@ -124,16 +114,30 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
   onApprove, 
   onReject, 
   loading,
-  densityStyles
+  densityStyles,
+  userEmail
 }) => {
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: string) => {
+    // Remove pontos e converte vírgula para ponto
+    const numValue = parseFloat(value.replace(/\./g, '').replace(',', '.'));
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: document.currency || 'BRL'
-    }).format(value);
+      currency: 'BRL'
+    }).format(numValue);
   };
 
   const formatDate = (date: string) => {
+    // Date comes in format YYYYMMDD, convert to DD/MM/YYYY
+    if (date.length === 8) {
+      const year = date.substring(0, 4);
+      const month = date.substring(4, 6);
+      const day = date.substring(6, 8);
+      return `${day}/${month}/${year}`;
+    }
+    // If date is already formatted or in another format
+    if (date.includes('/')) {
+      return date;
+    }
     return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
   };
 
@@ -143,26 +147,31 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h6" component="div" gutterBottom>
-              {document.number}
+              Documento: {document.numero.trim()}
             </Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              {document.description}
+              Fornecedor: {document.nome_fornecedor.trim()}
             </Typography>
             <Typography variant="h6" color="primary" gutterBottom>
-              {formatCurrency(document.value)}
+              {formatCurrency(document.vl_tot_documento)}
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Chip
-              label={getPriorityLabel(document.priority)}
-              color={getPriorityColor(document.priority)}
+              label={getTypeLabel(document.tipo)}
+              color={getTypeColor(document.tipo)}
               size={densityStyles.chipSize}
             />
-            <Chip
-              label={getStatusLabel(document.status)}
-              color={getStatusColor(document.status)}
-              size={densityStyles.chipSize}
-            />
+            {(() => {
+              const currentStatus = getCurrentApprovalStatus(document.alcada, userEmail);
+              return (
+                <Chip
+                  label={currentStatus.situacao_aprov}
+                  color={getStatusColor(currentStatus.situacao_aprov)}
+                  size={densityStyles.chipSize}
+                />
+              );
+            })()}
             <IconButton size="small">
               <MoreVert />
             </IconButton>
@@ -172,72 +181,67 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={6}>
             <Typography variant="caption" color="text.secondary">
-              Solicitante
+              Comprador
             </Typography>
             <Typography variant="body2">
-              {document.requester.name}
+              {document.comprador}
             </Typography>
           </Grid>
           <Grid item xs={6}>
             <Typography variant="caption" color="text.secondary">
-              Data da Solicitação
+              Data de Emissão
             </Typography>
             <Typography variant="body2">
-              {formatDate(document.requestDate)}
+              {formatDate(document.Emissao)}
             </Typography>
           </Grid>
-          {document.dueDate && (
-            <Grid item xs={6}>
-              <Typography variant="caption" color="text.secondary">
-                Prazo
-              </Typography>
-              <Typography variant="body2">
-                {formatDate(document.dueDate)}
-              </Typography>
-            </Grid>
-          )}
           <Grid item xs={6}>
             <Typography variant="caption" color="text.secondary">
-              Tipo
+              Condição de Pagamento
             </Typography>
             <Typography variant="body2">
-              {document.type.replace('_', ' ').toUpperCase()}
+              {document.cond_pagamento}
+            </Typography>
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="caption" color="text.secondary">
+              Filial
+            </Typography>
+            <Typography variant="body2">
+              {document.filial}
             </Typography>
           </Grid>
         </Grid>
 
-        {document.status === 'pending' && (
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-            <Button
-              variant="contained"
-              color="success"
-              startIcon={<CheckCircle />}
-              onClick={() => onApprove(document.id)}
-              disabled={loading}
-              size="small"
-              aria-label={`Aprovar documento ${document.number} no valor de ${new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: document.currency || 'BRL'
-              }).format(document.value)}`}
-            >
-              Aprovar
-            </Button>
-            <Button
-              variant="outlined"
-              color="error"
-              startIcon={<Cancel />}
-              onClick={() => onReject(document.id)}
-              disabled={loading}
-              size="small"
-              aria-label={`Rejeitar documento ${document.number} no valor de ${new Intl.NumberFormat('pt-BR', {
-                style: 'currency',
-                currency: document.currency || 'BRL'
-              }).format(document.value)}`}
-            >
-              Rejeitar
-            </Button>
-          </Box>
-        )}
+        {(() => {
+          const currentStatus = getCurrentApprovalStatus(document.alcada, userEmail);
+          return currentStatus?.situacao_aprov === 'Pendente' ? (
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<CheckCircle />}
+                onClick={() => onApprove(document.numero.trim())}
+                disabled={loading}
+                size="small"
+                aria-label={`Aprovar documento ${document.numero.trim()} no valor de ${formatCurrency(document.vl_tot_documento)}`}
+              >
+                Aprovar
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                startIcon={<Cancel />}
+                onClick={() => onReject(document.numero.trim())}
+                disabled={loading}
+                size="small"
+                aria-label={`Rejeitar documento ${document.numero.trim()} no valor de ${formatCurrency(document.vl_tot_documento)}`}
+              >
+                Rejeitar
+              </Button>
+            </Box>
+          ) : null;
+        })()}
       </CardContent>
     </Card>
   );
@@ -260,8 +264,8 @@ const DocumentList: React.FC = () => {
   const approveDocument = useApproveDocument();
   const rejectDocument = useRejectDocument();
 
-  const handleApprove = (documentId: string) => {
-    const document = documentsResponse?.data?.find(doc => doc.id === documentId);
+  const handleApprove = (documentNumber: string) => {
+    const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
     if (document) {
       setConfirmDialog({
         open: true,
@@ -271,8 +275,8 @@ const DocumentList: React.FC = () => {
     }
   };
 
-  const handleReject = (documentId: string) => {
-    const document = documentsResponse?.data?.find(doc => doc.id === documentId);
+  const handleReject = (documentNumber: string) => {
+    const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
     if (document) {
       setConfirmDialog({
         open: true,
@@ -290,30 +294,30 @@ const DocumentList: React.FC = () => {
 
     if (action === 'approve') {
       approveDocument.mutate({
-        documentId: document.id,
+        documentId: document.numero.trim(),
         action: 'approve',
         approverId: user.id,
         comments: '',
       }, {
         onSuccess: () => {
-          announce(`Documento ${document.number} aprovado com sucesso`);
+          announce(`Documento ${document.numero.trim()} aprovado com sucesso`);
         },
         onError: () => {
-          announce(`Erro ao aprovar documento ${document.number}`);
+          announce(`Erro ao aprovar documento ${document.numero.trim()}`);
         }
       });
     } else {
       rejectDocument.mutate({
-        documentId: document.id,
+        documentId: document.numero.trim(),
         action: 'reject',
         approverId: user.id,
         comments: 'Rejeitado pelo aprovador',
       }, {
         onSuccess: () => {
-          announce(`Documento ${document.number} rejeitado com sucesso`);
+          announce(`Documento ${document.numero.trim()} rejeitado com sucesso`);
         },
         onError: () => {
-          announce(`Erro ao rejeitar documento ${document.number}`);
+          announce(`Erro ao rejeitar documento ${document.numero.trim()}`);
         }
       });
     }
@@ -426,30 +430,21 @@ const DocumentList: React.FC = () => {
             </Card>
           ))}
         </Box>
-      ) : documentsResponse?.data && documentsResponse.data.length > 0 ? (
+      ) : documentsResponse?.documentos && documentsResponse.documentos.length > 0 ? (
         <>
-          {documentsResponse.data.map((document) => (
+          {documentsResponse.documentos.map((document) => (
             <DocumentCard
-              key={document.id}
+              key={document.numero}
               document={document}
               onApprove={handleApprove}
               onReject={handleReject}
               loading={approveDocument.isPending || rejectDocument.isPending}
               densityStyles={densityStyles}
+              userEmail={user?.email}
             />
           ))}
           
-          {/* Pagination */}
-          {documentsResponse.pagination && documentsResponse.pagination.totalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-              <Pagination
-                count={documentsResponse.pagination.totalPages}
-                page={pagination.page}
-                onChange={handlePageChange}
-                color="primary"
-              />
-            </Box>
-          )}
+          {/* Pagination - if needed in the future */}
         </>
       ) : (
         <EmptyState
@@ -474,12 +469,15 @@ const DocumentList: React.FC = () => {
         onClose={handleCloseDialog}
         onConfirm={handleConfirmAction}
         action={confirmDialog.action}
-        documentNumber={confirmDialog.document?.number}
+        documentNumber={confirmDialog.document?.numero.trim()}
         documentValue={confirmDialog.document ? 
-          new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: confirmDialog.document.currency || 'BRL'
-          }).format(confirmDialog.document.value) : undefined
+          (() => {
+            const numValue = parseFloat(confirmDialog.document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
+            return new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(numValue);
+          })() : undefined
         }
         loading={approveDocument.isPending || rejectDocument.isPending}
       />

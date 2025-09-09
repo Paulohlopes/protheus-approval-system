@@ -28,30 +28,58 @@ export interface ProtheusUser {
   permissions?: string[];
 }
 
+export interface DocumentItem {
+  item: string;
+  produto: string;
+  descr_produto: string;
+  unidade_medida: string;
+  quantidade: number;
+  moeda: number;
+  descr_moeda: string;
+  preco: string;
+  data_entrega: string;
+  total: string;
+  centro_custo: string;
+  descr_cc: string;
+  conta_contabil: string;
+  descr_conta_contabil: string;
+  item_cta: string;
+  classe_valor: string;
+  observacao: string;
+  cer: string;
+  item_cer: string;
+  descr_cer: string;
+}
+
+export interface DocumentApprovalLevel {
+  aprovador_aprov: string;
+  grupo_aprov: string;
+  nivel_aprov: string;
+  situacao_aprov: string;
+  data_lib_aprov: string;
+  observacao_aprov: string;
+  avaliado_aprov: string;
+  CNOME: string;
+  CSUPERIOR: string;
+  CTIPOLIBERACAO: string;
+  CCODUSUARIO: string;
+  CDESCGRUPO: string;
+  CIDENTIFICADOR: string;
+}
+
 export interface ProtheusDocument {
-  id: string;
-  type: string;
-  number: string;
-  series?: string;
-  description: string;
-  value: number;
-  currency: string;
-  requestDate: string;
-  dueDate?: string;
-  requester: {
-    id: string;
-    name: string;
-    department?: string;
-  };
-  approver?: {
-    id: string;
-    name: string;
-  };
-  status: 'pending' | 'approved' | 'rejected' | 'expired';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  comments?: string;
-  attachments?: ProtheusAttachment[];
-  approvalFlow?: ApprovalStep[];
+  filial: string;
+  numero: string;
+  tipo: 'IP' | 'SC' | 'CP';
+  Emissao: string;
+  itens: DocumentItem[];
+  alcada: DocumentApprovalLevel[];
+  cond_pagamento: string;
+  comprador: string;
+  cod_fornecedor: string;
+  loja: string;
+  nome_fornecedor: string;
+  vl_tot_documento: string;
 }
 
 export interface ProtheusAttachment {
@@ -111,6 +139,7 @@ export interface DocumentFilters {
   };
   requester?: string;
   search?: string;
+  aprovador?: string;
 }
 
 export interface PaginationParams {
@@ -131,4 +160,8 @@ export interface ApiResponse<T> {
     limit: number;
     totalPages: number;
   };
+}
+
+export interface ProtheusApiResponse {
+  documentos: ProtheusDocument[];
 }

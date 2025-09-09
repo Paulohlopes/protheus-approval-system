@@ -5,21 +5,30 @@ import type {
   PaginationParams, 
   ApprovalAction, 
   DashboardStats,
-  ApiResponse 
+  ApiResponse,
+  ProtheusApiResponse 
 } from '../types/auth';
 
 export const documentService = {
   // Get documents with filters and pagination
   async getDocuments(
+    userEmail: string,
     filters: DocumentFilters = {},
     pagination: PaginationParams = { page: 1, limit: 10 }
-  ): Promise<ApiResponse<ProtheusDocument[]>> {
+  ): Promise<ProtheusApiResponse> {
     try {
       const params = new URLSearchParams();
       
-      // Add pagination params
-      params.append('page', pagination.page.toString());
-      params.append('limit', pagination.limit.toString());
+      // Add user email as aprovador
+      params.append('aprovador', userEmail);
+      
+      // Add pagination params if needed
+      if (pagination.page) {
+        params.append('page', pagination.page.toString());
+      }
+      if (pagination.limit) {
+        params.append('limit', pagination.limit.toString());
+      }
       
       if (pagination.sortBy) {
         params.append('sortBy', pagination.sortBy);
@@ -30,19 +39,19 @@ export const documentService = {
       
       // Add filter params
       if (filters.status) {
-        params.append('status', filters.status);
+        params.append('status', filters.status.join(','));
       }
       if (filters.type) {
-        params.append('type', filters.type);
+        params.append('type', filters.type.join(','));
       }
       if (filters.priority) {
-        params.append('priority', filters.priority);
+        params.append('priority', filters.priority.join(','));
       }
-      if (filters.dateFrom) {
-        params.append('dateFrom', filters.dateFrom);
+      if (filters.dateRange?.start) {
+        params.append('dateFrom', filters.dateRange.start);
       }
-      if (filters.dateTo) {
-        params.append('dateTo', filters.dateTo);
+      if (filters.dateRange?.end) {
+        params.append('dateTo', filters.dateRange.end);
       }
       if (filters.requester) {
         params.append('requester', filters.requester);
@@ -53,11 +62,8 @@ export const documentService = {
 
       console.log('Fetching documents from Protheus...', params.toString());
       
-      const response = await api.get<ApiResponse<ProtheusDocument[]>>(`/api/documents?${params}`);
-      
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to fetch documents');
-      }
+      // Call the new Protheus API endpoint
+      const response = await api.get<ProtheusApiResponse>(`http://brsvawssaa06069:8029/rest/DocAprov/documentos?${params}`);
       
       return response.data;
     } catch (error: any) {
@@ -75,18 +81,25 @@ export const documentService = {
     }
   },
 
-  // Get single document by ID
-  async getDocument(id: string): Promise<ProtheusDocument> {
+  // Get single document by number
+  async getDocument(numero: string, userEmail: string): Promise<ProtheusDocument | undefined> {
     try {
-      console.log('Fetching document from Protheus:', id);
+      console.log('Fetching document from Protheus:', numero);
       
-      const response = await api.get<{ data: ProtheusDocument }>(`/api/documents/${id}`);
-      return response.data.data;
+      // Get all documents and find the specific one
+      const response = await this.getDocuments(userEmail);
+      const document = response.documentos.find(doc => doc.numero.trim() === numero.trim());
+      
+      if (!document) {
+        throw new Error('Documento não encontrado.');
+      }
+      
+      return document;
     } catch (error: any) {
       console.error('Error fetching document:', error);
       
-      if (error.response?.status === 404) {
-        throw new Error('Documento não encontrado.');
+      if (error.message === 'Documento não encontrado.') {
+        throw error;
       } else if (error.response?.status === 401) {
         throw new Error('Sessão expirada. Faça login novamente.');
       } else if (error.response?.status === 403) {
@@ -99,40 +112,76 @@ export const documentService = {
     }
   },
 
-  // Approve or reject document
-  async processDocument(
-    documentId: string, 
-    action: ApprovalAction, 
-    comments?: string
+  // Approve document
+  async approveDocument(
+    action: ApprovalAction
   ): Promise<{ success: boolean; message: string }> {
     try {
       const payload = {
-        action,
-        comments,
+        documentId: action.documentId,
+        action: 'approve',
+        comments: action.comments,
         timestamp: new Date().toISOString()
       };
 
-      console.log('Processing document in Protheus:', documentId, action);
+      console.log('Approving document in Protheus:', action.documentId);
       
       const response = await api.post<{ success: boolean; message: string }>(
-        `/api/documents/${documentId}/process`, 
+        `/api/documents/${action.documentId}/approve`, 
         payload
       );
       
       return response.data;
     } catch (error: any) {
-      console.error('Error processing document:', error);
+      console.error('Error approving document:', error);
       
       if (error.response?.status === 401) {
         throw new Error('Sessão expirada. Faça login novamente.');
       } else if (error.response?.status === 403) {
-        throw new Error('Sem permissão para processar este documento.');
+        throw new Error('Sem permissão para aprovar este documento.');
       } else if (error.response?.status === 404) {
         throw new Error('Documento não encontrado.');
       } else if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       } else {
-        throw new Error(`Erro ao ${action === 'approve' ? 'aprovar' : 'rejeitar'} documento.`);
+        throw new Error('Erro ao aprovar documento.');
+      }
+    }
+  },
+
+  // Reject document
+  async rejectDocument(
+    action: ApprovalAction
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const payload = {
+        documentId: action.documentId,
+        action: 'reject',
+        comments: action.comments,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('Rejecting document in Protheus:', action.documentId);
+      
+      const response = await api.post<{ success: boolean; message: string }>(
+        `/api/documents/${action.documentId}/reject`, 
+        payload
+      );
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error rejecting document:', error);
+      
+      if (error.response?.status === 401) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      } else if (error.response?.status === 403) {
+        throw new Error('Sem permissão para rejeitar este documento.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Documento não encontrado.');
+      } else if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Erro ao rejeitar documento.');
       }
     }
   },

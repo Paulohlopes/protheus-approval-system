@@ -2,11 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { documentService } from '../services/documentService';
 import { useDocumentStore } from '../stores/documentStore';
+import { useAuthStore } from '../stores/authStore';
 import type { 
   ProtheusDocument, 
   DocumentFilters, 
   PaginationParams, 
-  ApprovalAction 
+  ApprovalAction,
+  ProtheusApiResponse 
 } from '../types/auth';
 
 // Query keys
@@ -18,19 +20,33 @@ export const QUERY_KEYS = {
 
 // Hook for fetching documents
 export const useDocuments = (filters?: DocumentFilters, pagination?: PaginationParams) => {
-  return useQuery({
-    queryKey: [...QUERY_KEYS.documents, filters, pagination],
-    queryFn: () => documentService.getDocuments(filters, pagination),
-    enabled: true,
+  const { user } = useAuthStore();
+  
+  return useQuery<ProtheusApiResponse>({
+    queryKey: [...QUERY_KEYS.documents, filters, pagination, user?.email],
+    queryFn: () => {
+      if (!user?.email) {
+        throw new Error('Usuário não autenticado');
+      }
+      return documentService.getDocuments(user.email, filters, pagination);
+    },
+    enabled: !!user?.email,
   });
 };
 
 // Hook for fetching single document
-export const useDocument = (documentId: string) => {
+export const useDocument = (documentNumber: string) => {
+  const { user } = useAuthStore();
+  
   return useQuery({
-    queryKey: QUERY_KEYS.document(documentId),
-    queryFn: () => documentService.getDocument(documentId),
-    enabled: !!documentId,
+    queryKey: QUERY_KEYS.document(documentNumber),
+    queryFn: () => {
+      if (!user?.email) {
+        throw new Error('Usuário não autenticado');
+      }
+      return documentService.getDocument(documentNumber, user.email);
+    },
+    enabled: !!documentNumber && !!user?.email,
   });
 };
 
