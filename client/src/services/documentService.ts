@@ -144,15 +144,19 @@ export const documentService = {
         OBSERVACAO: action.comments || ''
       };
 
-      // Criar tenantId no formato: 01,filial
+      // TENTATIVA: Usar aspas duplas para escapar vírgula no header HTTP
       console.log('DEBUG APROVAÇÃO - action.document.filial:', action.document.filial);
-      console.log('DEBUG APROVAÇÃO - typeof filial:', typeof action.document.filial);
-      console.log('DEBUG APROVAÇÃO - filial length:', action.document.filial?.length);
       
-      const tenantId = `01,${action.document.filial}`;
-      console.log('DEBUG APROVAÇÃO - tenantId construído:', tenantId);
-      console.log('DEBUG APROVAÇÃO - tenantId length:', tenantId.length);
-      console.log('DEBUG APROVAÇÃO - tenantId type:', typeof tenantId);
+      // RFC HTTP: usar aspas duplas para valores com vírgula
+      const tenantIdWithQuotes = `"01,${action.document.filial}"`;
+      console.log('DEBUG APROVAÇÃO - tenantId com aspas:', tenantIdWithQuotes);
+      
+      // ALTERNATIVA: Base64 encoding se aspas não funcionarem
+      const tenantIdBase64 = btoa(`01,${action.document.filial}`);
+      console.log('DEBUG APROVAÇÃO - tenantId Base64:', tenantIdBase64);
+      
+      // Usar aspas primeiro, se não funcionar vamos para Base64
+      const tenantId = tenantIdWithQuotes;
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -254,8 +258,8 @@ export const documentService = {
         OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
       };
 
-      // Criar tenantId no formato: 01,filial
-      const tenantId = `01,${action.document.filial}`;
+      // TENTATIVA: Usar aspas duplas para escapar vírgula no header HTTP
+      const tenantId = `"01,${action.document.filial}"`;
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
