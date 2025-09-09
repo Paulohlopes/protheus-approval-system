@@ -1,4 +1,5 @@
 import api from './api';
+import { config } from '../config/environment';
 import type { 
   ProtheusDocument, 
   DocumentFilters, 
@@ -29,15 +30,19 @@ export const documentService = {
 
       console.log('Fetching documents from Protheus...', params.toString());
       
-      // Call the new Protheus API endpoint directly
-      // Bypass the api interceptor and make direct call
-      console.log('documentService.getDocuments - Making direct API call to:', `http://brsvawssaa06069:8029/rest/DocAprov/documentos?${params.toString()}`);
+      // Call the new Protheus API endpoint with Basic Auth
+      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/documentos?${params.toString()}`;
+      console.log('documentService.getDocuments - Making authenticated API call to:', apiUrl);
       
-      const response = await fetch(`http://brsvawssaa06069:8029/rest/DocAprov/documentos?${params.toString()}`, {
+      // Create Basic Auth header
+      const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
+      
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${credentials}`
         }
       });
       

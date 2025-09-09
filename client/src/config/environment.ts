@@ -35,6 +35,12 @@ interface AppConfig {
     maxLoginAttempts: number;
   };
 
+  // API Authentication
+  auth: {
+    username: string;
+    password: string;
+  };
+
   // Pagination Configuration
   pagination: {
     defaultPageSize: number;
@@ -110,6 +116,11 @@ export const config: AppConfig = {
     sessionTimeout: getEnvVar('VITE_SESSION_TIMEOUT', 86400000), // 24 hours
     tokenRefreshThreshold: getEnvVar('VITE_TOKEN_REFRESH_THRESHOLD', 300000), // 5 minutes
     maxLoginAttempts: getEnvVar('VITE_MAX_LOGIN_ATTEMPTS', 3),
+  },
+
+  auth: {
+    username: getEnvVar('VITE_API_USERNAME', ''),
+    password: getEnvVar('VITE_API_PASSWORD', ''),
   },
 
   pagination: {
