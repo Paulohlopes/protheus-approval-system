@@ -677,102 +677,114 @@ const DocumentList: React.FC = () => {
     }
   };
 
-  const handleBulkApprove = async () => {
+  const handleBulkApprove = () => {
     const documentsToApprove = Array.from(selectedDocuments);
     console.log(`Iniciando aprovação em massa de ${documentsToApprove.length} documentos`);
     
-    for (const documentNumber of documentsToApprove) {
-      try {
-        console.log(`Processando documento ${documentNumber}...`);
-        
-        // Encontrar o documento completo
-        const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
-        if (!document || !user) {
-          console.error(`Documento ${documentNumber} não encontrado ou usuário não autenticado`);
-          continue;
-        }
-
-        // Usar Promise para aguardar o mutate como na aprovação individual
-        await new Promise((resolve, reject) => {
-          approveDocument.mutate({
-            documentId: documentNumber,
-            action: 'approve',
-            approverId: user.email || user.id,
-            comments: 'Aprovado em massa',
-            document: document,
-          }, {
-            onSuccess: () => {
-              resolve(true);
-            },
-            onError: (error) => {
-              reject(error);
-            }
-          });
-        });
-        console.log(`✓ Documento ${documentNumber} aprovado com sucesso`);
-        
-        // Adicionar delay entre requisições para evitar sobrecarga
-        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms de delay
-        
-      } catch (error) {
-        console.error(`✗ Erro ao aprovar documento ${documentNumber}:`, error);
+    // Processar documentos um por um usando a mesma lógica da aprovação individual
+    let currentIndex = 0;
+    
+    const processNextDocument = () => {
+      if (currentIndex >= documentsToApprove.length) {
+        // Todos os documentos foram processados
+        console.log('Aprovação em massa concluída');
+        setSelectedDocuments(new Set());
+        setShowBulkActions(false);
+        return;
       }
-    }
+      
+      const documentNumber = documentsToApprove[currentIndex];
+      console.log(`Processando documento ${documentNumber}...`);
+      
+      // Encontrar o documento completo
+      const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
+      if (!document || !user) {
+        console.error(`Documento ${documentNumber} não encontrado ou usuário não autenticado`);
+        currentIndex++;
+        processNextDocument();
+        return;
+      }
+
+      // Usar mutate diretamente como na aprovação individual - SEM Promise wrapper
+      approveDocument.mutate({
+        documentId: documentNumber,
+        action: 'approve',
+        approverId: user.email || user.id,
+        comments: 'Aprovado em massa',
+        document: document,
+      }, {
+        onSuccess: () => {
+          console.log(`✓ Documento ${documentNumber} aprovado com sucesso`);
+          currentIndex++;
+          // Adicionar delay e processar próximo documento
+          setTimeout(processNextDocument, 500);
+        },
+        onError: (error) => {
+          console.error(`✗ Erro ao aprovar documento ${documentNumber}:`, error.message);
+          currentIndex++;
+          // Continuar com próximo documento mesmo se falhar
+          setTimeout(processNextDocument, 500);
+        }
+      });
+    };
     
-    console.log(`Aprovação em massa concluída`);
-    
-    // Limpar seleção após aprovação
-    setSelectedDocuments(new Set());
-    setShowBulkActions(false);
+    // Iniciar processamento
+    processNextDocument();
   };
 
-  const handleBulkReject = async () => {
+  const handleBulkReject = () => {
     const documentsToReject = Array.from(selectedDocuments);
     console.log(`Iniciando rejeição em massa de ${documentsToReject.length} documentos`);
     
-    for (const documentNumber of documentsToReject) {
-      try {
-        console.log(`Processando documento ${documentNumber}...`);
-        
-        // Encontrar o documento completo
-        const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
-        if (!document || !user) {
-          console.error(`Documento ${documentNumber} não encontrado ou usuário não autenticado`);
-          continue;
-        }
-
-        // Usar Promise para aguardar o mutate como na rejeição individual
-        await new Promise((resolve, reject) => {
-          rejectDocument.mutate({
-            documentId: documentNumber,
-            action: 'reject',
-            approverId: user.email || user.id,
-            comments: 'Rejeitado em massa',
-            document: document,
-          }, {
-            onSuccess: () => {
-              resolve(true);
-            },
-            onError: (error) => {
-              reject(error);
-            }
-          });
-        });
-        console.log(`✓ Documento ${documentNumber} rejeitado com sucesso`);
-        
-        // Adicionar delay entre requisições para evitar sobrecarga
-        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms de delay
-        
-      } catch (error) {
-        console.error(`✗ Erro ao rejeitar documento ${documentNumber}:`, error);
+    // Processar documentos um por um usando a mesma lógica da rejeição individual
+    let currentIndex = 0;
+    
+    const processNextDocument = () => {
+      if (currentIndex >= documentsToReject.length) {
+        // Todos os documentos foram processados
+        console.log('Rejeição em massa concluída');
+        setSelectedDocuments(new Set());
+        setShowBulkActions(false);
+        return;
       }
-    }
+      
+      const documentNumber = documentsToReject[currentIndex];
+      console.log(`Processando documento ${documentNumber}...`);
+      
+      // Encontrar o documento completo
+      const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
+      if (!document || !user) {
+        console.error(`Documento ${documentNumber} não encontrado ou usuário não autenticado`);
+        currentIndex++;
+        processNextDocument();
+        return;
+      }
+
+      // Usar mutate diretamente como na rejeição individual - SEM Promise wrapper
+      rejectDocument.mutate({
+        documentId: documentNumber,
+        action: 'reject',
+        approverId: user.email || user.id,
+        comments: 'Rejeitado em massa',
+        document: document,
+      }, {
+        onSuccess: () => {
+          console.log(`✓ Documento ${documentNumber} rejeitado com sucesso`);
+          currentIndex++;
+          // Adicionar delay e processar próximo documento
+          setTimeout(processNextDocument, 500);
+        },
+        onError: (error) => {
+          console.error(`✗ Erro ao rejeitar documento ${documentNumber}:`, error.message);
+          currentIndex++;
+          // Continuar com próximo documento mesmo se falhar
+          setTimeout(processNextDocument, 500);
+        }
+      });
+    };
     
-    console.log(`Rejeição em massa concluída`);
-    
-    // Limpar seleção após rejeição
-    setSelectedDocuments(new Set());
-    setShowBulkActions(false);
+    // Iniciar processamento
+    processNextDocument();
   };
 
   const pendingDocuments = documentsResponse?.documentos?.filter(doc => {
