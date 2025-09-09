@@ -15,7 +15,7 @@ import {
   Container,
   Stack,
 } from '@mui/material';
-import { Business, Email } from '@mui/icons-material';
+import { Business, Email, Shield } from '@mui/icons-material';
 import { protheusLoginSchema, type ProtheusLoginFormData } from '../schemas/loginSchema';
 
 interface LoginFormProps {
@@ -59,24 +59,27 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
   };
 
   return (
-    <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          py: 4,
-        }}
-      >
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        py: 4,
+        px: 2,
+      }}
+    >
+      <Container component="main" maxWidth="sm">
         <Paper
-          elevation={3}
+          elevation={12}
           sx={{
             width: '100%',
-            maxWidth: 480,
-            p: 4,
-            borderRadius: 2,
+            maxWidth: 420,
+            p: { xs: 3, sm: 4 },
+            borderRadius: 3,
+            backdropFilter: 'blur(10px)',
           }}
         >
           {/* Header */}
@@ -90,20 +93,26 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
           >
             <Avatar
               sx={{
-                m: 1,
+                m: '0 auto 16px',
                 bgcolor: 'primary.main',
-                width: 56,
-                height: 56,
+                width: 64,
+                height: 64,
               }}
             >
-              <Business />
+              <Business sx={{ fontSize: 32 }} />
             </Avatar>
-            <Typography component="h1" variant="h4" fontWeight={600} textAlign="center">
-              Sistema de Aprovação
+            <Typography component="h1" variant="h4" fontWeight={700} color="primary" textAlign="center">
+              Sistema Protheus
             </Typography>
-            <Typography variant="body2" color="text.secondary" textAlign="center" mt={1}>
-              Entre com seu e-mail corporativo para acessar o sistema
+            <Typography variant="subtitle1" color="text.secondary" textAlign="center">
+              Aprovação de Documentos
             </Typography>
+            <Alert severity="info" sx={{ mt: 2, mb: 3, fontSize: '0.875rem' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Shield fontSize="small" />
+                Ambiente seguro e criptografado
+              </Box>
+            </Alert>
           </Box>
 
 
@@ -188,8 +197,8 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
             </Typography>
           </Box>
         </Paper>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 });
 

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import {
   Card,
   CardContent,
+  CardHeader,
+  CardActions,
   Typography,
   Box,
   Chip,
@@ -24,6 +26,11 @@ import {
   TableRow,
   Paper,
   Divider,
+  Container,
+  useTheme,
+  useMediaQuery,
+  Collapse,
+  Avatar,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -37,6 +44,7 @@ import {
   CalendarToday,
   AttachMoney,
   Description,
+  Clear,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -126,6 +134,9 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
   densityStyles,
   userEmail
 }) => {
+  const [expanded, setExpanded] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const formatCurrency = (value: string) => {
     if (!value || typeof value !== 'string') {
       return 'R$ 0,00';
@@ -156,46 +167,136 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
     return format(new Date(date), 'dd/MM/yyyy', { locale: ptBR });
   };
 
+  const currentStatus = getCurrentApprovalStatus(document.alcada, userEmail);
+  const isPending = currentStatus?.situacao_aprov === 'Pendente';
+
   return (
-    <Card sx={{ mb: densityStyles.cardSpacing, position: 'relative' }}>
-      <CardContent sx={{ p: densityStyles.cardPadding }}>
-        {/* Header com informações principais */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: 600 }}>
-              {getTypeLabel(document.tipo)} - {document.numero.trim()}
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Business fontSize="small" color="action" />
-              <Typography variant="body1" color="text.primary">
-                {document.nome_fornecedor.trim()}
-              </Typography>
+    <Card 
+      sx={{ 
+        mb: 2,
+        border: isPending ? 2 : 1,
+        borderColor: isPending ? 'warning.main' : 'divider',
+        borderRadius: 2,
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          boxShadow: 4,
+          transform: 'translateY(-2px)',
+        }
+      }}
+    >
+      {/* HEADER COMPACTO - Sempre visível */}
+      <CardContent sx={{ pb: 1 }}>
+        <Grid container alignItems="center" spacing={2}>
+          {/* Coluna 1: Tipo e Status */}
+          <Grid item xs={12} sm={3}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <Chip
+                label={getTypeLabel(document.tipo)}
+                color={getTypeColor(document.tipo)}
+                size="small"
+                sx={{ width: 'fit-content' }}
+              />
+              <Chip
+                label={currentStatus.situacao_aprov}
+                color={getStatusColor(currentStatus.situacao_aprov)}
+                size="small"
+                variant={isPending ? 'filled' : 'outlined'}
+                sx={{ 
+                  width: 'fit-content',
+                  ...(isPending && {
+                    background: 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)',
+                    color: 'white',
+                    fontWeight: 600,
+                  })
+                }}
+              />
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AttachMoney fontSize="small" color="primary" />
-              <Typography variant="h5" color="primary" sx={{ fontWeight: 600 }}>
+          </Grid>
+
+          {/* Coluna 2: Info Principal */}
+          <Grid item xs={12} sm={5}>
+            <Typography variant="h6" fontWeight={600} gutterBottom>
+              {document.numero.trim()}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Business sx={{ fontSize: 16 }} />
+              {document.nome_fornecedor.trim()}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <CalendarToday sx={{ fontSize: 16 }} />
+              {formatDate(document.Emissao)}
+            </Typography>
+          </Grid>
+
+          {/* Coluna 3: Valor e Ações */}
+          <Grid item xs={12} sm={4}>
+            <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+              <Typography variant="h5" color="primary" fontWeight={700} gutterBottom>
                 {formatCurrency(document.vl_tot_documento)}
               </Typography>
+              
+              {/* Ações de Aprovação - SEMPRE VISÍVEIS quando pendente */}
+              {isPending && (
+                <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
+                  <Button
+                    variant="contained"
+                    color="success"
+                    size="small"
+                    startIcon={<CheckCircle />}
+                    onClick={() => onApprove(document.numero.trim())}
+                    disabled={loading}
+                    sx={{ 
+                      minWidth: 100,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-1px)',
+                        boxShadow: 4,
+                      }
+                    }}
+                  >
+                    Aprovar
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    startIcon={<Cancel />}
+                    onClick={() => onReject(document.numero.trim())}
+                    disabled={loading}
+                    sx={{ 
+                      minWidth: 100,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-1px)',
+                        boxShadow: 4,
+                      }
+                    }}
+                  >
+                    Rejeitar
+                  </Button>
+                </Stack>
+              )}
             </Box>
-          </Box>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', flexDirection: 'column' }}>
-            <Chip
-              label={getTypeLabel(document.tipo)}
-              color={getTypeColor(document.tipo)}
-              size={densityStyles.chipSize}
-            />
-            {(() => {
-              const currentStatus = getCurrentApprovalStatus(document.alcada, userEmail);
-              return (
-                <Chip
-                  label={currentStatus.situacao_aprov}
-                  color={getStatusColor(currentStatus.situacao_aprov)}
-                  size={densityStyles.chipSize}
-                />
-              );
-            })()}
-          </Box>
+          </Grid>
+        </Grid>
+
+        {/* Botão para expandir detalhes */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <Button
+            variant="text"
+            size="small"
+            onClick={() => setExpanded(!expanded)}
+            endIcon={<ExpandMore sx={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}
+          >
+            {expanded ? 'Ocultar Detalhes' : 'Ver Detalhes'}
+          </Button>
         </Box>
+      </CardContent>
+
+      {/* DETALHES EXPANDÍVEIS */}
+      <Collapse in={expanded} timeout="auto">
+        <Divider />
+        <CardContent>
 
         {/* Informações gerais */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -377,7 +478,8 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
             </Box>
           );
         })()}
-      </CardContent>
+        </CardContent>
+      </Collapse>
     </Card>
   );
 });
@@ -508,36 +610,63 @@ const DocumentList: React.FC = () => {
 
   return (
     <Box component="section" aria-label="Lista de documentos para aprovação">
-      {/* Filters */}
-      <Card sx={{ mb: 3 }} role="search" aria-label="Filtros de busca de documentos">
+      {/* Enhanced Filters */}
+      <Card sx={{ mb: 3, borderRadius: 2 }} role="search" aria-label="Filtros de busca de documentos">
         <CardContent>
-          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-            <Box component="form" onSubmit={handleSearch} sx={{ flex: 1, minWidth: 200 }}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Buscar documentos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                aria-label="Campo de busca por documentos"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search aria-hidden="true" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-
-            <IconButton 
-              onClick={() => refetch()}
-              aria-label="Atualizar lista de documentos"
-              title="Atualizar lista de documentos"
-            >
-              <Refresh />
-            </IconButton>
-          </Stack>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={8}>
+              <Box component="form" onSubmit={handleSearch}>
+                <TextField
+                  fullWidth
+                  size="medium"
+                  placeholder="Buscar por número, fornecedor ou valor..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  aria-label="Campo de busca por documentos"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ 
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} md={4}>
+              <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<Refresh />}
+                  onClick={() => refetch()}
+                  aria-label="Atualizar lista de documentos"
+                  sx={{ borderRadius: 2 }}
+                >
+                  Atualizar
+                </Button>
+                {searchTerm && (
+                  <Button
+                    variant="text"
+                    startIcon={<Clear />}
+                    onClick={() => {
+                      setSearchTerm('');
+                      setFilters({ ...filters, search: '' });
+                    }}
+                    aria-label="Limpar busca"
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Limpar
+                  </Button>
+                )}
+              </Stack>
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 
