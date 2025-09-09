@@ -173,10 +173,10 @@ export const documentService = {
         OBSERVACAO: action.comments || ''
       };
 
-      // TESTE: Adicionar quebra de linha no final + identificador único
+      // Voltar ao formato original sem quebra de linha
       const requestId = Math.random().toString(36).substring(7);
-      const tenantId = `01,${action.document.filial}\n`;
-      console.log(`🚀 APROVAÇÃO [${requestId}] - TenantId com \\n:`, JSON.stringify(tenantId));
+      const tenantId = `01,${action.document.filial}`;
+      console.log(`🚀 APROVAÇÃO [${requestId}] - TenantId:`, JSON.stringify(tenantId));
       console.log(`🚀 APROVAÇÃO [${requestId}] - Documento: ${action.document.numero}`);
       
       // Create Basic Auth header
@@ -279,9 +279,10 @@ export const documentService = {
         OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
       };
 
-      // TESTE: Adicionar quebra de linha no final como sugerido
-      const tenantId = `01,${action.document.filial}\n`;
-      console.log('DEBUG REJEIÇÃO - TenantId com \\n:', JSON.stringify(tenantId));
+      // Voltar ao formato original sem quebra de linha
+      const requestId = Math.random().toString(36).substring(7);
+      const tenantId = `01,${action.document.filial}`;
+      console.log(`🚀 REJEIÇÃO [${requestId}] - TenantId:`, JSON.stringify(tenantId));
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
