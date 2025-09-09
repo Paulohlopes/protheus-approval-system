@@ -569,7 +569,7 @@ const DocumentList: React.FC = () => {
     }
   };
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = (comments?: string) => {
     if (!confirmDialog.document || !user) return;
 
     const document = confirmDialog.document;
@@ -580,7 +580,7 @@ const DocumentList: React.FC = () => {
         documentId: document.numero.trim(),
         action: 'approve',
         approverId: user.id,
-        comments: '',
+        comments: comments || '',
       }, {
         onSuccess: () => {
           console.log(`Documento ${document.numero.trim()} aprovado com sucesso`);
@@ -594,7 +594,7 @@ const DocumentList: React.FC = () => {
         documentId: document.numero.trim(),
         action: 'reject',
         approverId: user.id,
-        comments: 'Rejeitado pelo aprovador',
+        comments: comments || 'Rejeitado pelo aprovador',
       }, {
         onSuccess: () => {
           console.log(`Documento ${document.numero.trim()} rejeitado com sucesso`);

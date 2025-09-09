@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogActions,
@@ -9,6 +9,7 @@ import {
   Box,
   Typography,
   Alert,
+  TextField,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -19,7 +20,7 @@ import {
 interface ConfirmationDialogProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (comments?: string) => void;
   action: 'approve' | 'reject';
   documentNumber?: string;
   documentValue?: string;
@@ -35,7 +36,18 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
   documentValue,
   loading = false,
 }) => {
+  const [comments, setComments] = useState('');
   const isApprove = action === 'approve';
+
+  const handleClose = () => {
+    setComments('');
+    onClose();
+  };
+
+  const handleConfirm = () => {
+    onConfirm(comments.trim() || undefined);
+    setComments('');
+  };
   
   const getActionConfig = () => {
     if (isApprove) {
@@ -66,7 +78,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       maxWidth="sm"
       fullWidth
       aria-labelledby="confirmation-dialog-title"
@@ -106,8 +118,21 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
             )}
           </Box>
         )}
+
+        <TextField
+          fullWidth
+          multiline
+          rows={3}
+          label={isApprove ? 'Observações da aprovação (opcional)' : 'Motivo da rejeição (opcional)'}
+          placeholder={isApprove ? 'Digite observações sobre a aprovação...' : 'Digite o motivo da rejeição...'}
+          value={comments}
+          onChange={(e) => setComments(e.target.value)}
+          disabled={loading}
+          sx={{ mt: 2, mb: 2 }}
+          variant="outlined"
+        />
         
-        <Alert severity={config.severity} sx={{ mt: 2 }}>
+        <Alert severity={config.severity}>
           <Typography variant="body2">
             <Warning sx={{ fontSize: 16, mr: 1, verticalAlign: 'text-bottom' }} />
             {config.warning}
@@ -117,7 +142,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
       
       <DialogActions sx={{ p: 3, pt: 1 }}>
         <Button
-          onClick={onClose}
+          onClick={handleClose}
           variant="outlined"
           disabled={loading}
           size="large"
@@ -125,7 +150,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
           Cancelar
         </Button>
         <Button
-          onClick={onConfirm}
+          onClick={handleConfirm}
           variant="contained"
           color={config.confirmButtonColor}
           disabled={loading}
