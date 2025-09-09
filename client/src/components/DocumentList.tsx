@@ -884,7 +884,7 @@ const DocumentList: React.FC = () => {
                         color="success"
                         startIcon={<CheckCircle />}
                         onClick={handleBulkApprove}
-                        disabled={loading || approveDocument.isPending || rejectDocument.isPending}
+                        disabled={isLoading || approveDocument.isPending || rejectDocument.isPending}
                         sx={{ borderRadius: 2 }}
                       >
                         Aprovar ({selectedDocuments.size})
@@ -894,7 +894,7 @@ const DocumentList: React.FC = () => {
                         color="error"
                         startIcon={<Cancel />}
                         onClick={handleBulkReject}
-                        disabled={loading || approveDocument.isPending || rejectDocument.isPending}
+                        disabled={isLoading || approveDocument.isPending || rejectDocument.isPending}
                         sx={{ borderRadius: 2 }}
                       >
                         Rejeitar ({selectedDocuments.size})
@@ -937,9 +937,9 @@ const DocumentList: React.FC = () => {
         </Box>
       ) : documentsResponse?.documentos && documentsResponse.documentos.length > 0 ? (
         <>
-          {documentsResponse.documentos.map((document) => (
+          {documentsResponse.documentos.map((document, index) => (
             <DocumentCard
-              key={document.numero}
+              key={`${document.filial}-${document.numero.trim()}-${index}`}
               document={document}
               onApprove={handleApprove}
               onReject={handleReject}
