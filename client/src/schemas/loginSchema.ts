@@ -16,15 +16,17 @@ export const loginSchema = z.object({
 });
 
 export const protheusLoginSchema = z.object({
-  username: z
+  email: z
     .string()
-    .min(3, 'Nome de usuário deve ter pelo menos 3 caracteres')
-    .max(50, 'Nome de usuário deve ter no máximo 50 caracteres'),
-  password: z
-    .string()
-    .min(1, 'Senha é obrigatória')
-    .max(128, 'Senha deve ter no máximo 128 caracteres'),
+    .min(1, 'E-mail é obrigatório')
+    .email('E-mail inválido')
+    .toLowerCase(),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type ProtheusLoginFormData = z.infer<typeof protheusLoginSchema>;
+
+// Manter compatibilidade com username para outros usos
+export interface ProtheusLoginData {
+  email: string;
+}

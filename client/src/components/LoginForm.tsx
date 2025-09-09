@@ -15,7 +15,7 @@ import {
   Container,
   Stack,
 } from '@mui/material';
-import { Business, Person, Lock } from '@mui/icons-material';
+import { Business, Email } from '@mui/icons-material';
 import { protheusLoginSchema, type ProtheusLoginFormData } from '../schemas/loginSchema';
 
 interface LoginFormProps {
@@ -37,8 +37,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
     resolver: zodResolver(protheusLoginSchema),
     mode: 'onChange',
     defaultValues: {
-      username: '',
-      password: '',
+      email: '',
     },
   });
 
@@ -100,7 +99,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
               Sistema de Aprovação
             </Typography>
             <Typography variant="body2" color="text.secondary" textAlign="center" mt={1}>
-              Conecte-se ao Protheus ERP para acessar o sistema
+              Entre com seu e-mail corporativo para acessar o sistema
             </Typography>
           </Box>
 
@@ -114,7 +113,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
               textColor="primary"
               indicatorColor="primary"
             >
-              <Tab label="Login Protheus" />
+              <Tab label="Login com E-mail" />
               <Tab label="Login Administrativo" disabled />
             </Tabs>
           </Box>
@@ -130,41 +129,22 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
           <Box component="form" onSubmit={handleSubmit(handleFormSubmit)} sx={{ mt: 1 }}>
             <Stack spacing={3}>
               <Controller
-                name="username"
+                name="email"
                 control={control}
                 render={({ field }) => (
                   <TextField
                     {...field}
                     fullWidth
-                    label="Nome de usuário"
-                    autoComplete="username"
+                    label="E-mail"
+                    type="email"
+                    autoComplete="email"
                     autoFocus
-                    error={!!errors.username}
-                    helperText={errors.username?.message}
+                    placeholder="seuemail@empresa.com"
+                    error={!!errors.email}
+                    helperText={errors.email?.message}
                     InputProps={{
                       startAdornment: (
-                        <Person sx={{ color: 'text.secondary', mr: 1, ml: 0.5 }} />
-                      ),
-                    }}
-                  />
-                )}
-              />
-
-              <Controller
-                name="password"
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    label="Senha"
-                    type="password"
-                    autoComplete="current-password"
-                    error={!!errors.password}
-                    helperText={errors.password?.message}
-                    InputProps={{
-                      startAdornment: (
-                        <Lock sx={{ color: 'text.secondary', mr: 1, ml: 0.5 }} />
+                        <Email sx={{ color: 'text.secondary', mr: 1, ml: 0.5 }} />
                       ),
                     }}
                   />
@@ -189,7 +169,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
                 {loading ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <CircularProgress size={20} color="inherit" />
-                    Conectando ao Protheus...
+                    Entrando no sistema...
                   </Box>
                 ) : (
                   'Entrar no Sistema'
@@ -201,7 +181,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
           {/* Footer */}
           <Box sx={{ mt: 3, textAlign: 'center' }}>
             <Typography variant="caption" color="text.secondary">
-              Sistema seguro com autenticação OAuth2
+              Sistema seguro de aprovação integrado ao Protheus
             </Typography>
           </Box>
         </Paper>

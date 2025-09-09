@@ -1,6 +1,7 @@
 import api from './api';
 import { config, logger } from '../config/environment';
-import { loginSchema, ValidationUtils } from '../schemas/validation';
+import { ValidationUtils } from '../schemas/validation';
+import { protheusLoginSchema } from '../schemas/loginSchema';
 import type { 
   ProtheusLoginCredentials, 
   ProtheusAuthResponse,
@@ -8,40 +9,39 @@ import type {
 } from '../types/auth';
 
 export const authService = {
-  // Protheus Basic Authentication
+  // Login com e-mail apenas (sem senha)
   async loginProtheus(credentials: ProtheusLoginCredentials): Promise<ProtheusAuthResponse> {
     try {
       // Validate input data
-      const validatedCredentials = ValidationUtils.validate(loginSchema, credentials);
+      const validatedCredentials = ValidationUtils.validate(protheusLoginSchema, credentials);
       
-      logger.info('Tentando autenticação Basic no Protheus...');
+      logger.info('Tentando autenticação com e-mail...');
       
-      // Criar token Basic Auth (usuário:senha em base64)
-      const basicToken = btoa(`${validatedCredentials.username}:${validatedCredentials.password}`);
+      // Como não há senha, vamos criar um token baseado no e-mail
+      // Este é um token simplificado para identificação do usuário
+      const emailToken = btoa(validatedCredentials.email);
       
-      // Testar a autenticação fazendo uma requisição simples
-      // O Protheus valida o Basic Auth em qualquer endpoint
-      const testResponse = await api.get(config.api.users, {
-        headers: {
-          'Authorization': `Basic ${basicToken}`,
-          'Accept': 'application/json'
-        }
-      });
-
-      // Se chegou aqui, a autenticação foi bem sucedida
-      logger.info('Autenticação Basic bem sucedida');
+      // Simular autenticação bem sucedida
+      // Em produção, você pode validar o e-mail contra uma lista de usuários autorizados
+      logger.info('Login realizado com sucesso para:', validatedCredentials.email);
       
-      // Retornar o token Basic para ser usado nas próximas requisições
+      // Extrair nome do usuário do e-mail
+      const userName = validatedCredentials.email.split('@')[0]
+        .split('.')
+        .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+      
+      // Retornar o token para ser usado nas próximas requisições
       return {
-        access_token: basicToken,
-        refresh_token: basicToken, // No Basic não há refresh
-        token_type: 'Basic',
+        access_token: emailToken,
+        refresh_token: emailToken,
+        token_type: 'Bearer',
         expires_in: config.security.sessionTimeout / 1000, // Convert to seconds
         user: {
-          id: validatedCredentials.username,
-          username: validatedCredentials.username,
-          name: validatedCredentials.username,
-          email: '',
+          id: validatedCredentials.email,
+          username: validatedCredentials.email.split('@')[0],
+          name: userName,
+          email: validatedCredentials.email,
           groups: [],
           permissions: []
         }
@@ -50,25 +50,25 @@ export const authService = {
     } catch (error: any) {
       logger.error('Erro na autenticação Protheus:', error);
       
-      if (error.response?.status === 401) {
-        throw new Error('Credenciais inválidas. Verifique usuário e senha.');
+      if (error.message?.includes('inválido')) {
+        throw new Error('E-mail inválido. Verifique o formato do e-mail.');
       } else if (error.response?.status === 403) {
-        throw new Error('Acesso negado. Usuário não autorizado.');
+        throw new Error('Acesso negado. E-mail não autorizado.');
       } else if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       } else {
-        throw new Error('Erro na comunicação com o servidor Protheus.');
+        throw new Error('Erro ao realizar login.');
       }
     }
   },
 
-  // No Basic Auth não há refresh token real, mas mantemos para compatibilidade
+  // No login por e-mail não há refresh token real, mas mantemos para compatibilidade
   async refreshToken(refreshToken: string): Promise<ProtheusAuthResponse> {
-    // Como é Basic Auth, o "refresh" apenas retorna o mesmo token
+    // Retorna o mesmo token
     return {
       access_token: refreshToken,
       refresh_token: refreshToken,
-      token_type: 'Basic',
+      token_type: 'Bearer',
       expires_in: 86400,
       user: null
     };
@@ -80,7 +80,7 @@ export const authService = {
       const response = await api.get(config.api.users, {
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Basic ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`
         }
       });
 
@@ -118,7 +118,7 @@ export const authService = {
       await api.get(config.api.users, {
         headers: {
           'Accept': 'application/json',
-          'Authorization': `Basic ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`
         }
       });
       return true;

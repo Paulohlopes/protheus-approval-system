@@ -1,6 +1,5 @@
 export interface ProtheusLoginCredentials {
-  username: string;
-  password: string;
+  email: string;
   company?: string;
   branch?: string;
 }
