@@ -50,32 +50,31 @@ export const documentService = {
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
       
-      const response = await fetch(apiUrl, {
-        method: 'GET',
+      const response = await axios.get(apiUrl, {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
           'Authorization': `Basic ${credentials}`
-        }
+        },
+        timeout: 30000
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      console.log('documentService.getDocuments - Response:', response.data);
       
-      const data = await response.json();
-      console.log('documentService.getDocuments - Response:', data);
-      
-      return data;
+      return response.data;
     } catch (error: any) {
       console.error('Error fetching documents:', error);
       
-      if (error.response?.status === 401) {
-        throw new Error('Sessão expirada. Faça login novamente.');
-      } else if (error.response?.status === 403) {
-        throw new Error('Sem permissão para acessar documentos.');
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new Error('Sessão expirada. Faça login novamente.');
+        } else if (error.response?.status === 403) {
+          throw new Error('Sem permissão para acessar documentos.');
+        } else if (error.response?.data?.message) {
+          throw new Error(error.response.data.message);
+        } else {
+          throw new Error('Erro ao buscar documentos.');
+        }
       } else {
         throw new Error('Erro ao buscar documentos.');
       }
@@ -101,12 +100,16 @@ export const documentService = {
       
       if (error.message === 'Documento não encontrado.') {
         throw error;
-      } else if (error.response?.status === 401) {
-        throw new Error('Sessão expirada. Faça login novamente.');
-      } else if (error.response?.status === 403) {
-        throw new Error('Sem permissão para acessar este documento.');
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+      } else if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new Error('Sessão expirada. Faça login novamente.');
+        } else if (error.response?.status === 403) {
+          throw new Error('Sem permissão para acessar este documento.');
+        } else if (error.response?.data?.message) {
+          throw new Error(error.response.data.message);
+        } else {
+          throw new Error('Erro ao buscar documento.');
+        }
       } else {
         throw new Error('Erro ao buscar documento.');
       }
