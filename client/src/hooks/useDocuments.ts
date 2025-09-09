@@ -22,15 +22,22 @@ export const QUERY_KEYS = {
 export const useDocuments = (filters?: DocumentFilters, pagination?: PaginationParams) => {
   const { user } = useAuthStore();
   
+  // Serializar filtros para evitar problemas de referência
+  const filtersKey = JSON.stringify(filters || {});
+  const paginationKey = JSON.stringify(pagination || {});
+  
   return useQuery<ProtheusApiResponse>({
-    queryKey: [...QUERY_KEYS.documents, filters, pagination, user?.email],
+    queryKey: [...QUERY_KEYS.documents, filtersKey, paginationKey, user?.email],
     queryFn: () => {
       if (!user?.email) {
         throw new Error('Usuário não autenticado');
       }
+      console.log('useDocuments.queryFn - Executing with filters:', filters);
       return documentService.getDocuments(user.email, filters, pagination);
     },
     enabled: !!user?.email,
+    staleTime: 0, // Força sempre buscar dados frescos
+    refetchOnWindowFocus: false,
   });
 };
 

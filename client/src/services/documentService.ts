@@ -39,7 +39,8 @@ export const documentService = {
         }
       }
 
-      console.log('Fetching documents from Protheus...', params.toString());
+      console.log('documentService.getDocuments - Filters received:', filters);
+      console.log('documentService.getDocuments - URL params:', params.toString());
       
       // Call the new Protheus API endpoint with Basic Auth
       const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/documentos?${params.toString()}`;

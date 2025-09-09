@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -55,7 +55,8 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useDocuments, useApproveDocument, useRejectDocument } from '../hooks/useDocuments';
+import { useDocuments, useApproveDocument, useRejectDocument, QUERY_KEYS } from '../hooks/useDocuments';
+import { useQueryClient } from '@tanstack/react-query';
 import { useDocumentStore } from '../stores/documentStore';
 import { useAuthStore } from '../stores/authStore';
 import ConfirmationDialog from './ConfirmationDialog';
@@ -521,6 +522,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
 const DocumentList: React.FC = () => {
   const { user } = useAuthStore();
   const { filters, pagination, setFilters, setPagination } = useDocumentStore();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
   const [numeroTerm, setNumeroTerm] = useState(filters.numero || '');
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -532,6 +534,12 @@ const DocumentList: React.FC = () => {
   // Estados para seleção múltipla
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+
+  // Invalidar cache quando filtros mudarem
+  useEffect(() => {
+    console.log('DocumentList - Filters changed, invalidating cache:', filters);
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documents });
+  }, [filters.search, filters.numero, queryClient]);
   
   const densityStyles = {};
   
@@ -628,6 +636,7 @@ const DocumentList: React.FC = () => {
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
+    console.log('handleSearch - Updating filters with:', { search: searchTerm, numero: numeroTerm });
     setFilters({ 
       ...filters, 
       search: searchTerm,
