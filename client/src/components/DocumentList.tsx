@@ -522,6 +522,7 @@ const DocumentList: React.FC = () => {
   const { user } = useAuthStore();
   const { filters, pagination, setFilters, setPagination } = useDocumentStore();
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
+  const [numeroTerm, setNumeroTerm] = useState(filters.numero || '');
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     action: 'approve' | 'reject';
@@ -627,7 +628,11 @@ const DocumentList: React.FC = () => {
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
-    setFilters({ ...filters, search: searchTerm });
+    setFilters({ 
+      ...filters, 
+      search: searchTerm,
+      numero: numeroTerm
+    });
   };
 
 
@@ -723,15 +728,15 @@ const DocumentList: React.FC = () => {
       <Card sx={{ mb: 3, borderRadius: 2 }} role="search" aria-label="Filtros de busca de documentos">
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={8}>
+            <Grid item xs={12} md={4}>
               <Box component="form" onSubmit={handleSearch}>
                 <TextField
                   fullWidth
                   size="medium"
-                  placeholder="Buscar por número, fornecedor ou valor..."
+                  placeholder="Buscar por fornecedor, valor..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  aria-label="Campo de busca por documentos"
+                  aria-label="Campo de busca geral"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -748,8 +753,48 @@ const DocumentList: React.FC = () => {
               </Box>
             </Grid>
             
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
+              <TextField
+                fullWidth
+                size="medium"
+                placeholder="Número do documento"
+                value={numeroTerm}
+                onChange={(e) => setNumeroTerm(e.target.value)}
+                aria-label="Busca por número do documento"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Typography variant="body2" color="text.secondary">
+                        #
+                      </Typography>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ 
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  }
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch(e);
+                  }
+                }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={5}>
               <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+                <Button
+                  variant="contained"
+                  startIcon={<Search />}
+                  onClick={handleSearch}
+                  aria-label="Buscar documentos"
+                  sx={{ borderRadius: 2 }}
+                >
+                  Buscar
+                </Button>
+                
                 <Button
                   variant="outlined"
                   startIcon={<Refresh />}
@@ -774,13 +819,14 @@ const DocumentList: React.FC = () => {
                   Seleção
                 </Button>
                 
-                {searchTerm && (
+                {(searchTerm || numeroTerm) && (
                   <Button
                     variant="text"
                     startIcon={<Clear />}
                     onClick={() => {
                       setSearchTerm('');
-                      setFilters({ ...filters, search: '' });
+                      setNumeroTerm('');
+                      setFilters({ ...filters, search: '', numero: '' });
                     }}
                     aria-label="Limpar busca"
                     sx={{ borderRadius: 2 }}

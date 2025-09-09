@@ -138,6 +138,7 @@ export interface DocumentFilters {
   };
   requester?: string;
   search?: string;
+  numero?: string;
   aprovador?: string;
 }
 

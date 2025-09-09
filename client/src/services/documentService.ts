@@ -20,12 +20,23 @@ export const documentService = {
     try {
       const params = new URLSearchParams();
       
-      // Only add the aprovador filter - this is the only filter the API supports
+      // Add the aprovador filter - required parameter
       params.append('aprovador', userEmail);
       
-      // Add search filter if provided (assuming API supports basic search)
-      if (filters.search) {
-        params.append('search', filters.search);
+      // Add numero filter if provided
+      if (filters.numero) {
+        params.append('numero', filters.numero);
+      }
+      
+      // Add search filter if provided (for compatibility)
+      if (filters.search && !filters.numero) {
+        // Se search for um número (apenas dígitos), usar como numero
+        const searchValue = filters.search.trim();
+        if (/^\d+$/.test(searchValue)) {
+          params.append('numero', searchValue);
+        } else {
+          params.append('search', filters.search);
+        }
       }
 
       console.log('Fetching documents from Protheus...', params.toString());
