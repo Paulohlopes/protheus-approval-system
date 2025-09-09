@@ -534,6 +534,13 @@ const DocumentList: React.FC = () => {
   // Estados para seleção múltipla
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  
+  // Estado para confirmação de ação em massa
+  const [bulkConfirmDialog, setBulkConfirmDialog] = useState<{
+    open: boolean;
+    action: 'approve' | 'reject';
+    documentCount: number;
+  }>({ open: false, action: 'approve', documentCount: 0 });
 
   // Invalidar cache quando filtros mudarem
   useEffect(() => {
@@ -678,6 +685,14 @@ const DocumentList: React.FC = () => {
   };
 
   const handleBulkApprove = () => {
+    setBulkConfirmDialog({
+      open: true,
+      action: 'approve',
+      documentCount: selectedDocuments.size
+    });
+  };
+
+  const executeBulkApprove = (comments?: string) => {
     const documentsToApprove = Array.from(selectedDocuments);
     console.log(`Iniciando aprovação em massa de ${documentsToApprove.length} documentos`);
     
@@ -710,7 +725,7 @@ const DocumentList: React.FC = () => {
         documentId: documentNumber,
         action: 'approve',
         approverId: user.email || user.id,
-        comments: 'Aprovado em massa',
+        comments: comments || 'Aprovado em massa',
         document: document,
       }, {
         onSuccess: () => {
@@ -733,6 +748,14 @@ const DocumentList: React.FC = () => {
   };
 
   const handleBulkReject = () => {
+    setBulkConfirmDialog({
+      open: true,
+      action: 'reject',
+      documentCount: selectedDocuments.size
+    });
+  };
+
+  const executeBulkReject = (comments?: string) => {
     const documentsToReject = Array.from(selectedDocuments);
     console.log(`Iniciando rejeição em massa de ${documentsToReject.length} documentos`);
     
@@ -765,7 +788,7 @@ const DocumentList: React.FC = () => {
         documentId: documentNumber,
         action: 'reject',
         approverId: user.email || user.id,
-        comments: 'Rejeitado em massa',
+        comments: comments || 'Rejeitado em massa',
         document: document,
       }, {
         onSuccess: () => {
@@ -785,6 +808,19 @@ const DocumentList: React.FC = () => {
     
     // Iniciar processamento
     processNextDocument();
+  };
+
+  const handleBulkConfirmAction = (comments?: string) => {
+    if (bulkConfirmDialog.action === 'approve') {
+      executeBulkApprove(comments);
+    } else {
+      executeBulkReject(comments);
+    }
+    setBulkConfirmDialog({ open: false, action: 'approve', documentCount: 0 });
+  };
+
+  const handleCloseBulkDialog = () => {
+    setBulkConfirmDialog({ open: false, action: 'approve', documentCount: 0 });
   };
 
   const pendingDocuments = documentsResponse?.documentos?.filter(doc => {
@@ -1045,6 +1081,17 @@ const DocumentList: React.FC = () => {
         action={confirmDialog.action}
         documentNumber={confirmDialog.document?.numero.trim()}
         documentValue={formatDocumentValue(confirmDialog.document)}
+        loading={approveDocument.isPending || rejectDocument.isPending}
+      />
+
+      {/* Bulk Confirmation Dialog */}
+      <ConfirmationDialog
+        open={bulkConfirmDialog.open}
+        onClose={handleCloseBulkDialog}
+        onConfirm={handleBulkConfirmAction}
+        action={bulkConfirmDialog.action}
+        documentNumber={`${bulkConfirmDialog.documentCount} documentos selecionados`}
+        documentValue={`Operação em massa`}
         loading={approveDocument.isPending || rejectDocument.isPending}
       />
     </Box>
