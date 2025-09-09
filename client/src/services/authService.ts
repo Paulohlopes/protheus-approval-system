@@ -1,6 +1,5 @@
 import api from './api';
 import { config, logger } from '../config/environment';
-import { ValidationUtils } from '../schemas/validation';
 import { protheusLoginSchema } from '../schemas/loginSchema';
 import type { 
   ProtheusLoginCredentials, 
@@ -12,8 +11,8 @@ export const authService = {
   // Login com e-mail apenas (sem senha)
   async loginProtheus(credentials: ProtheusLoginCredentials): Promise<ProtheusAuthResponse> {
     try {
-      // Validate input data
-      const validatedCredentials = ValidationUtils.validate(protheusLoginSchema, credentials);
+      // Validate input data - use the schema directly without ValidationUtils
+      const validatedCredentials = protheusLoginSchema.parse(credentials);
       
       logger.info('Tentando autenticação com e-mail...');
       

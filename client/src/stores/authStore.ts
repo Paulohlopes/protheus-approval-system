@@ -34,11 +34,16 @@ export const useAuthStore = create<AuthStore>()(
       error: null,
 
       // Actions
-      login: async (credentials: ProtheusLoginCredentials) => {
+      login: async (credentials: ProtheusLoginCredentials | { email: string }) => {
         set({ isLoading: true, error: null });
         
         try {
-          const response = await authService.loginProtheus(credentials);
+          // Converter formato do formulário para formato esperado pelo serviço
+          const loginData: ProtheusLoginCredentials = 'email' in credentials 
+            ? { email: credentials.email }
+            : credentials;
+            
+          const response = await authService.loginProtheus(loginData);
           
           // Salvar tokens e usuário usando secure tokenManager
           const success = tokenManager.setTokens(
