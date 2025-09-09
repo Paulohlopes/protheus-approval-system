@@ -144,19 +144,9 @@ export const documentService = {
         OBSERVACAO: action.comments || ''
       };
 
-      // TENTATIVA: Usar aspas duplas para escapar vírgula no header HTTP
-      console.log('DEBUG APROVAÇÃO - action.document.filial:', action.document.filial);
-      
-      // RFC HTTP: usar aspas duplas para valores com vírgula
-      const tenantIdWithQuotes = `"01,${action.document.filial}"`;
-      console.log('DEBUG APROVAÇÃO - tenantId com aspas:', tenantIdWithQuotes);
-      
-      // ALTERNATIVA: Base64 encoding se aspas não funcionarem
-      const tenantIdBase64 = btoa(`01,${action.document.filial}`);
-      console.log('DEBUG APROVAÇÃO - tenantId Base64:', tenantIdBase64);
-      
-      // Usar aspas primeiro, se não funcionar vamos para Base64
-      const tenantId = tenantIdWithQuotes;
+      // Usar o formato sem aspas, como confirmado pelo usuário
+      const tenantId = `01,${action.document.filial}`;
+      console.log('DEBUG APROVAÇÃO - TenantId sendo enviado:', tenantId);
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -168,11 +158,7 @@ export const documentService = {
         tenantId,
         body: requestBody,
         currentApprover: currentApprover,
-        userEmail: userEmail,
-        headers: {
-          'TenantId': tenantId,
-          'Authorization': `Basic ${credentials}`
-        }
+        userEmail: userEmail
       });
 
       const headers = {
@@ -182,8 +168,7 @@ export const documentService = {
         'TenantId': tenantId
       };
       
-      console.log('DEBUG APROVAÇÃO - Headers sendo enviados:', headers);
-      console.log('DEBUG APROVAÇÃO - Header TenantId específico:', headers['TenantId']);
+      console.log('DEBUG APROVAÇÃO - Headers completos:', headers);
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -258,8 +243,8 @@ export const documentService = {
         OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
       };
 
-      // TENTATIVA: Usar aspas duplas para escapar vírgula no header HTTP
-      const tenantId = `"01,${action.document.filial}"`;
+      // Usar o formato sem aspas, como confirmado pelo usuário
+      const tenantId = `01,${action.document.filial}`;
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
