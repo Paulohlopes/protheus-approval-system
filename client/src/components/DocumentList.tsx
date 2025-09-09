@@ -9,13 +9,8 @@ import {
   Grid,
   Skeleton,
   Alert,
-  Pagination,
   TextField,
   InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Button,
   Stack,
 } from '@mui/material';
@@ -24,7 +19,6 @@ import {
   Cancel,
   MoreVert,
   Search,
-  FilterList,
   Refresh,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
@@ -35,7 +29,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useLiveRegion } from '../hooks/useLiveRegion';
 import ConfirmationDialog from './ConfirmationDialog';
 import { EmptyState } from './EmptyState';
-import { DensityToggle, useDensity } from './DensityToggle';
+import { useDensity } from './DensityToggle';
 import type { ProtheusDocument, DocumentApprovalLevel } from '../types/auth';
 
 // Type colors
@@ -334,10 +328,6 @@ const DocumentList: React.FC = () => {
     setFilters({ ...filters, search: searchTerm });
   };
 
-  const handleStatusFilter = (status: string) => {
-    const newStatus = status === 'all' ? [] : [status];
-    setFilters({ ...filters, status: newStatus });
-  };
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
     setPagination({ page });
@@ -381,27 +371,6 @@ const DocumentList: React.FC = () => {
                 }}
               />
             </Box>
-            
-            <FormControl size="small" sx={{ minWidth: 120 }}>
-              <InputLabel id="status-filter-label">Status</InputLabel>
-              <Select
-                labelId="status-filter-label"
-                value={filters.status?.[0] || 'all'}
-                label="Status"
-                onChange={(e) => handleStatusFilter(e.target.value)}
-                aria-label="Filtro por status do documento"
-              >
-                <MenuItem value="all">Todos</MenuItem>
-                <MenuItem value="pending">Pendentes</MenuItem>
-                <MenuItem value="approved">Aprovados</MenuItem>
-                <MenuItem value="rejected">Rejeitados</MenuItem>
-              </Select>
-            </FormControl>
-
-            <DensityToggle
-              density={density}
-              onDensityChange={setDensity}
-            />
 
             <IconButton 
               onClick={() => refetch()}
@@ -448,18 +417,18 @@ const DocumentList: React.FC = () => {
         </>
       ) : (
         <EmptyState
-          type={searchTerm || filters.status?.length ? 'no-results' : 'no-documents'}
+          type={searchTerm ? 'no-results' : 'no-documents'}
           action={{
             label: 'Atualizar',
             onClick: () => refetch(),
           }}
-          secondaryAction={searchTerm || filters.status?.length ? {
-            label: 'Limpar filtros',
+          secondaryAction={searchTerm ? {
+            label: 'Limpar busca',
             onClick: () => {
               setSearchTerm('');
-              setFilters({ ...filters, search: '', status: [] });
+              setFilters({ ...filters, search: '' });
             },
-          } : undefined}
+          } : undefined
         />
       )}
       

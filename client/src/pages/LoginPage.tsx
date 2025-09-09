@@ -9,8 +9,8 @@ const LoginPage: React.FC = () => {
   const { login, isAuthenticated, isLoading, error, clearError } = useAuthStore();
   const location = useLocation();
   
-  // Get the intended destination or default to dashboard
-  const from = (location.state as any)?.from?.pathname || '/dashboard';
+  // Get the intended destination or default to documents
+  const from = (location.state as any)?.from?.pathname || '/documents';
 
   // Clear any previous errors when component mounts
   useEffect(() => {

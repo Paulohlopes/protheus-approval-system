@@ -35,11 +35,11 @@ const LoginDebug: React.FC = () => {
           <strong>ID:</strong> {user.id}
         </Typography>
         <Button 
-          onClick={() => window.location.href = '/dashboard'} 
+          onClick={() => window.location.href = '/documents'} 
           variant="contained" 
           sx={{ mt: 2 }}
         >
-          Ir para Dashboard
+          Ir para Documentos
         </Button>
       </Paper>
     );
