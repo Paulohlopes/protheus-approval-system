@@ -157,7 +157,11 @@ export const documentService = {
         tenantId,
         body: requestBody,
         currentApprover: currentApprover,
-        userEmail: userEmail
+        userEmail: userEmail,
+        headers: {
+          'tenantid': tenantId,
+          'Authorization': `Basic ${credentials}`
+        }
       });
 
       const response = await fetch(apiUrl, {

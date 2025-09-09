@@ -679,9 +679,12 @@ const DocumentList: React.FC = () => {
 
   const handleBulkApprove = async () => {
     const documentsToApprove = Array.from(selectedDocuments);
+    console.log(`Iniciando aprovação em massa de ${documentsToApprove.length} documentos`);
     
     for (const documentNumber of documentsToApprove) {
       try {
+        console.log(`Processando documento ${documentNumber}...`);
+        
         // Encontrar o documento completo
         const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
         if (!document || !user) {
@@ -696,11 +699,17 @@ const DocumentList: React.FC = () => {
           comments: 'Aprovado em massa',
           document: document,
         });
-        console.log(`Documento ${documentNumber} aprovado com sucesso`);
+        console.log(`✓ Documento ${documentNumber} aprovado com sucesso`);
+        
+        // Adicionar delay entre requisições para evitar sobrecarga
+        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms de delay
+        
       } catch (error) {
-        console.error(`Erro ao aprovar documento ${documentNumber}:`, error);
+        console.error(`✗ Erro ao aprovar documento ${documentNumber}:`, error);
       }
     }
+    
+    console.log(`Aprovação em massa concluída`);
     
     // Limpar seleção após aprovação
     setSelectedDocuments(new Set());
@@ -709,9 +718,12 @@ const DocumentList: React.FC = () => {
 
   const handleBulkReject = async () => {
     const documentsToReject = Array.from(selectedDocuments);
+    console.log(`Iniciando rejeição em massa de ${documentsToReject.length} documentos`);
     
     for (const documentNumber of documentsToReject) {
       try {
+        console.log(`Processando documento ${documentNumber}...`);
+        
         // Encontrar o documento completo
         const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
         if (!document || !user) {
@@ -726,11 +738,17 @@ const DocumentList: React.FC = () => {
           comments: 'Rejeitado em massa',
           document: document,
         });
-        console.log(`Documento ${documentNumber} rejeitado com sucesso`);
+        console.log(`✓ Documento ${documentNumber} rejeitado com sucesso`);
+        
+        // Adicionar delay entre requisições para evitar sobrecarga
+        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms de delay
+        
       } catch (error) {
-        console.error(`Erro ao rejeitar documento ${documentNumber}:`, error);
+        console.error(`✗ Erro ao rejeitar documento ${documentNumber}:`, error);
       }
     }
+    
+    console.log(`Rejeição em massa concluída`);
     
     // Limpar seleção após rejeição
     setSelectedDocuments(new Set());
