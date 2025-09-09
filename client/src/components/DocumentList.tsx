@@ -333,6 +333,18 @@ const DocumentList: React.FC = () => {
     }).format(numValue);
   };
 
+  const getEmptyStateSecondaryAction = () => {
+    if (!searchTerm) return undefined;
+    
+    return {
+      label: 'Limpar busca',
+      onClick: () => {
+        setSearchTerm('');
+        setFilters({ ...filters, search: '' });
+      },
+    };
+  };
+
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
     setFilters({ ...filters, search: searchTerm });
@@ -432,13 +444,7 @@ const DocumentList: React.FC = () => {
             label: 'Atualizar',
             onClick: () => refetch(),
           }}
-          secondaryAction={searchTerm ? {
-            label: 'Limpar busca',
-            onClick: () => {
-              setSearchTerm('');
-              setFilters({ ...filters, search: '' });
-            },
-          } : undefined
+          secondaryAction={getEmptyStateSecondaryAction()}
         />
       )}
       
