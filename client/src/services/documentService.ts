@@ -150,7 +150,7 @@ export const documentService = {
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
       
-      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/aprova_documento`;
+      const apiUrl = `http://brsvawssaa06069:8029/rest/aprova_documento`;
       
       console.log('Calling approval API:', {
         url: apiUrl,
@@ -236,7 +236,7 @@ export const documentService = {
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
       
-      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/aprova_documento`;
+      const apiUrl = `http://brsvawssaa06069:8029/rest/aprova_documento`;
       
       console.log('Calling rejection API:', {
         url: apiUrl,
