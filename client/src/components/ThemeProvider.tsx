@@ -1,14 +1,20 @@
 import React from 'react';
-import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider as MuiThemeProvider, CssBaseline, createTheme } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
-import { useAppTheme } from '../hooks/useTheme';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
 export const AppThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const { theme, isDarkMode } = useAppTheme();
+  const theme = createTheme({
+    palette: {
+      mode: 'light',
+      primary: {
+        main: '#1976d2',
+      },
+    },
+  });
 
   return (
     <MuiThemeProvider theme={theme}>
@@ -24,7 +30,7 @@ export const AppThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => 
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme={isDarkMode ? "dark" : "light"}
+        theme="light"
         style={{ zIndex: 9999 }}
       />
     </MuiThemeProvider>

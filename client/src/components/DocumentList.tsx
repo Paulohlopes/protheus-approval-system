@@ -43,10 +43,8 @@ import { ptBR } from 'date-fns/locale';
 import { useDocuments, useApproveDocument, useRejectDocument } from '../hooks/useDocuments';
 import { useDocumentStore } from '../stores/documentStore';
 import { useAuthStore } from '../stores/authStore';
-import { useLiveRegion } from '../hooks/useLiveRegion';
 import ConfirmationDialog from './ConfirmationDialog';
 import { EmptyState } from './EmptyState';
-import { useDensity } from './DensityToggle';
 import type { ProtheusDocument, DocumentApprovalLevel } from '../types/auth';
 
 // Type colors
@@ -394,8 +392,7 @@ const DocumentList: React.FC = () => {
     document: ProtheusDocument | null;
   }>({ open: false, action: 'approve', document: null });
   
-  const { message, announce, liveRegionProps } = useLiveRegion({ politeness: 'assertive' });
-  const { density, setDensity, styles: densityStyles } = useDensity('documents-density');
+  const densityStyles = {};
   
   const { data: documentsResponse, isLoading, error, refetch } = useDocuments(filters, pagination);
   const approveDocument = useApproveDocument();
@@ -437,10 +434,10 @@ const DocumentList: React.FC = () => {
         comments: '',
       }, {
         onSuccess: () => {
-          announce(`Documento ${document.numero.trim()} aprovado com sucesso`);
+          console.log(`Documento ${document.numero.trim()} aprovado com sucesso`);
         },
         onError: () => {
-          announce(`Erro ao aprovar documento ${document.numero.trim()}`);
+          console.error(`Erro ao aprovar documento ${document.numero.trim()}`);
         }
       });
     } else {
@@ -451,10 +448,10 @@ const DocumentList: React.FC = () => {
         comments: 'Rejeitado pelo aprovador',
       }, {
         onSuccess: () => {
-          announce(`Documento ${document.numero.trim()} rejeitado com sucesso`);
+          console.log(`Documento ${document.numero.trim()} rejeitado com sucesso`);
         },
         onError: () => {
-          announce(`Erro ao rejeitar documento ${document.numero.trim()}`);
+          console.error(`Erro ao rejeitar documento ${document.numero.trim()}`);
         }
       });
     }
@@ -511,10 +508,6 @@ const DocumentList: React.FC = () => {
 
   return (
     <Box component="section" aria-label="Lista de documentos para aprovação">
-      {/* Live Region para anúncios de acessibilidade */}
-      <div {...liveRegionProps}>
-        {message}
-      </div>
       {/* Filters */}
       <Card sx={{ mb: 3 }} role="search" aria-label="Filtros de busca de documentos">
         <CardContent>
