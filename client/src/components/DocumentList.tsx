@@ -129,8 +129,14 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
   userEmail
 }) => {
   const formatCurrency = (value: string) => {
+    if (!value || typeof value !== 'string') {
+      return 'R$ 0,00';
+    }
     // Remove pontos e converte vírgula para ponto
     const numValue = parseFloat(value.replace(/\./g, '').replace(',', '.'));
+    if (isNaN(numValue)) {
+      return 'R$ 0,00';
+    }
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
