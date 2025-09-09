@@ -145,7 +145,14 @@ export const documentService = {
       };
 
       // Criar tenantId no formato: 01,filial
+      console.log('DEBUG APROVAÇÃO - action.document.filial:', action.document.filial);
+      console.log('DEBUG APROVAÇÃO - typeof filial:', typeof action.document.filial);
+      console.log('DEBUG APROVAÇÃO - filial length:', action.document.filial?.length);
+      
       const tenantId = `01,${action.document.filial}`;
+      console.log('DEBUG APROVAÇÃO - tenantId construído:', tenantId);
+      console.log('DEBUG APROVAÇÃO - tenantId length:', tenantId.length);
+      console.log('DEBUG APROVAÇÃO - tenantId type:', typeof tenantId);
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -164,14 +171,19 @@ export const documentService = {
         }
       });
 
+      const headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${credentials}`,
+        'TenantId': tenantId
+      };
+      
+      console.log('DEBUG APROVAÇÃO - Headers sendo enviados:', headers);
+      console.log('DEBUG APROVAÇÃO - Header TenantId específico:', headers['TenantId']);
+
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${credentials}`,
-          'TenantId': tenantId
-        },
+        headers: headers,
         body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(30000)
       });
