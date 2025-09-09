@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
+import LoginDebug from './components/LoginDebug';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import { PurchaseRequestsPage } from './pages/PurchaseRequestsPage';
@@ -24,6 +25,15 @@ function App() {
                 element={
                   <ErrorBoundary level="page">
                     <LoginPage />
+                  </ErrorBoundary>
+                } 
+              />
+              
+              <Route 
+                path="/login-debug" 
+                element={
+                  <ErrorBoundary level="page">
+                    <LoginDebug />
                   </ErrorBoundary>
                 } 
               />

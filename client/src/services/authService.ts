@@ -11,8 +11,17 @@ export const authService = {
   // Login com e-mail apenas (sem senha)
   async loginProtheus(credentials: ProtheusLoginCredentials): Promise<ProtheusAuthResponse> {
     try {
+      console.log('authService.loginProtheus - Received credentials:', credentials);
+      
       // Validate input data - use the schema directly without ValidationUtils
-      const validatedCredentials = protheusLoginSchema.parse(credentials);
+      let validatedCredentials;
+      try {
+        validatedCredentials = protheusLoginSchema.parse(credentials);
+        console.log('authService.loginProtheus - Validated credentials:', validatedCredentials);
+      } catch (validationError) {
+        console.error('authService.loginProtheus - Validation error:', validationError);
+        throw new Error('E-mail inválido');
+      }
       
       logger.info('Tentando autenticação com e-mail...');
       
@@ -30,8 +39,7 @@ export const authService = {
         .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ');
       
-      // Retornar o token para ser usado nas próximas requisições
-      return {
+      const response = {
         access_token: emailToken,
         refresh_token: emailToken,
         token_type: 'Bearer',
@@ -45,16 +53,17 @@ export const authService = {
           permissions: []
         }
       };
+      
+      console.log('authService.loginProtheus - Returning response:', response);
+      return response;
 
     } catch (error: any) {
+      console.error('authService.loginProtheus - Error caught:', error);
       logger.error('Erro na autenticação Protheus:', error);
       
-      if (error.message?.includes('inválido')) {
-        throw new Error('E-mail inválido. Verifique o formato do e-mail.');
-      } else if (error.response?.status === 403) {
-        throw new Error('Acesso negado. E-mail não autorizado.');
-      } else if (error.response?.data?.message) {
-        throw new Error(error.response.data.message);
+      // Re-throw the error with a clear message
+      if (error.message) {
+        throw error;
       } else {
         throw new Error('Erro ao realizar login.');
       }

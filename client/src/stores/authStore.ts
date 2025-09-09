@@ -35,6 +35,7 @@ export const useAuthStore = create<AuthStore>()(
 
       // Actions
       login: async (credentials: ProtheusLoginCredentials | { email: string }) => {
+        console.log('authStore.login - Starting login with:', credentials);
         set({ isLoading: true, error: null });
         
         try {
@@ -42,8 +43,10 @@ export const useAuthStore = create<AuthStore>()(
           const loginData: ProtheusLoginCredentials = 'email' in credentials 
             ? { email: credentials.email }
             : credentials;
-            
+          
+          console.log('authStore.login - Calling authService with:', loginData);
           const response = await authService.loginProtheus(loginData);
+          console.log('authStore.login - Received response:', response);
           
           // Salvar tokens e usuário usando secure tokenManager
           const success = tokenManager.setTokens(
@@ -54,9 +57,11 @@ export const useAuthStore = create<AuthStore>()(
           );
 
           if (!success) {
+            console.error('authStore.login - Failed to save tokens');
             throw new Error('Falha ao salvar credenciais de autenticação');
           }
           
+          console.log('authStore.login - Login successful, setting state');
           set({
             user: response.user || null,
             token: response.access_token,
@@ -66,6 +71,7 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
           });
         } catch (error: any) {
+          console.error('authStore.login - Error:', error);
           set({
             user: null,
             token: null,

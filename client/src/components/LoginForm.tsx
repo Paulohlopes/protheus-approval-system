@@ -43,9 +43,12 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
 
 
   const handleFormSubmit = async (data: ProtheusLoginFormData) => {
+    console.log('LoginForm.handleFormSubmit - Submitting:', data);
     try {
       await onSubmit(data);
-    } catch (err) {
+      console.log('LoginForm.handleFormSubmit - Submit successful');
+    } catch (err: any) {
+      console.error('LoginForm.handleFormSubmit - Submit error:', err);
       // Error handling is managed by parent component
     }
   };

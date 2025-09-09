@@ -25,7 +25,14 @@ const LoginPage: React.FC = () => {
   }
 
   const handleLogin = async (data: ProtheusLoginFormData): Promise<void> => {
-    await login(data);
+    console.log('LoginPage.handleLogin - Login attempt with:', data);
+    try {
+      await login(data);
+      console.log('LoginPage.handleLogin - Login successful');
+    } catch (error: any) {
+      console.error('LoginPage.handleLogin - Login failed:', error);
+      // Error is already handled by the store
+    }
   };
 
   return (

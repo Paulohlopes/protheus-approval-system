@@ -332,6 +332,13 @@ export const tokenManager = {
     user?: any, 
     tokenType: string = 'Bearer'
   ): boolean {
+    console.log('tokenManager.setTokens - Saving tokens:', {
+      accessToken: accessToken?.substring(0, 10) + '...',
+      refreshToken: refreshToken?.substring(0, 10) + '...',
+      user,
+      tokenType
+    });
+    
     const results = [
       secureStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken, {
         encrypt: true,
@@ -361,7 +368,9 @@ export const tokenManager = {
       );
     }
 
-    return results.every(result => result);
+    const success = results.every(result => result);
+    console.log('tokenManager.setTokens - Results:', results, 'Success:', success);
+    return success;
   },
 
   /**
