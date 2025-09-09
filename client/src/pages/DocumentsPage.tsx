@@ -90,34 +90,35 @@ const DocumentsPage: React.FC = () => {
                 sx={{ 
                   p: 2, 
                   textAlign: 'center',
-                  background: 'linear-gradient(135deg, #ff9800 0%, #ffb74d 100%)',
-                  color: 'white'
+                  bgcolor: 'grey.100',
+                  border: '1px solid',
+                  borderColor: 'grey.300'
                 }}
               >
-                <Typography variant="h5" fontWeight={700}>
+                <Typography variant="h5" fontWeight={600} color="text.primary">
                   Pendentes
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                <Typography variant="body2" color="text.secondary">
                   Aguardando sua ação
                 </Typography>
               </Paper>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'primary.main', color: 'white' }}>
-                <Typography variant="h5" fontWeight={700}>
+              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50', border: '1px solid', borderColor: 'grey.300' }}>
+                <Typography variant="h5" fontWeight={600} color="text.primary">
                   Total
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                <Typography variant="body2" color="text.secondary">
                   Documentos listados
                 </Typography>
               </Paper>
             </Grid>
             <Grid item xs={12} sm={4}>
-              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.main', color: 'white' }}>
-                <Typography variant="h5" fontWeight={700}>
+              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.100', border: '1px solid', borderColor: 'grey.300' }}>
+                <Typography variant="h5" fontWeight={600} color="text.primary">
                   Hoje
                 </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                <Typography variant="body2" color="text.secondary">
                   {new Date().toLocaleDateString('pt-BR')}
                 </Typography>
               </Paper>

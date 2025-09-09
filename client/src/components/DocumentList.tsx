@@ -175,9 +175,10 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
       sx={{ 
         mb: 2,
         border: isPending ? 2 : 1,
-        borderColor: isPending ? 'warning.main' : 'divider',
+        borderColor: isPending ? 'grey.400' : 'divider',
         borderRadius: 2,
         transition: 'all 0.2s ease-in-out',
+        bgcolor: isPending ? 'grey.50' : 'background.paper',
         '&:hover': {
           boxShadow: 4,
           transform: 'translateY(-2px)',
@@ -204,8 +205,8 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 sx={{ 
                   width: 'fit-content',
                   ...(isPending && {
-                    background: 'linear-gradient(45deg, #ff9800 30%, #ffb74d 90%)',
-                    color: 'white',
+                    bgcolor: 'warning.light',
+                    color: 'warning.dark',
                     fontWeight: 600,
                   })
                 }}

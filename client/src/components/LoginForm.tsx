@@ -62,7 +62,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
     <Box
       sx={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+        background: 'linear-gradient(135deg, #607d8b 0%, #90a4ae 100%)',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
