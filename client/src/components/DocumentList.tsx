@@ -247,7 +247,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Business sx={{ fontSize: 16 }} />
-              {document.nome_fornecedor?.trim() || 'N/A'}
+              {document.nome_fornecedor ? String(document.nome_fornecedor).trim() : 'N/A'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <CalendarToday sx={{ fontSize: 16 }} />
@@ -371,7 +371,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                     Fornecedor
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
-                    {document.cod_fornecedor}/{document.loja} - {document.nome_fornecedor?.trim() || 'N/A'}
+                    {document.cod_fornecedor}/{document.loja} - {document.nome_fornecedor ? String(document.nome_fornecedor).trim() : 'N/A'}
                   </Typography>
                 </Grid>
               </Grid>
