@@ -13,6 +13,17 @@ import {
   InputAdornment,
   Button,
   Stack,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Divider,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -20,6 +31,12 @@ import {
   MoreVert,
   Search,
   Refresh,
+  ExpandMore,
+  Person,
+  Business,
+  CalendarToday,
+  AttachMoney,
+  Description,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -138,19 +155,26 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
   return (
     <Card sx={{ mb: densityStyles.cardSpacing, position: 'relative' }}>
       <CardContent sx={{ p: densityStyles.cardPadding }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+        {/* Header com informações principais */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h6" component="div" gutterBottom>
-              Documento: {document.numero.trim()}
+            <Typography variant="h5" component="div" gutterBottom sx={{ fontWeight: 600 }}>
+              {getTypeLabel(document.tipo)} - {document.numero.trim()}
             </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Fornecedor: {document.nome_fornecedor.trim()}
-            </Typography>
-            <Typography variant="h6" color="primary" gutterBottom>
-              {formatCurrency(document.vl_tot_documento)}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Business fontSize="small" color="action" />
+              <Typography variant="body1" color="text.primary">
+                {document.nome_fornecedor.trim()}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AttachMoney fontSize="small" color="primary" />
+              <Typography variant="h5" color="primary" sx={{ fontWeight: 600 }}>
+                {formatCurrency(document.vl_tot_documento)}
+              </Typography>
+            </Box>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', flexDirection: 'column' }}>
             <Chip
               label={getTypeLabel(document.tipo)}
               color={getTypeColor(document.tipo)}
@@ -166,61 +190,168 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 />
               );
             })()}
-            <IconButton size="small">
-              <MoreVert />
-            </IconButton>
           </Box>
         </Box>
 
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={6}>
-            <Typography variant="caption" color="text.secondary">
-              Comprador
+        {/* Informações gerais */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={6}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Description fontSize="small" />
+              Informações Gerais
             </Typography>
-            <Typography variant="body2">
-              {document.comprador}
-            </Typography>
+            <Box sx={{ pl: 2 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Filial
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {document.filial}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Data de Emissão
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {formatDate(document.Emissao)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Comprador
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {document.comprador}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Condição de Pagamento
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {document.cond_pagamento}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant="caption" color="text.secondary">
+                    Fornecedor
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {document.cod_fornecedor}/{document.loja} - {document.nome_fornecedor.trim()}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Box>
           </Grid>
-          <Grid item xs={6}>
-            <Typography variant="caption" color="text.secondary">
-              Data de Emissão
+          
+          <Grid item xs={12} md={6}>
+            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Person fontSize="small" />
+              Alçada de Aprovação
             </Typography>
-            <Typography variant="body2">
-              {formatDate(document.Emissao)}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="caption" color="text.secondary">
-              Condição de Pagamento
-            </Typography>
-            <Typography variant="body2">
-              {document.cond_pagamento}
-            </Typography>
-          </Grid>
-          <Grid item xs={6}>
-            <Typography variant="caption" color="text.secondary">
-              Filial
-            </Typography>
-            <Typography variant="body2">
-              {document.filial}
-            </Typography>
+            <Box sx={{ pl: 2 }}>
+              {document.alcada.map((nivel, index) => (
+                <Box key={index} sx={{ mb: 1, p: 1, bgcolor: nivel.situacao_aprov === 'Pendente' ? 'warning.light' : 'transparent', borderRadius: 1 }}>
+                  <Typography variant="body2" fontWeight={500}>
+                    Nível {nivel.nivel_aprov} - {nivel.avaliado_aprov}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Grupo: {nivel.CDESCGRUPO} | Status: {nivel.situacao_aprov}
+                  </Typography>
+                  {nivel.data_lib_aprov && nivel.data_lib_aprov.trim() !== '' && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Liberado em: {nivel.data_lib_aprov}
+                    </Typography>
+                  )}
+                  {nivel.observacao_aprov && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Obs: {nivel.observacao_aprov}
+                    </Typography>
+                  )}
+                </Box>
+              ))}
+            </Box>
           </Grid>
         </Grid>
 
+        {/* Itens do documento */}
+        <Accordion sx={{ mb: 2 }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Typography variant="h6">Itens ({document.itens.length})</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Item</TableCell>
+                    <TableCell>Produto</TableCell>
+                    <TableCell>Descrição</TableCell>
+                    <TableCell>Qtd</TableCell>
+                    <TableCell>Unidade</TableCell>
+                    <TableCell>Preço</TableCell>
+                    <TableCell>Total</TableCell>
+                    <TableCell>Centro de Custo</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {document.itens.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{item.item}</TableCell>
+                      <TableCell>{item.produto}</TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ maxWidth: 200 }}>
+                          {item.descr_produto}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{item.quantidade}</TableCell>
+                      <TableCell>{item.unidade_medida}</TableCell>
+                      <TableCell>R$ {item.preco}</TableCell>
+                      <TableCell>R$ {item.total}</TableCell>
+                      <TableCell>
+                        <Typography variant="caption">
+                          {item.centro_custo} - {item.descr_cc}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            {/* Informações adicionais dos itens */}
+            {document.itens.some(item => item.observacao) && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>Observações dos Itens:</Typography>
+                {document.itens.filter(item => item.observacao).map((item, index) => (
+                  <Box key={index} sx={{ mb: 1, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Item {item.item}: {item.observacao}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </AccordionDetails>
+        </Accordion>
+
+        {/* Botões de ação */}
         {(() => {
           const currentStatus = getCurrentApprovalStatus(document.alcada, userEmail);
           return currentStatus?.situacao_aprov === 'Pendente' ? (
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 2, borderTop: 1, borderColor: 'divider' }}>
               <Button
                 variant="contained"
                 color="success"
                 startIcon={<CheckCircle />}
                 onClick={() => onApprove(document.numero.trim())}
                 disabled={loading}
-                size="small"
+                size="large"
                 aria-label={`Aprovar documento ${document.numero.trim()} no valor de ${formatCurrency(document.vl_tot_documento)}`}
               >
-                Aprovar
+                Aprovar Documento
               </Button>
               <Button
                 variant="outlined"
@@ -228,13 +359,19 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 startIcon={<Cancel />}
                 onClick={() => onReject(document.numero.trim())}
                 disabled={loading}
-                size="small"
+                size="large"
                 aria-label={`Rejeitar documento ${document.numero.trim()} no valor de ${formatCurrency(document.vl_tot_documento)}`}
               >
-                Rejeitar
+                Rejeitar Documento
               </Button>
             </Box>
-          ) : null;
+          ) : (
+            <Box sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}>
+              <Typography variant="body2" color="text.secondary" textAlign="center">
+                Este documento não está pendente de sua aprovação
+              </Typography>
+            </Box>
+          );
         })()}
       </CardContent>
     </Card>
