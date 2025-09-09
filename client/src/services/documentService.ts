@@ -144,8 +144,8 @@ export const documentService = {
         OBSERVACAO: action.comments || ''
       };
 
-      // Criar tenantId no formato: 01,filial
-      const tenantId = `01,${action.document.filial}`;
+      // Tentar apenas a filial sem o "01," 
+      const tenantId = action.document.filial;
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -159,7 +159,7 @@ export const documentService = {
         currentApprover: currentApprover,
         userEmail: userEmail,
         headers: {
-          'tenantid': tenantId,
+          'TenantId': tenantId,
           'Authorization': `Basic ${credentials}`
         }
       });
@@ -170,7 +170,7 @@ export const documentService = {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
           'Authorization': `Basic ${credentials}`,
-          'tenantid': tenantId
+          'TenantId': tenantId
         },
         body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(30000)
@@ -242,8 +242,8 @@ export const documentService = {
         OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
       };
 
-      // Criar tenantId no formato: 01,filial
-      const tenantId = `01,${action.document.filial}`;
+      // Tentar apenas a filial sem o "01," 
+      const tenantId = action.document.filial;
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -262,7 +262,7 @@ export const documentService = {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
           'Authorization': `Basic ${credentials}`,
-          'tenantid': tenantId
+          'TenantId': tenantId
         },
         body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(30000)
