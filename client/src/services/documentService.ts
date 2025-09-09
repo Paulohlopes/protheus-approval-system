@@ -172,9 +172,10 @@ export const documentService = {
         OBSERVACAO: action.comments || ''
       };
 
-      // Reverter para vírgula simples como solicitado
-      const tenantId = `01,${action.document.filial}`;
-      console.log('DEBUG APROVAÇÃO - TenantId sendo enviado:', tenantId);
+      // TESTE: Adicionar quebra de linha no final como sugerido
+      const tenantId = `01,${action.document.filial}\n`;
+      console.log('DEBUG APROVAÇÃO - TenantId com \\n:', JSON.stringify(tenantId));
+      console.log('DEBUG APROVAÇÃO - TenantId display:', tenantId);
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -275,9 +276,9 @@ export const documentService = {
         OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
       };
 
-      // Reverter para vírgula simples como solicitado
-      const tenantId = `01,${action.document.filial}`;
-      console.log('DEBUG REJEIÇÃO - TenantId sendo enviado:', tenantId);
+      // TESTE: Adicionar quebra de linha no final como sugerido
+      const tenantId = `01,${action.document.filial}\n`;
+      console.log('DEBUG REJEIÇÃO - TenantId com \\n:', JSON.stringify(tenantId));
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
