@@ -144,8 +144,8 @@ export const documentService = {
         OBSERVACAO: action.comments || ''
       };
 
-      // Criar tenantId no formato: 01,filial com vírgula encoded
-      const tenantId = `01%2C${action.document.filial}`;
+      // Criar tenantId no formato: 01,filial
+      const tenantId = `01,${action.document.filial}`;
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
@@ -242,8 +242,8 @@ export const documentService = {
         OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
       };
 
-      // Criar tenantId no formato: 01,filial com vírgula encoded
-      const tenantId = `01%2C${action.document.filial}`;
+      // Criar tenantId no formato: 01,filial
+      const tenantId = `01,${action.document.filial}`;
       
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);

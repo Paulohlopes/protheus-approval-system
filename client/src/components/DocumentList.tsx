@@ -692,12 +692,22 @@ const DocumentList: React.FC = () => {
           continue;
         }
 
-        await approveDocument.mutateAsync({
-          documentId: documentNumber,
-          action: 'approve',
-          approverId: user.email || user.id,
-          comments: 'Aprovado em massa',
-          document: document,
+        // Usar Promise para aguardar o mutate como na aprovação individual
+        await new Promise((resolve, reject) => {
+          approveDocument.mutate({
+            documentId: documentNumber,
+            action: 'approve',
+            approverId: user.email || user.id,
+            comments: 'Aprovado em massa',
+            document: document,
+          }, {
+            onSuccess: () => {
+              resolve(true);
+            },
+            onError: (error) => {
+              reject(error);
+            }
+          });
         });
         console.log(`✓ Documento ${documentNumber} aprovado com sucesso`);
         
@@ -731,12 +741,22 @@ const DocumentList: React.FC = () => {
           continue;
         }
 
-        await rejectDocument.mutateAsync({
-          documentId: documentNumber,
-          action: 'reject',
-          approverId: user.email || user.id,
-          comments: 'Rejeitado em massa',
-          document: document,
+        // Usar Promise para aguardar o mutate como na rejeição individual
+        await new Promise((resolve, reject) => {
+          rejectDocument.mutate({
+            documentId: documentNumber,
+            action: 'reject',
+            approverId: user.email || user.id,
+            comments: 'Rejeitado em massa',
+            document: document,
+          }, {
+            onSuccess: () => {
+              resolve(true);
+            },
+            onError: (error) => {
+              reject(error);
+            }
+          });
         });
         console.log(`✓ Documento ${documentNumber} rejeitado com sucesso`);
         
