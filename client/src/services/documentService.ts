@@ -112,45 +112,147 @@ export const documentService = {
     }
   },
 
-  // Approve document - Mock implementation for now
+  // Approve document
   async approveDocument(
     action: ApprovalAction
   ): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('Mock approving document:', action.documentId);
+      console.log('Approving document:', action.documentId);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!action.document) {
+        throw new Error('Documento não encontrado para aprovação');
+      }
+
+      // Encontrar o aprovador atual da alçada
+      const userEmail = action.approverId; // Assumindo que o approverId é o email do usuário
+      const currentApprover = action.document.alcada.find(nivel => 
+        nivel.CIDENTIFICADOR === userEmail?.split('@')[0] ||
+        nivel.CNOME === userEmail?.split('@')[0]
+      );
+
+      if (!currentApprover) {
+        throw new Error('Aprovador não encontrado na alçada do documento');
+      }
+
+      const requestBody = {
+        TIPO: action.document.tipo,
+        DOCUMENTO: action.document.numero.trim(),
+        APROVADOR: currentApprover.aprovador_aprov,
+        STATUS: 'APROVACAO',
+        OBSERVACAO: action.comments || ''
+      };
+
+      // Criar tenantId no formato: 01,filial
+      const tenantId = `01,${action.document.filial}`;
       
-      // Return mock success response
+      // Create Basic Auth header
+      const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
+      
+      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/aprova_documento/`;
+      
+      console.log('Calling approval API:', {
+        url: apiUrl,
+        tenantId,
+        body: requestBody
+      });
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${credentials}`,
+          'tenantid': tenantId
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Approval API response:', data);
+      
       return {
         success: true,
         message: `Documento ${action.documentId} aprovado com sucesso`
       };
     } catch (error: any) {
       console.error('Error approving document:', error);
-      throw new Error('Erro ao aprovar documento.');
+      throw new Error(error.message || 'Erro ao aprovar documento.');
     }
   },
 
-  // Reject document - Mock implementation for now
+  // Reject document
   async rejectDocument(
     action: ApprovalAction
   ): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('Mock rejecting document:', action.documentId);
+      console.log('Rejecting document:', action.documentId);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!action.document) {
+        throw new Error('Documento não encontrado para rejeição');
+      }
+
+      // Encontrar o aprovador atual da alçada
+      const userEmail = action.approverId; // Assumindo que o approverId é o email do usuário
+      const currentApprover = action.document.alcada.find(nivel => 
+        nivel.CIDENTIFICADOR === userEmail?.split('@')[0] ||
+        nivel.CNOME === userEmail?.split('@')[0]
+      );
+
+      if (!currentApprover) {
+        throw new Error('Aprovador não encontrado na alçada do documento');
+      }
+
+      const requestBody = {
+        TIPO: action.document.tipo,
+        DOCUMENTO: action.document.numero.trim(),
+        APROVADOR: currentApprover.aprovador_aprov,
+        STATUS: 'REJEICAO',
+        OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
+      };
+
+      // Criar tenantId no formato: 01,filial
+      const tenantId = `01,${action.document.filial}`;
       
-      // Return mock success response
+      // Create Basic Auth header
+      const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
+      
+      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/aprova_documento/`;
+      
+      console.log('Calling rejection API:', {
+        url: apiUrl,
+        tenantId,
+        body: requestBody
+      });
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${credentials}`,
+          'tenantid': tenantId
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Rejection API response:', data);
+      
       return {
         success: true,
         message: `Documento ${action.documentId} rejeitado com sucesso`
       };
     } catch (error: any) {
       console.error('Error rejecting document:', error);
-      throw new Error('Erro ao rejeitar documento.');
+      throw new Error(error.message || 'Erro ao rejeitar documento.');
     }
   },
 

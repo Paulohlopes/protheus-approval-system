@@ -107,6 +107,7 @@ export interface ApprovalAction {
   action: 'approve' | 'reject';
   comments?: string;
   approverId: string;
+  document?: ProtheusDocument;
 }
 
 export interface AuthState {

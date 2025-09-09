@@ -579,8 +579,9 @@ const DocumentList: React.FC = () => {
       approveDocument.mutate({
         documentId: document.numero.trim(),
         action: 'approve',
-        approverId: user.id,
+        approverId: user.email || user.id,
         comments: comments || '',
+        document: document,
       }, {
         onSuccess: () => {
           console.log(`Documento ${document.numero.trim()} aprovado com sucesso`);
@@ -593,8 +594,9 @@ const DocumentList: React.FC = () => {
       rejectDocument.mutate({
         documentId: document.numero.trim(),
         action: 'reject',
-        approverId: user.id,
+        approverId: user.email || user.id,
         comments: comments || 'Rejeitado pelo aprovador',
+        document: document,
       }, {
         onSuccess: () => {
           console.log(`Documento ${document.numero.trim()} rejeitado com sucesso`);
@@ -680,9 +682,19 @@ const DocumentList: React.FC = () => {
     
     for (const documentNumber of documentsToApprove) {
       try {
+        // Encontrar o documento completo
+        const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
+        if (!document || !user) {
+          console.error(`Documento ${documentNumber} não encontrado ou usuário não autenticado`);
+          continue;
+        }
+
         await approveDocument.mutateAsync({
           documentId: documentNumber,
+          action: 'approve',
+          approverId: user.email || user.id,
           comments: 'Aprovado em massa',
+          document: document,
         });
         console.log(`Documento ${documentNumber} aprovado com sucesso`);
       } catch (error) {
@@ -700,9 +712,19 @@ const DocumentList: React.FC = () => {
     
     for (const documentNumber of documentsToReject) {
       try {
+        // Encontrar o documento completo
+        const document = documentsResponse?.documentos?.find(doc => doc.numero.trim() === documentNumber);
+        if (!document || !user) {
+          console.error(`Documento ${documentNumber} não encontrado ou usuário não autenticado`);
+          continue;
+        }
+
         await rejectDocument.mutateAsync({
           documentId: documentNumber,
+          action: 'reject',
+          approverId: user.email || user.id,
           comments: 'Rejeitado em massa',
+          document: document,
         });
         console.log(`Documento ${documentNumber} rejeitado com sucesso`);
       } catch (error) {
