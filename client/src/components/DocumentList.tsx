@@ -31,6 +31,10 @@ import {
   useMediaQuery,
   Collapse,
   Avatar,
+  Checkbox,
+  FormControlLabel,
+  Tooltip,
+  Badge,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -45,6 +49,9 @@ import {
   AttachMoney,
   Description,
   Clear,
+  SelectAll,
+  PlaylistAddCheck,
+  Close,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -114,6 +121,9 @@ interface DocumentCardProps {
   onReject: (documentNumber: string) => void;
   loading?: boolean;
   userEmail?: string;
+  isSelected?: boolean;
+  onSelectChange?: (documentNumber: string, selected: boolean) => void;
+  showSelection?: boolean;
 }
 
 interface DocumentCardWithDensityProps extends DocumentCardProps {
@@ -132,7 +142,10 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
   onReject, 
   loading,
   densityStyles,
-  userEmail
+  userEmail,
+  isSelected,
+  onSelectChange,
+  showSelection
 }) => {
   const [expanded, setExpanded] = useState(false);
   const theme = useTheme();
@@ -188,8 +201,20 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
       {/* HEADER COMPACTO - Sempre visível */}
       <CardContent sx={{ pb: 1 }}>
         <Grid container alignItems="center" spacing={2}>
+          {/* Checkbox de seleção (apenas para documentos pendentes se showSelection estiver ativo) */}
+          {showSelection && isPending && (
+            <Grid item xs="auto">
+              <Checkbox
+                checked={isSelected || false}
+                onChange={(e) => onSelectChange?.(document.numero.trim(), e.target.checked)}
+                color="primary"
+                size="small"
+              />
+            </Grid>
+          )}
+          
           {/* Coluna 1: Tipo e Status */}
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={showSelection && isPending ? 2 : 3}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               <Chip
                 label={getTypeLabel(document.tipo)}
@@ -503,6 +528,10 @@ const DocumentList: React.FC = () => {
     document: ProtheusDocument | null;
   }>({ open: false, action: 'approve', document: null });
   
+  // Estados para seleção múltipla
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  
   const densityStyles = {};
   
   const { data: documentsResponse, isLoading, error, refetch } = useDocuments(filters, pagination);
@@ -606,6 +635,77 @@ const DocumentList: React.FC = () => {
     setPagination({ page });
   };
 
+  // Funções para seleção múltipla
+  const handleSelectDocument = (documentNumber: string, selected: boolean) => {
+    const newSelected = new Set(selectedDocuments);
+    if (selected) {
+      newSelected.add(documentNumber);
+    } else {
+      newSelected.delete(documentNumber);
+    }
+    setSelectedDocuments(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    const pendingDocs = documentsResponse?.documentos?.filter(doc => {
+      const currentStatus = getCurrentApprovalStatus(doc.alcada, user?.email);
+      return currentStatus?.situacao_aprov === 'Pendente';
+    }) || [];
+    
+    if (selectedDocuments.size === pendingDocs.length) {
+      // Se todos estão selecionados, desmarcar todos
+      setSelectedDocuments(new Set());
+    } else {
+      // Selecionar todos os documentos pendentes
+      setSelectedDocuments(new Set(pendingDocs.map(doc => doc.numero.trim())));
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    const documentsToApprove = Array.from(selectedDocuments);
+    
+    for (const documentNumber of documentsToApprove) {
+      try {
+        await approveDocument.mutateAsync({
+          documentId: documentNumber,
+          comments: 'Aprovado em massa',
+        });
+        console.log(`Documento ${documentNumber} aprovado com sucesso`);
+      } catch (error) {
+        console.error(`Erro ao aprovar documento ${documentNumber}:`, error);
+      }
+    }
+    
+    // Limpar seleção após aprovação
+    setSelectedDocuments(new Set());
+    setShowBulkActions(false);
+  };
+
+  const handleBulkReject = async () => {
+    const documentsToReject = Array.from(selectedDocuments);
+    
+    for (const documentNumber of documentsToReject) {
+      try {
+        await rejectDocument.mutateAsync({
+          documentId: documentNumber,
+          comments: 'Rejeitado em massa',
+        });
+        console.log(`Documento ${documentNumber} rejeitado com sucesso`);
+      } catch (error) {
+        console.error(`Erro ao rejeitar documento ${documentNumber}:`, error);
+      }
+    }
+    
+    // Limpar seleção após rejeição
+    setSelectedDocuments(new Set());
+    setShowBulkActions(false);
+  };
+
+  const pendingDocuments = documentsResponse?.documentos?.filter(doc => {
+    const currentStatus = getCurrentApprovalStatus(doc.alcada, user?.email);
+    return currentStatus?.situacao_aprov === 'Pendente';
+  }) || [];
+
   if (error) {
     return (
       <Alert severity="error" sx={{ mb: 3 }}>
@@ -659,6 +759,21 @@ const DocumentList: React.FC = () => {
                 >
                   Atualizar
                 </Button>
+                
+                {/* Botão para ativar seleção múltipla */}
+                <Button
+                  variant={showBulkActions ? "contained" : "outlined"}
+                  startIcon={<PlaylistAddCheck />}
+                  onClick={() => {
+                    setShowBulkActions(!showBulkActions);
+                    setSelectedDocuments(new Set()); // Limpar seleções ao alternar
+                  }}
+                  disabled={pendingDocuments.length === 0}
+                  sx={{ borderRadius: 2 }}
+                >
+                  Seleção
+                </Button>
+                
                 {searchTerm && (
                   <Button
                     variant="text"
@@ -678,6 +793,76 @@ const DocumentList: React.FC = () => {
           </Grid>
         </CardContent>
       </Card>
+
+      {/* Barra de ações em massa */}
+      {showBulkActions && (
+        <Card sx={{ mb: 3, borderRadius: 2, bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.200' }}>
+          <CardContent>
+            <Grid container alignItems="center" spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={pendingDocuments.length > 0 && selectedDocuments.size === pendingDocuments.length}
+                        indeterminate={selectedDocuments.size > 0 && selectedDocuments.size < pendingDocuments.length}
+                        onChange={handleSelectAll}
+                        color="primary"
+                      />
+                    }
+                    label="Selecionar todos"
+                  />
+                  {selectedDocuments.size > 0 && (
+                    <Typography variant="body2" color="text.secondary">
+                      {selectedDocuments.size} de {pendingDocuments.length} selecionados
+                    </Typography>
+                  )}
+                </Box>
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
+                  {selectedDocuments.size > 0 && (
+                    <>
+                      <Button
+                        variant="contained"
+                        color="success"
+                        startIcon={<CheckCircle />}
+                        onClick={handleBulkApprove}
+                        disabled={loading || approveDocument.isPending || rejectDocument.isPending}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        Aprovar ({selectedDocuments.size})
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<Cancel />}
+                        onClick={handleBulkReject}
+                        disabled={loading || approveDocument.isPending || rejectDocument.isPending}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        Rejeitar ({selectedDocuments.size})
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    variant="text"
+                    startIcon={<Close />}
+                    onClick={() => {
+                      setShowBulkActions(false);
+                      setSelectedDocuments(new Set());
+                    }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Cancelar
+                  </Button>
+                </Stack>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Document List */}
       {isLoading ? (
@@ -706,6 +891,9 @@ const DocumentList: React.FC = () => {
               loading={approveDocument.isPending || rejectDocument.isPending}
               densityStyles={densityStyles}
               userEmail={user?.email}
+              showSelection={showBulkActions}
+              isSelected={selectedDocuments.has(document.numero.trim())}
+              onSelectChange={handleSelectDocument}
             />
           ))}
           
