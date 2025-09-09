@@ -363,6 +363,9 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                   <Typography variant="body2" fontWeight={500}>
                     Nível {nivel.nivel_aprov} - {nivel.avaliado_aprov}
                   </Typography>
+                  <Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
+                    Aprovador: {nivel.CNOME || nivel.aprovador_aprov}
+                  </Typography>
                   <Typography variant="caption" color="text.secondary">
                     Grupo: {nivel.CDESCGRUPO} | Status: {nivel.situacao_aprov}
                   </Typography>
@@ -371,10 +374,15 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                       Liberado em: {nivel.data_lib_aprov}
                     </Typography>
                   )}
-                  {nivel.observacao_aprov && (
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Obs: {nivel.observacao_aprov}
-                    </Typography>
+                  {nivel.observacao_aprov && nivel.observacao_aprov.trim() !== '' && (
+                    <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.100', borderRadius: 1, border: '1px solid', borderColor: 'grey.300' }}>
+                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                        Observação do Aprovador:
+                      </Typography>
+                      <Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
+                        {nivel.observacao_aprov}
+                      </Typography>
+                    </Box>
                   )}
                 </Box>
               ))}
