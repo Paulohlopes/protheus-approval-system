@@ -441,79 +441,31 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
         </Accordion>
 
         {/* Alçada de Aprovação */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Person fontSize="small" />
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
             Alçada de Aprovação
           </Typography>
-          <Box sx={{ pl: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             {document.alcada.map((nivel, index) => (
-              <Box key={index} sx={{ mb: 1, p: 1, bgcolor: nivel.situacao_aprov === 'Pendente' ? 'warning.light' : 'transparent', borderRadius: 1 }}>
-                <Typography variant="body2" fontWeight={500}>
-                  Nível {nivel.nivel_aprov} - {nivel.avaliado_aprov}
+              <Box 
+                key={index} 
+                sx={{ 
+                  px: 1, 
+                  py: 0.5, 
+                  bgcolor: nivel.situacao_aprov === 'Pendente' ? 'warning.50' : 'grey.50', 
+                  borderRadius: 0.5,
+                  border: '1px solid',
+                  borderColor: nivel.situacao_aprov === 'Pendente' ? 'warning.200' : 'grey.200'
+                }}
+              >
+                <Typography variant="caption" sx={{ display: 'block' }}>
+                  Nível {nivel.nivel_aprov} • {nivel.CNOME || nivel.aprovador_aprov} • {nivel.CDESCGRUPO} • {nivel.situacao_aprov}
                 </Typography>
-                <Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
-                  Aprovador: {nivel.CNOME || nivel.aprovador_aprov}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Grupo: {nivel.CDESCGRUPO} | Status: {nivel.situacao_aprov}
-                </Typography>
-                {nivel.data_lib_aprov && nivel.data_lib_aprov.trim() !== '' && (
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Liberado em: {nivel.data_lib_aprov}
-                  </Typography>
-                )}
-                {nivel.observacao_aprov && nivel.observacao_aprov.trim() !== '' && (
-                  <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.100', borderRadius: 1, border: '1px solid', borderColor: 'grey.300' }}>
-                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                      Observação do Aprovador:
-                    </Typography>
-                    <Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
-                      {nivel.observacao_aprov}
-                    </Typography>
-                  </Box>
-                )}
               </Box>
             ))}
           </Box>
         </Box>
 
-        {/* Botões de ação */}
-        {(() => {
-          const currentStatus = getCurrentApprovalStatus(document.alcada, userEmail);
-          return currentStatus?.situacao_aprov === 'Pendente' && !showSelection ? (
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 2, borderTop: 1, borderColor: 'divider' }}>
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<CheckCircle />}
-                onClick={() => onApprove(document.numero.trim())}
-                disabled={loading}
-                size="large"
-                aria-label={`Aprovar documento ${document.numero.trim()} no valor de ${formatCurrency(document.vl_tot_documento)}`}
-              >
-                Aprovar Documento
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<Cancel />}
-                onClick={() => onReject(document.numero.trim())}
-                disabled={loading}
-                size="large"
-                aria-label={`Rejeitar documento ${document.numero.trim()} no valor de ${formatCurrency(document.vl_tot_documento)}`}
-              >
-                Rejeitar Documento
-              </Button>
-            </Box>
-          ) : (
-            <Box sx={{ pt: 2, borderTop: 1, borderColor: 'divider' }}>
-              <Typography variant="body2" color="text.secondary" textAlign="center">
-                Este documento não está pendente de sua aprovação
-              </Typography>
-            </Box>
-          );
-        })()}
         </CardContent>
       </Collapse>
     </Card>
