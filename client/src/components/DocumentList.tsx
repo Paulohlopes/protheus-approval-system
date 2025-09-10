@@ -218,71 +218,56 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
           <Grid item xs={12} sm={showSelection && isPending ? 2 : 3}>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
               {/* Tipo de Documento */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ 
-                  width: 6, 
-                  height: 6, 
-                  borderRadius: '50%', 
-                  bgcolor: `${getTypeColor(document.tipo)}.main` 
-                }} />
-                <Chip
-                  label={getTypeLabel(document.tipo)}
-                  color={getTypeColor(document.tipo)}
-                  size="small"
-                  variant="outlined"
-                  sx={{ 
-                    width: 'fit-content',
-                    fontWeight: 500,
-                    fontSize: '0.7rem',
-                    height: 24,
-                    borderWidth: 1.5,
-                    '& .MuiChip-label': {
-                      px: 1
-                    }
-                  }}
-                />
-              </Box>
+              <Chip
+                label={getTypeLabel(document.tipo)}
+                color={getTypeColor(document.tipo)}
+                size="small"
+                variant="outlined"
+                sx={{ 
+                  width: 'fit-content',
+                  fontWeight: 500,
+                  fontSize: '0.7rem',
+                  height: 24,
+                  borderWidth: 1.5,
+                  '& .MuiChip-label': {
+                    px: 1
+                  }
+                }}
+              />
               
               {/* Status */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box sx={{ fontSize: '12px' }}>
-                  {currentStatus.situacao_aprov === 'Liberado' ? '✓' : 
-                   currentStatus.situacao_aprov === 'Pendente' ? '⏳' : 
-                   currentStatus.situacao_aprov === 'Rejeitado' ? '✗' : '○'}
-                </Box>
-                <Chip
-                  label={currentStatus.situacao_aprov}
-                  color={getStatusColor(currentStatus.situacao_aprov)}
-                  size="small"
-                  variant={isPending ? 'filled' : 'outlined'}
-                  sx={{ 
-                    width: 'fit-content',
-                    fontWeight: 600,
-                    fontSize: '0.7rem',
-                    height: 24,
-                    borderWidth: 1.5,
-                    '& .MuiChip-label': {
-                      px: 1
-                    },
-                    ...(isPending && {
-                      bgcolor: 'warning.main',
-                      color: 'warning.contrastText',
-                      borderColor: 'warning.main',
-                      boxShadow: '0 2px 4px rgba(237, 108, 2, 0.2)',
-                    }),
-                    ...(currentStatus.situacao_aprov === 'Liberado' && {
-                      bgcolor: 'success.main',
-                      color: 'success.contrastText',
-                      borderColor: 'success.main',
-                    }),
-                    ...(currentStatus.situacao_aprov === 'Rejeitado' && {
-                      bgcolor: 'error.main',
-                      color: 'error.contrastText',
-                      borderColor: 'error.main',
-                    })
-                  }}
-                />
-              </Box>
+              <Chip
+                label={currentStatus.situacao_aprov}
+                color={getStatusColor(currentStatus.situacao_aprov)}
+                size="small"
+                variant={isPending ? 'filled' : 'outlined'}
+                sx={{ 
+                  width: 'fit-content',
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  height: 24,
+                  borderWidth: 1.5,
+                  '& .MuiChip-label': {
+                    px: 1
+                  },
+                  ...(isPending && {
+                    bgcolor: 'warning.main',
+                    color: 'warning.contrastText',
+                    borderColor: 'warning.main',
+                    boxShadow: '0 2px 4px rgba(237, 108, 2, 0.2)',
+                  }),
+                  ...(currentStatus.situacao_aprov === 'Liberado' && {
+                    bgcolor: 'success.main',
+                    color: 'success.contrastText',
+                    borderColor: 'success.main',
+                  }),
+                  ...(currentStatus.situacao_aprov === 'Rejeitado' && {
+                    bgcolor: 'error.main',
+                    color: 'error.contrastText',
+                    borderColor: 'error.main',
+                  })
+                }}
+              />
             </Box>
           </Grid>
 
@@ -488,11 +473,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
 
         {/* Alçada de Aprovação */}
         <Box sx={{ mb: 2 }}>
-          <Typography 
-            variant="body2" 
-            color="text.secondary" 
-            sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.8rem' }}
-          >
+          <Typography variant="h6" gutterBottom>
             Alçada de Aprovação
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -506,14 +487,6 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 }
               };
 
-              const getStatusIcon = (status: string) => {
-                switch (status) {
-                  case 'Liberado': return '✓';
-                  case 'Pendente': return '⏳';
-                  case 'Rejeitado': return '✗';
-                  default: return '○';
-                }
-              };
 
               return (
                 <Box 
@@ -538,9 +511,6 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                     }
                   }}
                 >
-                  <Box sx={{ mr: 1, fontSize: '14px' }}>
-                    {getStatusIcon(nivel.situacao_aprov)}
-                  </Box>
                   <Box sx={{ flexGrow: 1 }}>
                     <Typography 
                       variant="caption" 
