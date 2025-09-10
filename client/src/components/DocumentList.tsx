@@ -262,8 +262,8 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 {formatCurrency(document.vl_tot_documento)}
               </Typography>
               
-              {/* Ações de Aprovação - SEMPRE VISÍVEIS quando pendente */}
-              {isPending && (
+              {/* Ações de Aprovação - Visíveis quando pendente E não está em modo de seleção */}
+              {isPending && !showSelection && (
                 <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
                   <Button
                     variant="contained"
@@ -480,7 +480,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
         {/* Botões de ação */}
         {(() => {
           const currentStatus = getCurrentApprovalStatus(document.alcada, userEmail);
-          return currentStatus?.situacao_aprov === 'Pendente' ? (
+          return currentStatus?.situacao_aprov === 'Pendente' && !showSelection ? (
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', pt: 2, borderTop: 1, borderColor: 'divider' }}>
               <Button
                 variant="contained"
