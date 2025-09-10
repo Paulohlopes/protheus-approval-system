@@ -377,43 +377,6 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
               </Grid>
             </Box>
           </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Person fontSize="small" />
-              Alçada de Aprovação
-            </Typography>
-            <Box sx={{ pl: 2 }}>
-              {document.alcada.map((nivel, index) => (
-                <Box key={index} sx={{ mb: 1, p: 1, bgcolor: nivel.situacao_aprov === 'Pendente' ? 'warning.light' : 'transparent', borderRadius: 1 }}>
-                  <Typography variant="body2" fontWeight={500}>
-                    Nível {nivel.nivel_aprov} - {nivel.avaliado_aprov}
-                  </Typography>
-                  <Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
-                    Aprovador: {nivel.CNOME || nivel.aprovador_aprov}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Grupo: {nivel.CDESCGRUPO} | Status: {nivel.situacao_aprov}
-                  </Typography>
-                  {nivel.data_lib_aprov && nivel.data_lib_aprov.trim() !== '' && (
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Liberado em: {nivel.data_lib_aprov}
-                    </Typography>
-                  )}
-                  {nivel.observacao_aprov && nivel.observacao_aprov.trim() !== '' && (
-                    <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.100', borderRadius: 1, border: '1px solid', borderColor: 'grey.300' }}>
-                      <Typography variant="caption" color="text.secondary" fontWeight={600}>
-                        Observação do Aprovador:
-                      </Typography>
-                      <Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
-                        {nivel.observacao_aprov}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              ))}
-            </Box>
-          </Grid>
         </Grid>
 
         {/* Itens do documento */}
@@ -476,6 +439,44 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
             )}
           </AccordionDetails>
         </Accordion>
+
+        {/* Alçada de Aprovação */}
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Person fontSize="small" />
+            Alçada de Aprovação
+          </Typography>
+          <Box sx={{ pl: 2 }}>
+            {document.alcada.map((nivel, index) => (
+              <Box key={index} sx={{ mb: 1, p: 1, bgcolor: nivel.situacao_aprov === 'Pendente' ? 'warning.light' : 'transparent', borderRadius: 1 }}>
+                <Typography variant="body2" fontWeight={500}>
+                  Nível {nivel.nivel_aprov} - {nivel.avaliado_aprov}
+                </Typography>
+                <Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
+                  Aprovador: {nivel.CNOME || nivel.aprovador_aprov}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Grupo: {nivel.CDESCGRUPO} | Status: {nivel.situacao_aprov}
+                </Typography>
+                {nivel.data_lib_aprov && nivel.data_lib_aprov.trim() !== '' && (
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Liberado em: {nivel.data_lib_aprov}
+                  </Typography>
+                )}
+                {nivel.observacao_aprov && nivel.observacao_aprov.trim() !== '' && (
+                  <Box sx={{ mt: 1, p: 1, bgcolor: 'grey.100', borderRadius: 1, border: '1px solid', borderColor: 'grey.300' }}>
+                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                      Observação do Aprovador:
+                    </Typography>
+                    <Typography variant="body2" color="text.primary" sx={{ mt: 0.5 }}>
+                      {nivel.observacao_aprov}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            ))}
+          </Box>
+        </Box>
 
         {/* Botões de ação */}
         {(() => {
