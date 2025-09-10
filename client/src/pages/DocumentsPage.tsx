@@ -245,30 +245,6 @@ const DocumentsPage: React.FC = () => {
                   <IconButton onClick={() => refetch()} color="primary">
                     <Refresh />
                   </IconButton>
-                  {selectedDocuments.size > 0 && (
-                    <>
-                      <Button
-                        variant="contained"
-                        color="success"
-                        startIcon={<CheckCircle />}
-                        onClick={handleBulkApprove}
-                        disabled={isProcessing}
-                        size="small"
-                      >
-                        Aprovar ({selectedDocuments.size})
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        startIcon={<Cancel />}
-                        onClick={handleBulkReject}
-                        disabled={isProcessing}
-                        size="small"
-                      >
-                        Rejeitar ({selectedDocuments.size})
-                      </Button>
-                    </>
-                  )}
                 </Stack>
               </Stack>
             </Paper>

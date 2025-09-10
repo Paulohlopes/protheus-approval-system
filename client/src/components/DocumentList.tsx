@@ -552,7 +552,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const showBulkActions = externalShowBulkActions !== undefined ? externalShowBulkActions : internalShowBulkActions;
   const selectedDocuments = externalSelectedDocuments || internalSelectedDocuments;
   
-  // Estado para confirmação de ação em massa
+  // Estado para confirmação de ação em massa (apenas se usando modo interno)
   const [bulkConfirmDialog, setBulkConfirmDialog] = useState<{
     open: boolean;
     action: 'approve' | 'reject';
@@ -1022,30 +1022,6 @@ const DocumentList: React.FC<DocumentListProps> = ({
               
               <Grid item xs={12} sm={6}>
                 <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
-                  {selectedDocuments.size > 0 && (
-                    <>
-                      <Button
-                        variant="contained"
-                        color="success"
-                        startIcon={<CheckCircle />}
-                        onClick={handleBulkApprove}
-                        disabled={isLoading || approveDocument.isPending || rejectDocument.isPending}
-                        sx={{ borderRadius: 2 }}
-                      >
-                        Aprovar ({selectedDocuments.size})
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        startIcon={<Cancel />}
-                        onClick={handleBulkReject}
-                        disabled={isLoading || approveDocument.isPending || rejectDocument.isPending}
-                        sx={{ borderRadius: 2 }}
-                      >
-                        Rejeitar ({selectedDocuments.size})
-                      </Button>
-                    </>
-                  )}
                   <Button
                     variant="text"
                     startIcon={<Close />}
@@ -1125,16 +1101,18 @@ const DocumentList: React.FC<DocumentListProps> = ({
         loading={approveDocument.isPending || rejectDocument.isPending}
       />
 
-      {/* Bulk Confirmation Dialog */}
-      <ConfirmationDialog
-        open={bulkConfirmDialog.open}
-        onClose={handleCloseBulkDialog}
-        onConfirm={handleBulkConfirmAction}
-        action={bulkConfirmDialog.action}
-        documentNumber={`${bulkConfirmDialog.documentCount} documentos selecionados`}
-        documentValue={`Operação em massa`}
-        loading={approveDocument.isPending || rejectDocument.isPending}
-      />
+      {/* Bulk Confirmation Dialog - apenas se usando modo interno */}
+      {!externalSelectedDocuments && (
+        <ConfirmationDialog
+          open={bulkConfirmDialog.open}
+          onClose={handleCloseBulkDialog}
+          onConfirm={handleBulkConfirmAction}
+          action={bulkConfirmDialog.action}
+          documentNumber={`${bulkConfirmDialog.documentCount} documentos selecionados`}
+          documentValue={`Operação em massa`}
+          loading={approveDocument.isPending || rejectDocument.isPending}
+        />
+      )}
     </Box>
   );
 };
