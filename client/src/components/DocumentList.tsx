@@ -216,27 +216,73 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
           
           {/* Coluna 1: Tipo e Status */}
           <Grid item xs={12} sm={showSelection && isPending ? 2 : 3}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Chip
-                label={getTypeLabel(document.tipo)}
-                color={getTypeColor(document.tipo)}
-                size="small"
-                sx={{ width: 'fit-content' }}
-              />
-              <Chip
-                label={currentStatus.situacao_aprov}
-                color={getStatusColor(currentStatus.situacao_aprov)}
-                size="small"
-                variant={isPending ? 'filled' : 'outlined'}
-                sx={{ 
-                  width: 'fit-content',
-                  ...(isPending && {
-                    bgcolor: 'warning.light',
-                    color: 'warning.dark',
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {/* Tipo de Documento */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ 
+                  width: 6, 
+                  height: 6, 
+                  borderRadius: '50%', 
+                  bgcolor: `${getTypeColor(document.tipo)}.main` 
+                }} />
+                <Chip
+                  label={getTypeLabel(document.tipo)}
+                  color={getTypeColor(document.tipo)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ 
+                    width: 'fit-content',
+                    fontWeight: 500,
+                    fontSize: '0.7rem',
+                    height: 24,
+                    borderWidth: 1.5,
+                    '& .MuiChip-label': {
+                      px: 1
+                    }
+                  }}
+                />
+              </Box>
+              
+              {/* Status */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ fontSize: '12px' }}>
+                  {currentStatus.situacao_aprov === 'Liberado' ? '✓' : 
+                   currentStatus.situacao_aprov === 'Pendente' ? '⏳' : 
+                   currentStatus.situacao_aprov === 'Rejeitado' ? '✗' : '○'}
+                </Box>
+                <Chip
+                  label={currentStatus.situacao_aprov}
+                  color={getStatusColor(currentStatus.situacao_aprov)}
+                  size="small"
+                  variant={isPending ? 'filled' : 'outlined'}
+                  sx={{ 
+                    width: 'fit-content',
                     fontWeight: 600,
-                  })
-                }}
-              />
+                    fontSize: '0.7rem',
+                    height: 24,
+                    borderWidth: 1.5,
+                    '& .MuiChip-label': {
+                      px: 1
+                    },
+                    ...(isPending && {
+                      bgcolor: 'warning.main',
+                      color: 'warning.contrastText',
+                      borderColor: 'warning.main',
+                      boxShadow: '0 2px 4px rgba(237, 108, 2, 0.2)',
+                    }),
+                    ...(currentStatus.situacao_aprov === 'Liberado' && {
+                      bgcolor: 'success.main',
+                      color: 'success.contrastText',
+                      borderColor: 'success.main',
+                    }),
+                    ...(currentStatus.situacao_aprov === 'Rejeitado' && {
+                      bgcolor: 'error.main',
+                      color: 'error.contrastText',
+                      borderColor: 'error.main',
+                    })
+                  }}
+                />
+              </Box>
             </Box>
           </Grid>
 
