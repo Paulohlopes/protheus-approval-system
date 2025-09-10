@@ -18,13 +18,10 @@ import {
 import { 
   Logout, 
   Business, 
-  Assessment, 
-  PlaylistAddCheck,
   CheckCircle,
   Cancel,
   KeyboardArrowUp,
   Close,
-  Refresh,
 } from '@mui/icons-material';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -86,9 +83,6 @@ const DocumentsPage: React.FC = () => {
     navigate('/login');
   };
 
-  const handleClearSelection = () => {
-    toggleBulkActions();
-  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -201,54 +195,6 @@ const DocumentsPage: React.FC = () => {
             </Grid>
           </Grid>
 
-          {/* Barra de Seleção Múltipla */}
-          {pendingDocuments.length > 0 && (
-            <Paper 
-              sx={{ 
-                p: 2, 
-                mt: 3,
-                bgcolor: showBulkActions ? 'primary.50' : 'background.paper',
-                border: showBulkActions ? '2px solid' : '1px solid',
-                borderColor: showBulkActions ? 'primary.main' : 'divider',
-              }}
-            >
-              <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Button
-                    variant={showBulkActions ? "contained" : "outlined"}
-                    startIcon={<PlaylistAddCheck />}
-                    onClick={() => {
-                      if (!showBulkActions) {
-                        toggleBulkActions();
-                        handleSelectAll(pendingDocuments);
-                      } else {
-                        handleClearSelection();
-                      }
-                    }}
-                  >
-                    {showBulkActions && selectedDocuments.size > 0 
-                      ? `Limpar Seleção (${selectedDocuments.size})` 
-                      : 'Selecionar Todos Pendentes'
-                    }
-                  </Button>
-                  
-                  {selectedDocuments.size > 0 && (
-                    <Chip 
-                      label={`${selectedDocuments.size} de ${pendingDocuments.length} selecionados`}
-                      color="primary"
-                      variant="filled"
-                    />
-                  )}
-                </Stack>
-
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <IconButton onClick={() => refetch()} color="primary">
-                    <Refresh />
-                  </IconButton>
-                </Stack>
-              </Stack>
-            </Paper>
-          )}
         </Box>
 
         {/* Document List */}

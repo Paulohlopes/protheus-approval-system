@@ -955,22 +955,37 @@ const DocumentList: React.FC<DocumentListProps> = ({
                   Atualizar
                 </Button>
                 
-                {/* Botão para ativar seleção múltipla */}
+                {/* Botão para ativar seleção múltipla e selecionar todos */}
                 <Button
                   variant={showBulkActions ? "contained" : "outlined"}
                   startIcon={<PlaylistAddCheck />}
                   onClick={() => {
-                    if (onToggleBulkActions) {
-                      onToggleBulkActions();
+                    if (!showBulkActions) {
+                      // Ativar modo seleção e selecionar todos os pendentes
+                      if (onToggleBulkActions) {
+                        onToggleBulkActions();
+                        onSelectAll?.(pendingDocuments);
+                      } else {
+                        setInternalShowBulkActions(true);
+                        setInternalSelectedDocuments(new Set(pendingDocuments.map(doc => doc.numero.trim())));
+                      }
                     } else {
-                      setInternalShowBulkActions(!showBulkActions);
-                      setInternalSelectedDocuments(new Set()); // Limpar seleções ao alternar
+                      // Desativar modo seleção
+                      if (onToggleBulkActions) {
+                        onToggleBulkActions();
+                      } else {
+                        setInternalShowBulkActions(false);
+                        setInternalSelectedDocuments(new Set());
+                      }
                     }
                   }}
                   disabled={pendingDocuments.length === 0}
                   sx={{ borderRadius: 2 }}
                 >
-                  Seleção
+                  {showBulkActions && selectedDocuments.size > 0 
+                    ? `Selecionados (${selectedDocuments.size})` 
+                    : 'Selecionar Todos Pendentes'
+                  }
                 </Button>
                 
                 {(searchTerm || numeroTerm) && (
