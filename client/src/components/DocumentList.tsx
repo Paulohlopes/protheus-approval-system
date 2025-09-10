@@ -494,57 +494,44 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                   sx={{ 
                     display: 'flex',
                     alignItems: 'center',
-                    px: 1.5, 
-                    py: 1, 
-                    bgcolor: nivel.situacao_aprov === 'Liberado' ? 'success.50' : 
-                             nivel.situacao_aprov === 'Pendente' ? 'warning.50' : 
-                             nivel.situacao_aprov === 'Rejeitado' ? 'error.50' : 'grey.50',
-                    borderRadius: 1,
-                    border: '1px solid',
-                    borderColor: nivel.situacao_aprov === 'Liberado' ? 'success.200' : 
-                                nivel.situacao_aprov === 'Pendente' ? 'warning.300' : 
-                                nivel.situacao_aprov === 'Rejeitado' ? 'error.200' : 'grey.200',
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }
+                    justifyContent: 'space-between',
+                    px: 0, 
+                    py: 0.5, 
+                    bgcolor: 'background.paper',
                   }}
                 >
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        display: 'block',
-                        fontWeight: 500,
-                        fontSize: '0.75rem',
-                        color: 'text.primary'
-                      }}
-                    >
-                      <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                        Nível {nivel.nivel_aprov}
-                      </Box>
-                      {' • '}
-                      <Box component="span" sx={{ fontWeight: 500 }}>
-                        {nivel.CNOME || nivel.aprovador_aprov}
-                      </Box>
-                      {' • '}
-                      <Box component="span" sx={{ color: 'text.secondary' }}>
-                        {nivel.CDESCGRUPO}
-                      </Box>
-                    </Typography>
-                  </Box>
-                  <Chip 
-                    label={nivel.situacao_aprov} 
-                    size="small"
-                    color={getStatusColor(nivel.situacao_aprov) as any}
-                    variant="outlined"
+                  <Typography 
+                    variant="caption" 
                     sx={{ 
-                      fontSize: '0.7rem',
-                      height: 20,
-                      fontWeight: 500
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      fontWeight: 500,
+                      fontSize: '0.75rem',
+                      color: 'text.primary'
                     }}
-                  />
+                  >
+                    <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                      Nível {nivel.nivel_aprov}
+                    </Box>
+                    <Box component="span" sx={{ fontWeight: 500 }}>
+                      {nivel.CNOME || nivel.aprovador_aprov}
+                    </Box>
+                    <Box component="span" sx={{ color: 'text.secondary' }}>
+                      {nivel.CDESCGRUPO}
+                    </Box>
+                    <Chip 
+                      label={nivel.situacao_aprov} 
+                      size="small"
+                      color={getStatusColor(nivel.situacao_aprov) as any}
+                      variant="outlined"
+                      sx={{ 
+                        fontSize: '0.7rem',
+                        height: 20,
+                        fontWeight: 500
+                      }}
+                    />
+                  </Typography>
                 </Box>
               );
             })}
