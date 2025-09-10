@@ -519,7 +519,21 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
   );
 });
 
-const DocumentList: React.FC = () => {
+interface DocumentListProps {
+  selectedDocuments?: Set<string>;
+  showBulkActions?: boolean;
+  onSelectDocument?: (documentNumber: string, selected: boolean) => void;
+  onSelectAll?: (pendingDocs: ProtheusDocument[]) => void;
+  onToggleBulkActions?: () => void;
+}
+
+const DocumentList: React.FC<DocumentListProps> = ({
+  selectedDocuments: externalSelectedDocuments,
+  showBulkActions: externalShowBulkActions,
+  onSelectDocument: externalOnSelectDocument,
+  onSelectAll: externalOnSelectAll,
+  onToggleBulkActions,
+}) => {
   const { user } = useAuthStore();
   const { filters, pagination, setFilters, setPagination } = useDocumentStore();
   const queryClient = useQueryClient();
@@ -531,9 +545,12 @@ const DocumentList: React.FC = () => {
     document: ProtheusDocument | null;
   }>({ open: false, action: 'approve', document: null });
   
-  // Estados para seleção múltipla
-  const [showBulkActions, setShowBulkActions] = useState(false);
-  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  // Estados para seleção múltipla (usa externo se disponível, senão interno)
+  const [internalShowBulkActions, setInternalShowBulkActions] = useState(false);
+  const [internalSelectedDocuments, setInternalSelectedDocuments] = useState<Set<string>>(new Set());
+  
+  const showBulkActions = externalShowBulkActions !== undefined ? externalShowBulkActions : internalShowBulkActions;
+  const selectedDocuments = externalSelectedDocuments || internalSelectedDocuments;
   
   // Estado para confirmação de ação em massa
   const [bulkConfirmDialog, setBulkConfirmDialog] = useState<{
@@ -660,13 +677,17 @@ const DocumentList: React.FC = () => {
 
   // Funções para seleção múltipla
   const handleSelectDocument = (documentNumber: string, selected: boolean) => {
-    const newSelected = new Set(selectedDocuments);
-    if (selected) {
-      newSelected.add(documentNumber);
+    if (externalOnSelectDocument) {
+      externalOnSelectDocument(documentNumber, selected);
     } else {
-      newSelected.delete(documentNumber);
+      const newSelected = new Set(selectedDocuments);
+      if (selected) {
+        newSelected.add(documentNumber);
+      } else {
+        newSelected.delete(documentNumber);
+      }
+      setInternalSelectedDocuments(newSelected);
     }
-    setSelectedDocuments(newSelected);
   };
 
   const handleSelectAll = () => {
@@ -675,12 +696,16 @@ const DocumentList: React.FC = () => {
       return currentStatus?.situacao_aprov === 'Pendente';
     }) || [];
     
-    if (selectedDocuments.size === pendingDocs.length) {
-      // Se todos estão selecionados, desmarcar todos
-      setSelectedDocuments(new Set());
+    if (externalOnSelectAll) {
+      externalOnSelectAll(pendingDocs);
     } else {
-      // Selecionar todos os documentos pendentes
-      setSelectedDocuments(new Set(pendingDocs.map(doc => doc.numero.trim())));
+      if (selectedDocuments.size === pendingDocs.length) {
+        // Se todos estão selecionados, desmarcar todos
+        setInternalSelectedDocuments(new Set());
+      } else {
+        // Selecionar todos os documentos pendentes
+        setInternalSelectedDocuments(new Set(pendingDocs.map(doc => doc.numero.trim())));
+      }
     }
   };
 
@@ -703,8 +728,12 @@ const DocumentList: React.FC = () => {
       if (currentIndex >= documentsToApprove.length) {
         // Todos os documentos foram processados
         console.log('Aprovação em massa concluída');
-        setSelectedDocuments(new Set());
-        setShowBulkActions(false);
+        if (onToggleBulkActions) {
+          onToggleBulkActions();
+        } else {
+          setInternalSelectedDocuments(new Set());
+          setInternalShowBulkActions(false);
+        }
         return;
       }
       
@@ -766,8 +795,12 @@ const DocumentList: React.FC = () => {
       if (currentIndex >= documentsToReject.length) {
         // Todos os documentos foram processados
         console.log('Rejeição em massa concluída');
-        setSelectedDocuments(new Set());
-        setShowBulkActions(false);
+        if (onToggleBulkActions) {
+          onToggleBulkActions();
+        } else {
+          setInternalSelectedDocuments(new Set());
+          setInternalShowBulkActions(false);
+        }
         return;
       }
       
@@ -927,8 +960,12 @@ const DocumentList: React.FC = () => {
                   variant={showBulkActions ? "contained" : "outlined"}
                   startIcon={<PlaylistAddCheck />}
                   onClick={() => {
-                    setShowBulkActions(!showBulkActions);
-                    setSelectedDocuments(new Set()); // Limpar seleções ao alternar
+                    if (onToggleBulkActions) {
+                      onToggleBulkActions();
+                    } else {
+                      setInternalShowBulkActions(!showBulkActions);
+                      setInternalSelectedDocuments(new Set()); // Limpar seleções ao alternar
+                    }
                   }}
                   disabled={pendingDocuments.length === 0}
                   sx={{ borderRadius: 2 }}
@@ -1013,8 +1050,12 @@ const DocumentList: React.FC = () => {
                     variant="text"
                     startIcon={<Close />}
                     onClick={() => {
-                      setShowBulkActions(false);
-                      setSelectedDocuments(new Set());
+                      if (onToggleBulkActions) {
+                        onToggleBulkActions();
+                      } else {
+                        setInternalShowBulkActions(false);
+                        setInternalSelectedDocuments(new Set());
+                      }
                     }}
                     sx={{ borderRadius: 2 }}
                   >

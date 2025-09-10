@@ -40,7 +40,6 @@ const DocumentsPage: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { filters, pagination } = useDocumentStore();
-  const [showBulkActions, setShowBulkActions] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   // Use document actions hook
@@ -48,12 +47,14 @@ const DocumentsPage: React.FC = () => {
     confirmDialog,
     bulkConfirmDialog,
     selectedDocuments,
+    showBulkActions,
     handleApprove,
     handleReject,
     handleConfirmAction,
     handleCloseDialog,
     handleSelectDocument,
     handleSelectAll,
+    toggleBulkActions,
     handleBulkApprove,
     handleBulkReject,
     handleCloseBulkDialog,
@@ -80,23 +81,13 @@ const DocumentsPage: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Auto show bulk actions when selecting
-  useEffect(() => {
-    if (selectedDocuments.size > 0) {
-      setShowBulkActions(true);
-    }
-  }, [selectedDocuments.size]);
-
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
   const handleClearSelection = () => {
-    selectedDocuments.clear();
-    setShowBulkActions(false);
-    // Force re-render
-    handleSelectDocument('', false);
+    toggleBulkActions();
   };
 
   return (
@@ -228,7 +219,7 @@ const DocumentsPage: React.FC = () => {
                     startIcon={<PlaylistAddCheck />}
                     onClick={() => {
                       if (!showBulkActions) {
-                        setShowBulkActions(true);
+                        toggleBulkActions();
                         handleSelectAll(pendingDocuments);
                       } else {
                         handleClearSelection();
@@ -285,7 +276,13 @@ const DocumentsPage: React.FC = () => {
         </Box>
 
         {/* Document List */}
-        <DocumentList />
+        <DocumentList 
+          selectedDocuments={selectedDocuments}
+          showBulkActions={showBulkActions}
+          onSelectDocument={handleSelectDocument}
+          onSelectAll={handleSelectAll}
+          onToggleBulkActions={toggleBulkActions}
+        />
       </Container>
 
       {/* Barra Flutuante Fixa (bottom) - Só aparece quando há seleção */}
