@@ -1,16 +1,15 @@
 import React from 'react';
 import { ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { ToastContainer } from 'react-toastify';
-import customTheme from '../theme/customTheme';
+import { theme } from '../theme/theme';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
 export const AppThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // Usando o tema customizado moderno
   return (
-    <MuiThemeProvider theme={customTheme}>
+    <MuiThemeProvider theme={theme}>
       <CssBaseline />
       {children}
       <ToastContainer
