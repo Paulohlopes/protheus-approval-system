@@ -24,7 +24,6 @@ import {
   KeyboardArrowUp,
   KeyboardArrowDown,
   SelectAll,
-  DeselectAll,
   PlaylistAddCheck,
   FilterList,
   Speed,
@@ -212,7 +211,7 @@ const FloatingActionBar: React.FC<FloatingActionBarProps> = ({
                     <Button
                       size="small"
                       variant="text"
-                      startIcon={allSelected ? <DeselectAll /> : <SelectAll />}
+                      startIcon={<SelectAll />}
                       onClick={onSelectAll}
                     >
                       {allSelected ? 'Desmarcar Todos' : 'Selecionar Todos'}
