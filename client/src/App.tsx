@@ -1,10 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
-// import LoginPage from './pages/LoginPage';
-import ModernLoginPage from './pages/ModernLoginPage';
-// import DocumentsPage from './pages/DocumentsPage';
-import FloatingDocumentsPage from './pages/FloatingDocumentsPage';
+import LoginPage from './pages/LoginPage';
+import DocumentsPage from './pages/DocumentsPage';
 
 function App() {
   return (
@@ -16,7 +14,7 @@ function App() {
             path="/login" 
             element={
               <ErrorBoundary level="page">
-                <ModernLoginPage />
+                <LoginPage />
               </ErrorBoundary>
             } 
           />
@@ -27,7 +25,7 @@ function App() {
             element={
               <ErrorBoundary level="page">
                 <ProtectedRoute>
-                  <FloatingDocumentsPage />
+                  <DocumentsPage />
                 </ProtectedRoute>
               </ErrorBoundary>
             } 
