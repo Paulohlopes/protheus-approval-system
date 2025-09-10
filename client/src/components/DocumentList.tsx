@@ -441,28 +441,97 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
         </Accordion>
 
         {/* Alçada de Aprovação */}
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography 
+            variant="body2" 
+            color="text.secondary" 
+            sx={{ mb: 1.5, fontWeight: 600, fontSize: '0.8rem' }}
+          >
             Alçada de Aprovação
           </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            {document.alcada.map((nivel, index) => (
-              <Box 
-                key={index} 
-                sx={{ 
-                  px: 1, 
-                  py: 0.5, 
-                  bgcolor: nivel.situacao_aprov === 'Pendente' ? 'warning.50' : 'grey.50', 
-                  borderRadius: 0.5,
-                  border: '1px solid',
-                  borderColor: nivel.situacao_aprov === 'Pendente' ? 'warning.200' : 'grey.200'
-                }}
-              >
-                <Typography variant="caption" sx={{ display: 'block' }}>
-                  Nível {nivel.nivel_aprov} • {nivel.CNOME || nivel.aprovador_aprov} • {nivel.CDESCGRUPO} • {nivel.situacao_aprov}
-                </Typography>
-              </Box>
-            ))}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {document.alcada.map((nivel, index) => {
+              const getStatusColor = (status: string) => {
+                switch (status) {
+                  case 'Liberado': return 'success';
+                  case 'Pendente': return 'warning';
+                  case 'Rejeitado': return 'error';
+                  default: return 'default';
+                }
+              };
+
+              const getStatusIcon = (status: string) => {
+                switch (status) {
+                  case 'Liberado': return '✓';
+                  case 'Pendente': return '⏳';
+                  case 'Rejeitado': return '✗';
+                  default: return '○';
+                }
+              };
+
+              return (
+                <Box 
+                  key={index} 
+                  sx={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    px: 1.5, 
+                    py: 1, 
+                    bgcolor: nivel.situacao_aprov === 'Liberado' ? 'success.50' : 
+                             nivel.situacao_aprov === 'Pendente' ? 'warning.50' : 
+                             nivel.situacao_aprov === 'Rejeitado' ? 'error.50' : 'grey.50',
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: nivel.situacao_aprov === 'Liberado' ? 'success.200' : 
+                                nivel.situacao_aprov === 'Pendente' ? 'warning.300' : 
+                                nivel.situacao_aprov === 'Rejeitado' ? 'error.200' : 'grey.200',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }
+                  }}
+                >
+                  <Box sx={{ mr: 1, fontSize: '14px' }}>
+                    {getStatusIcon(nivel.situacao_aprov)}
+                  </Box>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        display: 'block',
+                        fontWeight: 500,
+                        fontSize: '0.75rem',
+                        color: 'text.primary'
+                      }}
+                    >
+                      <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                        Nível {nivel.nivel_aprov}
+                      </Box>
+                      {' • '}
+                      <Box component="span" sx={{ fontWeight: 500 }}>
+                        {nivel.CNOME || nivel.aprovador_aprov}
+                      </Box>
+                      {' • '}
+                      <Box component="span" sx={{ color: 'text.secondary' }}>
+                        {nivel.CDESCGRUPO}
+                      </Box>
+                    </Typography>
+                  </Box>
+                  <Chip 
+                    label={nivel.situacao_aprov} 
+                    size="small"
+                    color={getStatusColor(nivel.situacao_aprov) as any}
+                    variant="outlined"
+                    sx={{ 
+                      fontSize: '0.7rem',
+                      height: 20,
+                      fontWeight: 500
+                    }}
+                  />
+                </Box>
+              );
+            })}
           </Box>
         </Box>
 
