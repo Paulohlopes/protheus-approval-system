@@ -263,7 +263,7 @@ const DocumentsPage: React.FC = () => {
                 </Button>
                 <IconButton
                   color="default"
-                  onClick={handleClearSelection}
+                  onClick={toggleBulkActions}
                   sx={{ ml: 1 }}
                 >
                   <Close />

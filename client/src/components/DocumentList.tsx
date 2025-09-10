@@ -964,7 +964,9 @@ const DocumentList: React.FC<DocumentListProps> = ({
                       // Ativar modo seleção e selecionar todos os pendentes
                       if (onToggleBulkActions) {
                         onToggleBulkActions();
-                        onSelectAll?.(pendingDocuments);
+                        if (onSelectAll) {
+                          onSelectAll(pendingDocuments);
+                        }
                       } else {
                         setInternalShowBulkActions(true);
                         setInternalSelectedDocuments(new Set(pendingDocuments.map(doc => doc.numero.trim())));
@@ -984,7 +986,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
                 >
                   {showBulkActions && selectedDocuments.size > 0 
                     ? `Selecionados (${selectedDocuments.size})` 
-                    : 'Selecionar Todos Pendentes'
+                    : 'Seleção'
                   }
                 </Button>
                 
