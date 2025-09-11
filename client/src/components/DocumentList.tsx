@@ -537,71 +537,166 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
         </Accordion>
 
         {/* Alçada de Aprovação */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Alçada de Aprovação
-          </Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            {document.alcada.map((nivel, index) => {
-              const getStatusColor = (status: string) => {
-                switch (status) {
-                  case 'Liberado': return 'success';
-                  case 'Pendente': return 'warning';
-                  case 'Rejeitado': return 'error';
-                  default: return 'default';
-                }
-              };
+        <Accordion sx={{ mb: 2 }}>
+          <AccordionSummary expandIcon={<ExpandMore />}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Typography variant="h6">Alçada de Aprovação</Typography>
+              <Typography variant="body2" color="text.secondary">
+                ({document.alcada.length} {document.alcada.length === 1 ? 'nível' : 'níveis'})
+              </Typography>
+              {(() => {
+                const pendingCount = document.alcada.filter(n => n.situacao_aprov === 'Pendente').length;
+                const approvedCount = document.alcada.filter(n => n.situacao_aprov === 'Liberado').length;
+                const rejectedCount = document.alcada.filter(n => n.situacao_aprov === 'Rejeitado').length;
+                
+                return (
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {approvedCount > 0 && (
+                      <Chip 
+                        label={`${approvedCount} aprovado${approvedCount > 1 ? 's' : ''}`}
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                    {pendingCount > 0 && (
+                      <Chip 
+                        label={`${pendingCount} pendente${pendingCount > 1 ? 's' : ''}`}
+                        size="small"
+                        color="warning"
+                        variant="filled"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                    {rejectedCount > 0 && (
+                      <Chip 
+                        label={`${rejectedCount} rejeitado${rejectedCount > 1 ? 's' : ''}`}
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                  </Box>
+                );
+              })()}
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails>
+            <TableContainer component={Paper} variant="outlined">
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell width="10%">Nível</TableCell>
+                    <TableCell width="20%">Aprovador</TableCell>
+                    <TableCell width="15%">Grupo</TableCell>
+                    <TableCell width="12%">Status</TableCell>
+                    <TableCell width="13%">Data Liberação</TableCell>
+                    <TableCell width="30%">Observação do Aprovador</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {document.alcada.map((nivel, index) => {
+                    const getStatusColor = (status: string) => {
+                      switch (status) {
+                        case 'Liberado': return 'success';
+                        case 'Pendente': return 'warning';
+                        case 'Aguardando nivel anterior': return 'info';
+                        case 'Rejeitado': return 'error';
+                        default: return 'default';
+                      }
+                    };
 
-
-              return (
-                <Box 
-                  key={index} 
-                  sx={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    px: 0, 
-                    py: 0.5, 
-                    bgcolor: 'background.paper',
-                  }}
-                >
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      fontWeight: 500,
-                      fontSize: '0.75rem',
-                      color: 'text.primary'
-                    }}
-                  >
-                    <Box component="span" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                      Nível {nivel.nivel_aprov}
-                    </Box>
-                    <Box component="span" sx={{ fontWeight: 500 }}>
-                      {nivel.CNOME || nivel.aprovador_aprov}
-                    </Box>
-                    <Box component="span" sx={{ color: 'text.secondary' }}>
-                      {nivel.CDESCGRUPO}
-                    </Box>
-                    <Chip 
-                      label={nivel.situacao_aprov} 
-                      size="small"
-                      color={getStatusColor(nivel.situacao_aprov) as any}
-                      variant="outlined"
-                      sx={{ 
-                        fontSize: '0.7rem',
-                        height: 20,
-                        fontWeight: 500
-                      }}
-                    />
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Box>
-        </Box>
+                    return (
+                      <TableRow 
+                        key={index}
+                        sx={{
+                          bgcolor: nivel.situacao_aprov === 'Pendente' ? 'warning.50' : 'inherit',
+                          '&:hover': {
+                            bgcolor: 'action.hover'
+                          }
+                        }}
+                      >
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={600} color="primary">
+                            Nível {nivel.nivel_aprov}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {nivel.CNOME || nivel.aprovador_aprov}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="caption" color="text.secondary">
+                            {nivel.CDESCGRUPO}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={nivel.situacao_aprov} 
+                            size="small"
+                            color={getStatusColor(nivel.situacao_aprov) as any}
+                            variant={nivel.situacao_aprov === 'Pendente' ? 'filled' : 'outlined'}
+                            sx={{ 
+                              fontSize: '0.7rem',
+                              height: 20,
+                              fontWeight: 500
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="caption">
+                            {nivel.DT_LIBERACAO || '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {nivel.observacao_aprov && nivel.observacao_aprov.trim() !== '' ? (
+                            <Tooltip title={nivel.observacao_aprov} arrow placement="top">
+                              <Box sx={{ 
+                                bgcolor: nivel.situacao_aprov === 'Rejeitado' ? 'error.50' : 'info.50',
+                                borderLeft: '3px solid',
+                                borderColor: nivel.situacao_aprov === 'Rejeitado' ? 'error.main' : 'info.main',
+                                p: 1,
+                                borderRadius: 1,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                '&:hover': {
+                                  bgcolor: nivel.situacao_aprov === 'Rejeitado' ? 'error.100' : 'info.100',
+                                }
+                              }}>
+                                <Typography 
+                                  variant="caption" 
+                                  sx={{ 
+                                    fontStyle: 'italic', 
+                                    color: 'text.primary',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    lineHeight: 1.4
+                                  }}
+                                >
+                                  {nivel.observacao_aprov}
+                                </Typography>
+                              </Box>
+                            </Tooltip>
+                          ) : (
+                            <Typography variant="caption" color="text.disabled">
+                              -
+                            </Typography>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </AccordionDetails>
+        </Accordion>
 
         </CardContent>
       </Collapse>
