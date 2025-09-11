@@ -69,7 +69,7 @@ export const documentService = {
       console.log('documentService.getDocuments - URL params:', params.toString());
       
       // Call the new Protheus API endpoint with Basic Auth
-      const apiUrl = `http://brsvawssaa06069:8029/rest/DocAprov/documentos?${params.toString()}`;
+      const apiUrl = `${config.protheus.baseUrl}${config.api.docAprov}?${params.toString()}`;
       console.log('documentService.getDocuments - Making authenticated API call to:', apiUrl);
       
       // Create Basic Auth header
@@ -182,7 +182,7 @@ export const documentService = {
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
       
-      const apiUrl = `http://brsvawssaa06069:8029/rest/aprova_documento`;
+      const apiUrl = `${config.protheus.baseUrl}${config.api.aprovaDocumento}`;
       
       console.log('Calling approval API with axios:', {
         url: apiUrl,
@@ -287,7 +287,7 @@ export const documentService = {
       // Create Basic Auth header
       const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
       
-      const apiUrl = `http://brsvawssaa06069:8029/rest/aprova_documento`;
+      const apiUrl = `${config.protheus.baseUrl}${config.api.aprovaDocumento}`;
       
       console.log('Calling rejection API with axios:', {
         url: apiUrl,

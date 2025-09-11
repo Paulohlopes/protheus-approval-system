@@ -19,6 +19,8 @@ interface AppConfig {
     documents: string;
     dashboardStats: string;
     users: string;
+    docAprov: string;
+    aprovaDocumento: string;
   };
 
   // Application Configuration
@@ -104,6 +106,8 @@ export const config: AppConfig = {
     documents: getEnvVar('VITE_API_DOCUMENTS', '/api/documents'),
     dashboardStats: getEnvVar('VITE_API_DASHBOARD_STATS', '/api/dashboard/stats'),
     users: getEnvVar('VITE_API_USERS', '/api/framework/v1/users'),
+    docAprov: getEnvVar('VITE_API_DOC_APROV', '/DocAprov/documentos'),
+    aprovaDocumento: getEnvVar('VITE_API_APROVA_DOCUMENTO', '/aprova_documento'),
   },
 
   app: {
