@@ -648,7 +648,18 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                         </TableCell>
                         <TableCell>
                           <Typography variant="caption">
-                            {nivel.DT_LIBERACAO || '-'}
+                            {(() => {
+                              if (!nivel.data_lib_aprov || nivel.data_lib_aprov === '') return '-';
+                              // Se a data estiver no formato YYYYMMDD
+                              if (nivel.data_lib_aprov.length === 8) {
+                                const year = nivel.data_lib_aprov.substring(0, 4);
+                                const month = nivel.data_lib_aprov.substring(4, 6);
+                                const day = nivel.data_lib_aprov.substring(6, 8);
+                                return `${day}/${month}/${year}`;
+                              }
+                              // Se a data já estiver formatada ou em outro formato
+                              return nivel.data_lib_aprov;
+                            })()}
                           </Typography>
                         </TableCell>
                         <TableCell>
