@@ -150,7 +150,8 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const formatCurrency = (value: string) => {
     if (!value || typeof value !== 'string') {
       return 'R$ 0,00';
@@ -201,7 +202,8 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
     >
       {/* HEADER COMPACTO - Sempre visível */}
       <CardContent sx={{ pb: 1 }}>
-        <Grid container alignItems="center" spacing={2}>
+        {/* Primeira linha: Informações principais */}
+        <Grid container alignItems="flex-start" spacing={2} sx={{ mb: 2 }}>
           {/* Checkbox de seleção (apenas para documentos pendentes se showSelection estiver ativo) */}
           {showSelection && isPending && (
             <Grid item xs="auto">
@@ -210,136 +212,224 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 onChange={(e) => onSelectChange?.(document.numero.trim(), e.target.checked)}
                 color="primary"
                 size="small"
+                sx={{ mt: 0.5 }}
               />
             </Grid>
           )}
           
-          {/* Coluna 1: Tipo e Status */}
-          <Grid item xs={12} sm={showSelection && isPending ? 2 : 3}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              {/* Tipo de Documento */}
-              <Chip
-                label={getTypeLabel(document.tipo)}
-                color={getTypeColor(document.tipo)}
-                size="small"
-                variant="outlined"
+          {/* Coluna 1: Número do documento e tipo/status */}
+          <Grid item xs={12} sm={showSelection && isPending ? 3 : 3.5}>
+            <Box>
+              <Typography 
+                variant={isMobile ? "subtitle1" : "h6"} 
+                fontWeight={700} 
+                gutterBottom 
                 sx={{ 
-                  width: 'fit-content',
-                  fontWeight: 500,
-                  fontSize: '0.7rem',
-                  height: 24,
-                  borderWidth: 1.5,
-                  '& .MuiChip-label': {
-                    px: 1
-                  }
+                  color: 'text.primary', 
+                  mb: 1.5,
+                  fontSize: isMobile ? '1.1rem' : '1.25rem'
                 }}
-              />
-              
-              {/* Status */}
-              <Chip
-                label={currentStatus.situacao_aprov}
-                color={getStatusColor(currentStatus.situacao_aprov)}
-                size="small"
-                variant={isPending ? 'filled' : 'outlined'}
-                sx={{ 
-                  width: 'fit-content',
-                  fontWeight: 600,
-                  fontSize: '0.7rem',
-                  height: 24,
-                  borderWidth: 1.5,
-                  '& .MuiChip-label': {
-                    px: 1
-                  },
-                  ...(isPending && {
-                    bgcolor: 'warning.main',
-                    color: 'warning.contrastText',
-                    borderColor: 'warning.main',
-                    boxShadow: '0 2px 4px rgba(237, 108, 2, 0.2)',
-                  }),
-                  ...(currentStatus.situacao_aprov === 'Liberado' && {
-                    bgcolor: 'success.main',
-                    color: 'success.contrastText',
-                    borderColor: 'success.main',
-                  }),
-                  ...(currentStatus.situacao_aprov === 'Rejeitado' && {
-                    bgcolor: 'error.main',
-                    color: 'error.contrastText',
-                    borderColor: 'error.main',
-                  })
-                }}
-              />
+              >
+                {document.numero.trim()}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, flexWrap: 'wrap' }}>
+                {/* Tipo de Documento */}
+                <Chip
+                  label={getTypeLabel(document.tipo)}
+                  color={getTypeColor(document.tipo)}
+                  size="small"
+                  variant="outlined"
+                  sx={{ 
+                    fontWeight: 500,
+                    fontSize: '0.7rem',
+                    height: 24,
+                    borderWidth: 1.5,
+                    '& .MuiChip-label': {
+                      px: 1
+                    }
+                  }}
+                />
+                
+                {/* Status */}
+                <Chip
+                  label={currentStatus.situacao_aprov}
+                  color={getStatusColor(currentStatus.situacao_aprov)}
+                  size="small"
+                  variant={isPending ? 'filled' : 'outlined'}
+                  sx={{ 
+                    fontWeight: 600,
+                    fontSize: '0.7rem',
+                    height: 24,
+                    borderWidth: 1.5,
+                    '& .MuiChip-label': {
+                      px: 1
+                    },
+                    ...(isPending && {
+                      bgcolor: 'warning.main',
+                      color: 'warning.contrastText',
+                      borderColor: 'warning.main',
+                      boxShadow: '0 2px 4px rgba(237, 108, 2, 0.2)',
+                    }),
+                    ...(currentStatus.situacao_aprov === 'Liberado' && {
+                      bgcolor: 'success.main',
+                      color: 'success.contrastText',
+                      borderColor: 'success.main',
+                    }),
+                    ...(currentStatus.situacao_aprov === 'Rejeitado' && {
+                      bgcolor: 'error.main',
+                      color: 'error.contrastText',
+                      borderColor: 'error.main',
+                    })
+                  }}
+                />
+              </Box>
             </Box>
           </Grid>
 
-          {/* Coluna 2: Info Principal */}
-          <Grid item xs={12} sm={5}>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
-              {document.numero.trim()}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Business sx={{ fontSize: 16 }} />
-              {document.nome_fornecedor ? String(document.nome_fornecedor).trim() : 'N/A'}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <CalendarToday sx={{ fontSize: 16 }} />
-              {formatDate(document.Emissao)}
-            </Typography>
+          {/* Coluna 2: Fornecedor e Data */}
+          <Grid item xs={12} sm={4.5}>
+            <Box sx={{ pt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Business sx={{ fontSize: 18, color: 'action.active' }} />
+                <Box component="span" sx={{ fontWeight: 500 }}>
+                  {document.nome_fornecedor ? String(document.nome_fornecedor).trim() : 'N/A'}
+                </Box>
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarToday sx={{ fontSize: 18, color: 'action.active' }} />
+                <Box component="span">
+                  Emissão: {formatDate(document.Emissao)}
+                </Box>
+              </Typography>
+            </Box>
           </Grid>
 
-          {/* Coluna 3: Valor e Ações */}
+          {/* Coluna 3: Valor em destaque */}
           <Grid item xs={12} sm={4}>
-            <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-              <Typography variant="h5" color="primary" fontWeight={700} gutterBottom>
+            <Box sx={{ 
+              textAlign: { xs: 'center', sm: 'right' },
+              bgcolor: isPending ? 'primary.50' : 'grey.50',
+              borderRadius: 2,
+              p: { xs: 1.5, sm: 2 },
+              border: '2px solid',
+              borderColor: isPending ? 'primary.200' : 'grey.200',
+              transition: 'all 0.3s ease',
+              ...(isMobile && {
+                mt: 1,
+                mb: 1
+              })
+            }}>
+              <Typography 
+                variant="caption" 
+                color="text.secondary" 
+                sx={{ 
+                  display: 'block', 
+                  mb: 0.5,
+                  fontSize: '0.75rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  fontWeight: 500
+                }}
+              >
+                Valor Total
+              </Typography>
+              <Typography 
+                variant={isMobile ? "h6" : "h5"} 
+                sx={{
+                  color: isPending ? 'primary.main' : 'text.primary',
+                  fontWeight: 800,
+                  fontSize: isMobile ? '1.3rem' : '1.5rem'
+                }}
+              >
                 {formatCurrency(document.vl_tot_documento)}
               </Typography>
-              
-              {/* Ações de Aprovação - Visíveis quando pendente E não está em modo de seleção */}
-              {isPending && !showSelection && (
-                <Stack direction="row" spacing={1} justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    color="success"
-                    size="small"
-                    startIcon={<CheckCircle />}
-                    onClick={() => onApprove(document.numero.trim())}
-                    disabled={loading}
-                    sx={{ 
-                      minWidth: 100,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        transform: 'translateY(-1px)',
-                        boxShadow: 4,
-                      }
-                    }}
-                  >
-                    Aprovar
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    startIcon={<Cancel />}
-                    onClick={() => onReject(document.numero.trim())}
-                    disabled={loading}
-                    sx={{ 
-                      minWidth: 100,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        transform: 'translateY(-1px)',
-                        boxShadow: 4,
-                      }
-                    }}
-                  >
-                    Rejeitar
-                  </Button>
-                </Stack>
-              )}
             </Box>
           </Grid>
         </Grid>
 
+        {/* Segunda linha: Ações (separada das informações) */}
+        {isPending && !showSelection && (
+          <Box sx={{ 
+            borderTop: '2px solid',
+            borderColor: 'primary.100',
+            pt: 2.5,
+            mt: 2,
+            bgcolor: 'primary.50',
+            mx: -2,
+            px: 2,
+            pb: 1,
+            borderBottomLeftRadius: 8,
+            borderBottomRightRadius: 8
+          }}>
+            <Stack 
+              direction={{ xs: 'column', sm: 'row' }} 
+              spacing={2} 
+              justifyContent={{ xs: 'stretch', sm: 'flex-end' }}
+            >
+              <Button
+                variant="contained"
+                color="success"
+                size={isMobile ? "large" : "medium"}
+                startIcon={<CheckCircle />}
+                onClick={() => onApprove(document.numero.trim())}
+                disabled={loading}
+                fullWidth={isMobile}
+                sx={{ 
+                  minWidth: { xs: 'auto', sm: 140 },
+                  py: { xs: 1.5, sm: 1 },
+                  fontWeight: 600,
+                  fontSize: { xs: '0.95rem', sm: '0.875rem' },
+                  transition: 'all 0.2s ease-in-out',
+                  boxShadow: 2,
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 6,
+                  }
+                }}
+              >
+                Aprovar
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                size={isMobile ? "large" : "medium"}
+                startIcon={<Cancel />}
+                onClick={() => onReject(document.numero.trim())}
+                disabled={loading}
+                fullWidth={isMobile}
+                sx={{ 
+                  minWidth: { xs: 'auto', sm: 140 },
+                  py: { xs: 1.5, sm: 1 },
+                  fontWeight: 600,
+                  fontSize: { xs: '0.95rem', sm: '0.875rem' },
+                  borderWidth: 2,
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: 4,
+                    borderWidth: 2,
+                    bgcolor: 'error.50'
+                  }
+                }}
+              >
+                Rejeitar
+              </Button>
+            </Stack>
+          </Box>
+        )}
+        
+        {/* Se não houver ações pendentes, apenas mostrar uma linha divisória sutil */}
+        {!isPending && (
+          <Box sx={{ 
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            mt: 2,
+            opacity: 0.3
+          }} />
+        )}
+
         {/* Botão para expandir detalhes */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
           <Button
             variant="text"
             size="small"
