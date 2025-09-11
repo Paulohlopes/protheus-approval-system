@@ -189,14 +189,14 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
     <Card 
       sx={{ 
         mb: 2,
-        border: isPending ? 2 : 1,
-        borderColor: isPending ? 'grey.400' : 'divider',
-        borderRadius: 2,
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 1,
         transition: 'all 0.2s ease-in-out',
-        bgcolor: isPending ? 'grey.50' : 'background.paper',
+        bgcolor: 'background.paper',
         '&:hover': {
-          boxShadow: 4,
-          transform: 'translateY(-2px)',
+          boxShadow: 2,
+          transform: 'translateY(-1px)',
         }
       }}
     >
@@ -242,8 +242,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                   sx={{ 
                     fontWeight: 500,
                     fontSize: '0.7rem',
-                    height: 24,
-                    borderWidth: 1.5,
+                    height: 22,
                     '& .MuiChip-label': {
                       px: 1
                     }
@@ -257,28 +256,25 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                   size="small"
                   variant={isPending ? 'filled' : 'outlined'}
                   sx={{ 
-                    fontWeight: 600,
+                    fontWeight: 500,
                     fontSize: '0.7rem',
-                    height: 24,
-                    borderWidth: 1.5,
+                    height: 22,
                     '& .MuiChip-label': {
                       px: 1
                     },
                     ...(isPending && {
                       bgcolor: 'warning.main',
                       color: 'warning.contrastText',
-                      borderColor: 'warning.main',
-                      boxShadow: '0 2px 4px rgba(237, 108, 2, 0.2)',
                     }),
                     ...(currentStatus.situacao_aprov === 'Liberado' && {
-                      bgcolor: 'success.main',
+                      bgcolor: 'success.light',
                       color: 'success.contrastText',
-                      borderColor: 'success.main',
+                      borderColor: 'success.light',
                     }),
                     ...(currentStatus.situacao_aprov === 'Rejeitado' && {
-                      bgcolor: 'error.main',
+                      bgcolor: 'error.light',
                       color: 'error.contrastText',
-                      borderColor: 'error.main',
+                      borderColor: 'error.light',
                     })
                   }}
                 />
@@ -307,13 +303,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
           {/* Coluna 3: Valor em destaque */}
           <Grid item xs={12} sm={4}>
             <Box sx={{ 
-              textAlign: { xs: 'center', sm: 'right' },
-              bgcolor: isPending ? 'primary.50' : 'grey.50',
-              borderRadius: 2,
-              p: { xs: 1.5, sm: 2 },
-              border: '2px solid',
-              borderColor: isPending ? 'primary.200' : 'grey.200',
-              transition: 'all 0.3s ease',
+              textAlign: { xs: 'left', sm: 'right' },
               ...(isMobile && {
                 mt: 1,
                 mb: 1
@@ -324,10 +314,8 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 color="text.secondary" 
                 sx={{ 
                   display: 'block', 
-                  mb: 0.5,
-                  fontSize: '0.75rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.5,
+                  mb: 0.25,
+                  fontSize: '0.7rem',
                   fontWeight: 500
                 }}
               >
@@ -336,9 +324,9 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
               <Typography 
                 variant={isMobile ? "h6" : "h5"} 
                 sx={{
-                  color: isPending ? 'primary.main' : 'text.primary',
-                  fontWeight: 800,
-                  fontSize: isMobile ? '1.3rem' : '1.5rem'
+                  color: 'text.primary',
+                  fontWeight: 700,
+                  fontSize: isMobile ? '1.25rem' : '1.5rem'
                 }}
               >
                 {formatCurrency(document.vl_tot_documento)}
@@ -350,40 +338,31 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
         {/* Segunda linha: Ações (separada das informações) */}
         {isPending && !showSelection && (
           <Box sx={{ 
-            borderTop: '2px solid',
-            borderColor: 'primary.100',
-            pt: 2.5,
-            mt: 2,
-            bgcolor: 'primary.50',
-            mx: -2,
-            px: 2,
-            pb: 1,
-            borderBottomLeftRadius: 8,
-            borderBottomRightRadius: 8
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            pt: 2,
+            mt: 2
           }}>
             <Stack 
               direction={{ xs: 'column', sm: 'row' }} 
-              spacing={2} 
+              spacing={1.5} 
               justifyContent={{ xs: 'stretch', sm: 'flex-end' }}
             >
               <Button
                 variant="contained"
                 color="success"
-                size={isMobile ? "large" : "medium"}
+                size="small"
                 startIcon={<CheckCircle />}
                 onClick={() => onApprove(document.numero.trim())}
                 disabled={loading}
                 fullWidth={isMobile}
                 sx={{ 
-                  minWidth: { xs: 'auto', sm: 140 },
-                  py: { xs: 1.5, sm: 1 },
-                  fontWeight: 600,
-                  fontSize: { xs: '0.95rem', sm: '0.875rem' },
+                  minWidth: { xs: 'auto', sm: 110 },
+                  fontWeight: 500,
                   transition: 'all 0.2s ease-in-out',
-                  boxShadow: 2,
                   '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: 6,
+                    transform: 'translateY(-1px)',
+                    boxShadow: 2,
                   }
                 }}
               >
@@ -392,22 +371,18 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
               <Button
                 variant="outlined"
                 color="error"
-                size={isMobile ? "large" : "medium"}
+                size="small"
                 startIcon={<Cancel />}
                 onClick={() => onReject(document.numero.trim())}
                 disabled={loading}
                 fullWidth={isMobile}
                 sx={{ 
-                  minWidth: { xs: 'auto', sm: 140 },
-                  py: { xs: 1.5, sm: 1 },
-                  fontWeight: 600,
-                  fontSize: { xs: '0.95rem', sm: '0.875rem' },
-                  borderWidth: 2,
+                  minWidth: { xs: 'auto', sm: 110 },
+                  fontWeight: 500,
                   transition: 'all 0.2s ease-in-out',
                   '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: 4,
-                    borderWidth: 2,
+                    transform: 'translateY(-1px)',
+                    boxShadow: 1,
                     bgcolor: 'error.50'
                   }
                 }}
