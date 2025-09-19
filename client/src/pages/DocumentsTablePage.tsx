@@ -204,13 +204,20 @@ const columns: Column[] = [
     visible: true,
     group: 'financial',
     format: (value: string) => {
+      if (!value || typeof value !== 'string') {
+        return (
+          <Typography variant="body2" fontWeight={600} color="primary">
+            R$ 0,00
+          </Typography>
+        );
+      }
       const numValue = parseFloat(value.replace(/\./g, '').replace(',', '.'));
       return (
         <Typography variant="body2" fontWeight={600} color="primary">
           {new Intl.NumberFormat('pt-BR', {
             style: 'currency',
             currency: 'BRL'
-          }).format(numValue)}
+          }).format(isNaN(numValue) ? 0 : numValue)}
         </Typography>
       );
     },
@@ -224,6 +231,9 @@ const columns: Column[] = [
     visible: true,
     group: 'basic',
     format: (value: string) => {
+      if (!value || typeof value !== 'string') {
+        return '-';
+      }
       if (value.length === 8) {
         const year = value.substring(0, 4);
         const month = value.substring(4, 6);
@@ -237,7 +247,7 @@ const columns: Column[] = [
           </Stack>
         );
       }
-      return value;
+      return value || '-';
     },
   },
   {
@@ -251,7 +261,7 @@ const columns: Column[] = [
     format: (value: string) => (
       <Stack direction="row" alignItems="center" spacing={1}>
         <Person fontSize="small" color="action" />
-        <Typography variant="body2">{value}</Typography>
+        <Typography variant="body2">{value || '-'}</Typography>
       </Stack>
     ),
   },
@@ -357,11 +367,14 @@ const DocumentsTablePage: React.FC = () => {
 
     // Aplicar busca
     if (searchTerm) {
-      filtered = filtered.filter(doc =>
-        doc.numero.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.nome_fornecedor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.comprador?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter(doc => {
+        const searchTermLower = searchTerm.toLowerCase();
+        return (
+          (doc.numero && doc.numero.toLowerCase().includes(searchTermLower)) ||
+          (doc.nome_fornecedor && String(doc.nome_fornecedor).toLowerCase().includes(searchTermLower)) ||
+          (doc.comprador && doc.comprador.toLowerCase().includes(searchTermLower))
+        );
+      });
     }
 
     // Aplicar filtros específicos
@@ -369,6 +382,7 @@ const DocumentsTablePage: React.FC = () => {
       if (value) {
         filtered = filtered.filter(doc => {
           const docValue = (doc as any)[key];
+          if (docValue === undefined || docValue === null) return false;
           return String(docValue).toLowerCase().includes(value.toLowerCase());
         });
       }
@@ -376,8 +390,8 @@ const DocumentsTablePage: React.FC = () => {
 
     // Ordenar
     filtered.sort((a, b) => {
-      const aValue = (a as any)[orderBy];
-      const bValue = (b as any)[orderBy];
+      const aValue = (a as any)[orderBy] || '';
+      const bValue = (b as any)[orderBy] || '';
 
       if (order === 'asc') {
         return aValue > bValue ? 1 : -1;
@@ -531,13 +545,18 @@ const DocumentsTablePage: React.FC = () => {
   const isSelected = (documentNumber: string) => selected.indexOf(documentNumber) !== -1;
 
   const formatDocumentValue = (document: ProtheusDocument | null): string | undefined => {
-    if (!document) return undefined;
+    if (!document || !document.vl_tot_documento) return undefined;
 
-    const numValue = parseFloat(document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(numValue);
+    try {
+      const numValue = parseFloat(document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(isNaN(numValue) ? 0 : numValue);
+    } catch (error) {
+      console.error('Erro ao formatar valor do documento:', error);
+      return 'R$ 0,00';
+    }
   };
 
   return (
