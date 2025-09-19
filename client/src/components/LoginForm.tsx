@@ -61,12 +61,17 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         p: 2,
+        overflow: 'auto',
       }}
     >
       <Container component="main" maxWidth="xs">
