@@ -78,9 +78,9 @@ import { useNavigate } from 'react-router-dom';
 import { getCurrentApprovalStatus } from '../utils/documentHelpers';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import type { ProtheusDocument } from '../types/auth';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+// import * as XLSX from 'xlsx';
+// import jsPDF from 'jspdf';
+// import 'jspdf-autotable';
 
 interface Column {
   id: string;
@@ -458,52 +458,69 @@ const DocumentsTablePage: React.FC = () => {
     );
   };
 
-  const handleExportExcel = () => {
-    const exportData = processedDocuments.map(doc => ({
-      'Número': doc.numero.trim(),
-      'Tipo': doc.tipo,
-      'Fornecedor': doc.nome_fornecedor,
-      'Valor Total': doc.vl_tot_documento,
-      'Emissão': doc.Emissao,
-      'Comprador': doc.comprador,
-      'Filial': doc.filial,
-      'Condição Pagamento': doc.cond_pagamento,
-    }));
+  const handleExportExcel = async () => {
+    try {
+      // Importação dinâmica para evitar problemas de build
+      const XLSX = await import('xlsx');
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Documentos');
-    XLSX.writeFile(wb, `documentos_${new Date().toISOString().split('T')[0]}.xlsx`);
+      const exportData = processedDocuments.map(doc => ({
+        'Número': doc.numero.trim(),
+        'Tipo': doc.tipo,
+        'Fornecedor': doc.nome_fornecedor,
+        'Valor Total': doc.vl_tot_documento,
+        'Emissão': doc.Emissao,
+        'Comprador': doc.comprador,
+        'Filial': doc.filial,
+        'Condição Pagamento': doc.cond_pagamento,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Documentos');
+      XLSX.writeFile(wb, `documentos_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      alert('Erro ao exportar arquivo Excel');
+    }
   };
 
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
+  const handleExportPDF = async () => {
+    try {
+      // Importação dinâmica para evitar problemas de build
+      const { default: jsPDF } = await import('jspdf');
+      await import('jspdf-autotable');
 
-    doc.setFontSize(18);
-    doc.text('Relatório de Documentos', 14, 22);
+      const doc = new jsPDF();
 
-    doc.setFontSize(11);
-    doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
-    doc.text(`Total de documentos: ${processedDocuments.length}`, 14, 38);
+      doc.setFontSize(18);
+      doc.text('Relatório de Documentos', 14, 22);
 
-    const tableData = processedDocuments.map(doc => [
-      doc.numero.trim(),
-      doc.tipo,
-      doc.nome_fornecedor || 'N/A',
-      doc.vl_tot_documento,
-      doc.Emissao,
-      doc.comprador,
-    ]);
+      doc.setFontSize(11);
+      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
+      doc.text(`Total de documentos: ${processedDocuments.length}`, 14, 38);
 
-    (doc as any).autoTable({
-      head: [['Número', 'Tipo', 'Fornecedor', 'Valor', 'Emissão', 'Comprador']],
-      body: tableData,
-      startY: 45,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [63, 81, 181] },
-    });
+      const tableData = processedDocuments.map(doc => [
+        doc.numero.trim(),
+        doc.tipo,
+        doc.nome_fornecedor || 'N/A',
+        doc.vl_tot_documento,
+        doc.Emissao,
+        doc.comprador,
+      ]);
 
-    doc.save(`documentos_${new Date().toISOString().split('T')[0]}.pdf`);
+      (doc as any).autoTable({
+        head: [['Número', 'Tipo', 'Fornecedor', 'Valor', 'Emissão', 'Comprador']],
+        body: tableData,
+        startY: 45,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [63, 81, 181] },
+      });
+
+      doc.save(`documentos_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao exportar arquivo PDF');
+    }
   };
 
   const handleLogout = async () => {
