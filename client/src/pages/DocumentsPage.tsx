@@ -14,14 +14,19 @@ import {
   Fab,
   Zoom,
   IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
+  Divider,
 } from '@mui/material';
-import { 
-  Logout, 
-  Business, 
+import {
+  Logout,
+  Business,
   CheckCircle,
   Cancel,
   KeyboardArrowUp,
   Close,
+  Dashboard,
+  ViewList,
 } from '@mui/icons-material';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -104,9 +109,28 @@ const DocumentsPage: React.FC = () => {
           </Box>
           
           <Box sx={{ flexGrow: 1 }} />
-          
+
+          {/* Toggle View Buttons */}
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ mr: 3 }}>
+            <ToggleButtonGroup
+              value="cards"
+              exclusive
+              size="small"
+              sx={{ bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}
+            >
+              <ToggleButton value="cards">
+                <Dashboard fontSize="small" />
+              </ToggleButton>
+              <ToggleButton value="table" onClick={() => navigate('/documents-table')}>
+                <ViewList fontSize="small" />
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Stack>
+
+          <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+
           {/* Status do usuário */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', ml: 3, mr: 3 }}>
             <Avatar sx={{ width: 32, height: 32, mr: 1, bgcolor: 'primary.dark' }}>
               {user?.email?.charAt(0).toUpperCase()}
             </Avatar>

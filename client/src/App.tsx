@@ -3,6 +3,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
 import DocumentsPage from './pages/DocumentsPage';
+import DocumentsTablePage from './pages/DocumentsTablePage';
 
 function App() {
   return (
@@ -20,15 +21,26 @@ function App() {
           />
           
           {/* Protected routes */}
-          <Route 
-            path="/documents" 
+          <Route
+            path="/documents"
             element={
               <ErrorBoundary level="page">
                 <ProtectedRoute>
                   <DocumentsPage />
                 </ProtectedRoute>
               </ErrorBoundary>
-            } 
+            }
+          />
+
+          <Route
+            path="/documents-table"
+            element={
+              <ErrorBoundary level="page">
+                <ProtectedRoute>
+                  <DocumentsTablePage />
+                </ProtectedRoute>
+              </ErrorBoundary>
+            }
           />
           
           {/* Default redirect */}
