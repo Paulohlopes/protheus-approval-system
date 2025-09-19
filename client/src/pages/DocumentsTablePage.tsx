@@ -872,15 +872,194 @@ const DocumentsTablePage: React.FC = () => {
                                       </Paper>
                                     </Grid>
 
-                                    <Grid item xs={12} md={6}>
+                                    <Grid item xs={12}>
                                       <Paper variant="outlined" sx={{ p: 2 }}>
-                                        <Typography variant="subtitle2" gutterBottom>
-                                          Itens ({document.itens.length})
+                                        <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                          <Description fontSize="small" />
+                                          Itens do Documento ({document.itens.length})
                                         </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                          {document.itens.map(item => item.descr_produto).slice(0, 3).join(', ')}
-                                          {document.itens.length > 3 && '...'}
-                                        </Typography>
+
+                                        {document.itens.length <= 3 ? (
+                                          // Visualização resumida para poucos itens
+                                          <Stack spacing={1}>
+                                            {document.itens.map((item, itemIndex) => (
+                                              <Box
+                                                key={itemIndex}
+                                                sx={{
+                                                  p: 1.5,
+                                                  bgcolor: 'grey.50',
+                                                  borderRadius: 1,
+                                                  border: '1px solid',
+                                                  borderColor: 'grey.200',
+                                                }}
+                                              >
+                                                <Grid container spacing={2} alignItems="center">
+                                                  <Grid item xs={12} sm={1}>
+                                                    <Chip
+                                                      label={`Item ${item.item}`}
+                                                      size="small"
+                                                      color="primary"
+                                                      variant="outlined"
+                                                    />
+                                                  </Grid>
+                                                  <Grid item xs={12} sm={2}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                      Produto
+                                                    </Typography>
+                                                    <Typography variant="body2" fontWeight={500}>
+                                                      {item.produto}
+                                                    </Typography>
+                                                  </Grid>
+                                                  <Grid item xs={12} sm={4}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                      Descrição
+                                                    </Typography>
+                                                    <Typography variant="body2">
+                                                      {item.descr_produto}
+                                                    </Typography>
+                                                  </Grid>
+                                                  <Grid item xs={6} sm={2}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                      Quantidade
+                                                    </Typography>
+                                                    <Typography variant="body2" fontWeight={500}>
+                                                      {item.quantidade} {item.unidade_medida}
+                                                    </Typography>
+                                                  </Grid>
+                                                  <Grid item xs={6} sm={3}>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                      Valor Total
+                                                    </Typography>
+                                                    <Typography variant="body2" fontWeight={600} color="primary">
+                                                      R$ {item.total}
+                                                    </Typography>
+                                                  </Grid>
+                                                </Grid>
+
+                                                {item.observacao && (
+                                                  <Box sx={{ mt: 1, p: 1, bgcolor: 'info.50', borderRadius: 1 }}>
+                                                    <Typography variant="caption" color="info.main" fontWeight={500}>
+                                                      Observação: {item.observacao}
+                                                    </Typography>
+                                                  </Box>
+                                                )}
+                                              </Box>
+                                            ))}
+                                          </Stack>
+                                        ) : (
+                                          // Tabela compacta para muitos itens
+                                          <TableContainer component={Box} sx={{ mt: 1 }}>
+                                            <Table size="small">
+                                              <TableHead>
+                                                <TableRow sx={{ bgcolor: 'grey.100' }}>
+                                                  <TableCell><strong>Item</strong></TableCell>
+                                                  <TableCell><strong>Produto</strong></TableCell>
+                                                  <TableCell><strong>Descrição</strong></TableCell>
+                                                  <TableCell align="right"><strong>Qtd</strong></TableCell>
+                                                  <TableCell><strong>UN</strong></TableCell>
+                                                  <TableCell align="right"><strong>Preço</strong></TableCell>
+                                                  <TableCell align="right"><strong>Total</strong></TableCell>
+                                                </TableRow>
+                                              </TableHead>
+                                              <TableBody>
+                                                {document.itens.map((item, itemIndex) => (
+                                                  <TableRow
+                                                    key={itemIndex}
+                                                    sx={{
+                                                      '&:nth-of-type(odd)': { bgcolor: 'grey.25' },
+                                                      '&:hover': { bgcolor: 'action.hover' }
+                                                    }}
+                                                  >
+                                                    <TableCell>
+                                                      <Chip
+                                                        label={item.item}
+                                                        size="small"
+                                                        color="primary"
+                                                        variant="outlined"
+                                                      />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                      <Typography variant="body2" fontWeight={500}>
+                                                        {item.produto}
+                                                      </Typography>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                      <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                          maxWidth: 200,
+                                                          overflow: 'hidden',
+                                                          textOverflow: 'ellipsis',
+                                                          whiteSpace: 'nowrap'
+                                                        }}
+                                                        title={item.descr_produto}
+                                                      >
+                                                        {item.descr_produto}
+                                                      </Typography>
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                      <Typography variant="body2" fontWeight={500}>
+                                                        {item.quantidade}
+                                                      </Typography>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                      <Typography variant="body2">
+                                                        {item.unidade_medida}
+                                                      </Typography>
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                      <Typography variant="body2">
+                                                        R$ {item.preco}
+                                                      </Typography>
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                      <Typography variant="body2" fontWeight={600} color="primary">
+                                                        R$ {item.total}
+                                                      </Typography>
+                                                    </TableCell>
+                                                  </TableRow>
+                                                ))}
+                                              </TableBody>
+                                            </Table>
+                                          </TableContainer>
+                                        )}
+
+                                        {/* Resumo dos itens */}
+                                        <Box sx={{ mt: 2, p: 1, bgcolor: 'primary.50', borderRadius: 1 }}>
+                                          <Grid container spacing={2}>
+                                            <Grid item xs={6} sm={3}>
+                                              <Typography variant="caption" color="text.secondary">
+                                                Total de Itens
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight={600}>
+                                                {document.itens.length}
+                                              </Typography>
+                                            </Grid>
+                                            <Grid item xs={6} sm={3}>
+                                              <Typography variant="caption" color="text.secondary">
+                                                Valor Total
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight={600} color="primary">
+                                                {(() => {
+                                                  if (!document.vl_tot_documento) return 'R$ 0,00';
+                                                  const numValue = parseFloat(document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
+                                                  return new Intl.NumberFormat('pt-BR', {
+                                                    style: 'currency',
+                                                    currency: 'BRL'
+                                                  }).format(isNaN(numValue) ? 0 : numValue);
+                                                })()}
+                                              </Typography>
+                                            </Grid>
+                                            <Grid item xs={12} sm={6}>
+                                              <Typography variant="caption" color="text.secondary">
+                                                Centro de Custo Principal
+                                              </Typography>
+                                              <Typography variant="body2">
+                                                {document.itens[0]?.centro_custo} - {document.itens[0]?.descr_cc}
+                                              </Typography>
+                                            </Grid>
+                                          </Grid>
+                                        </Box>
                                       </Paper>
                                     </Grid>
 
