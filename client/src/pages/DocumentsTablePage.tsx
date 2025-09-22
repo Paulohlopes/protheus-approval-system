@@ -77,6 +77,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentApprovalStatus } from '../utils/documentHelpers';
 import ConfirmationDialog from '../components/ConfirmationDialog';
+import LanguageSelector from '../components/LanguageSelector';
+import { useLanguage } from '../contexts/LanguageContext';
 import type { ProtheusDocument } from '../types/auth';
 // import * as XLSX from 'xlsx';
 // import jsPDF from 'jspdf';
@@ -106,7 +108,7 @@ const columns: Column[] = [
   },
   {
     id: 'numero',
-    label: 'Número',
+    label: t?.documents?.number || 'Número',
     minWidth: 120,
     sortable: true,
     filterable: true,
@@ -120,7 +122,7 @@ const columns: Column[] = [
   },
   {
     id: 'tipo',
-    label: 'Tipo',
+    label: t?.documents?.type || 'Tipo',
     minWidth: 130,
     sortable: true,
     filterable: true,
@@ -129,9 +131,9 @@ const columns: Column[] = [
     format: (value: string) => {
       const getTypeInfo = (type: string) => {
         switch (type) {
-          case 'IP': return { label: 'Pedido de Compra', color: 'primary' };
-          case 'SC': return { label: 'Solicitação', color: 'info' };
-          case 'CP': return { label: 'Contrato', color: 'warning' };
+          case 'IP': return { label: t?.documentTypes?.IP || 'Pedido de Compra', color: 'primary' };
+          case 'SC': return { label: t?.documentTypes?.SC || 'Solicitação', color: 'info' };
+          case 'CP': return { label: t?.documentTypes?.CP || 'Contrato', color: 'warning' };
           default: return { label: type, color: 'default' };
         }
       };
@@ -148,7 +150,7 @@ const columns: Column[] = [
   },
   {
     id: 'status',
-    label: 'Status',
+    label: t?.documents?.status || 'Status',
     minWidth: 140,
     sortable: true,
     filterable: true,
@@ -179,7 +181,7 @@ const columns: Column[] = [
   },
   {
     id: 'nome_fornecedor',
-    label: 'Fornecedor',
+    label: t?.documents?.supplier || 'Fornecedor',
     minWidth: 200,
     sortable: true,
     filterable: true,
@@ -196,7 +198,7 @@ const columns: Column[] = [
   },
   {
     id: 'vl_tot_documento',
-    label: 'Valor Total',
+    label: t?.documents?.totalValue || 'Valor Total',
     minWidth: 140,
     align: 'right',
     sortable: true,
@@ -224,7 +226,7 @@ const columns: Column[] = [
   },
   {
     id: 'Emissao',
-    label: 'Emissão',
+    label: t?.documents?.issueDate || 'Emissão',
     minWidth: 110,
     sortable: true,
     filterable: true,
@@ -252,7 +254,7 @@ const columns: Column[] = [
   },
   {
     id: 'comprador',
-    label: 'Comprador',
+    label: t?.documents?.buyer || 'Comprador',
     minWidth: 150,
     sortable: true,
     filterable: true,
@@ -267,7 +269,7 @@ const columns: Column[] = [
   },
   {
     id: 'cond_pagamento',
-    label: 'Cond. Pagamento',
+    label: t?.documents?.paymentCondition || 'Cond. Pagamento',
     minWidth: 130,
     sortable: true,
     filterable: true,
@@ -276,7 +278,7 @@ const columns: Column[] = [
   },
   {
     id: 'filial',
-    label: 'Filial',
+    label: t?.documents?.branch || 'Filial',
     minWidth: 80,
     sortable: true,
     filterable: true,
@@ -285,7 +287,7 @@ const columns: Column[] = [
   },
   {
     id: 'aprovadores',
-    label: 'Aprovadores',
+    label: t?.documents?.approvers || 'Aprovadores',
     minWidth: 200,
     sortable: false,
     filterable: false,
@@ -313,7 +315,7 @@ const columns: Column[] = [
   },
   {
     id: 'actions',
-    label: 'Ações',
+    label: t?.common?.actions || 'Ações',
     minWidth: 150,
     align: 'center',
     sortable: false,
@@ -326,6 +328,7 @@ const DocumentsTablePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const theme = useTheme();
+  const { t, formatMessage } = useLanguage();
 
   // Estados
   const [page, setPage] = useState(0);
@@ -570,15 +573,16 @@ const DocumentsTablePage: React.FC = () => {
             </Avatar>
             <Box>
               <Typography variant="h6" fontWeight={600}>
-                Sistema Protheus - Tabela Avançada
+                {t?.header?.title || 'Sistema Protheus - Tabela Avançada'}
               </Typography>
               <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                Visualização completa de documentos
+                {t?.header?.subtitle || 'Visualização completa de documentos'}
               </Typography>
             </Box>
           </Stack>
 
           <Stack direction="row" spacing={2} alignItems="center">
+            <LanguageSelector />
             <ToggleButtonGroup
               value="table"
               exclusive
@@ -608,7 +612,7 @@ const DocumentsTablePage: React.FC = () => {
               variant="outlined"
               sx={{ borderColor: 'rgba(255,255,255,0.3)' }}
             >
-              Sair
+              {t?.common?.logout || 'Sair'}
             </Button>
           </Stack>
         </MuiToolbar>
@@ -629,11 +633,11 @@ const DocumentsTablePage: React.FC = () => {
           >
             {selected.length > 0 ? (
               <Typography sx={{ flex: '1 1 100%' }} color="inherit" variant="subtitle1" component="div">
-                {selected.length} selecionado(s)
+                {selected.length} {t?.common?.selected || 'selecionado(s)'}
               </Typography>
             ) : (
               <Typography sx={{ flex: '1 1 100%' }} variant="h6" id="tableTitle" component="div">
-                Documentos para Aprovação
+                {t?.documents?.title || 'Documentos para Aprovação'}
               </Typography>
             )}
 
@@ -646,7 +650,7 @@ const DocumentsTablePage: React.FC = () => {
                   startIcon={<CheckCircle />}
                   onClick={() => handleBulkApprove()}
                 >
-                  Aprovar
+                  {t?.common?.approve || 'Aprovar'}
                 </Button>
                 <Button
                   variant="outlined"
@@ -655,14 +659,14 @@ const DocumentsTablePage: React.FC = () => {
                   startIcon={<Cancel />}
                   onClick={() => handleBulkReject()}
                 >
-                  Rejeitar
+                  {t?.common?.reject || 'Rejeitar'}
                 </Button>
               </Stack>
             ) : (
               <Stack direction="row" spacing={1}>
                 <TextField
                   size="small"
-                  placeholder="Buscar..."
+                  placeholder={t?.common?.search || 'Buscar...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   InputProps={{
@@ -675,7 +679,7 @@ const DocumentsTablePage: React.FC = () => {
                   sx={{ width: 250 }}
                 />
 
-                <Tooltip title="Filtros">
+                <Tooltip title={t?.common?.filter || 'Filtros'}>
                   <IconButton onClick={(e) => setFilterMenuAnchor(e.currentTarget)}>
                     <Badge badgeContent={Object.keys(filters).length} color="error">
                       <FilterList />
@@ -683,25 +687,25 @@ const DocumentsTablePage: React.FC = () => {
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title="Colunas">
+                <Tooltip title={t?.common?.columns || 'Colunas'}>
                   <IconButton onClick={(e) => setColumnMenuAnchor(e.currentTarget)}>
                     <ViewColumn />
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title="Exportar Excel">
+                <Tooltip title={t?.common?.exportExcel || 'Exportar Excel'}>
                   <IconButton onClick={handleExportExcel}>
                     <TableChart />
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title="Exportar PDF">
+                <Tooltip title={t?.common?.exportPdf || 'Exportar PDF'}>
                   <IconButton onClick={handleExportPDF}>
                     <PictureAsPdf />
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title="Atualizar">
+                <Tooltip title={t?.common?.refresh || 'Atualizar'}>
                   <IconButton onClick={() => refetch()}>
                     <Refresh />
                   </IconButton>
@@ -804,7 +808,7 @@ const DocumentsTablePage: React.FC = () => {
                                     <TableCell key={column.id} align={column.align}>
                                       {isPending && (
                                         <Stack direction="row" spacing={1} justifyContent="center">
-                                          <Tooltip title="Aprovar">
+                                          <Tooltip title={t?.common?.approve || 'Aprovar'}>
                                             <IconButton
                                               size="small"
                                               color="success"
@@ -813,7 +817,7 @@ const DocumentsTablePage: React.FC = () => {
                                               <CheckCircle fontSize="small" />
                                             </IconButton>
                                           </Tooltip>
-                                          <Tooltip title="Rejeitar">
+                                          <Tooltip title={t?.common?.reject || 'Rejeitar'}>
                                             <IconButton
                                               size="small"
                                               color="error"
@@ -822,7 +826,7 @@ const DocumentsTablePage: React.FC = () => {
                                               <Cancel fontSize="small" />
                                             </IconButton>
                                           </Tooltip>
-                                          <Tooltip title="Mais">
+                                          <Tooltip title={t?.common?.more || 'Mais'}>
                                             <IconButton size="small">
                                               <MoreVert fontSize="small" />
                                             </IconButton>
@@ -855,24 +859,24 @@ const DocumentsTablePage: React.FC = () => {
                               <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                                 <Box sx={{ margin: 2 }}>
                                   <Typography variant="h6" gutterBottom component="div">
-                                    Detalhes do Documento
+                                    {t?.documents?.documentDetails || 'Detalhes do Documento'}
                                   </Typography>
                                   <Grid container spacing={3}>
                                     <Grid item xs={12} md={6}>
                                       <Paper variant="outlined" sx={{ p: 2 }}>
                                         <Typography variant="subtitle2" gutterBottom>
-                                          Informações Gerais
+                                          {t?.documents?.generalInfo || 'Informações Gerais'}
                                         </Typography>
                                         <Grid container spacing={1}>
                                           <Grid item xs={6}>
                                             <Typography variant="caption" color="text.secondary">
-                                              Filial
+                                              {t?.documents?.branch || 'Filial'}
                                             </Typography>
                                             <Typography variant="body2">{document.filial}</Typography>
                                           </Grid>
                                           <Grid item xs={6}>
                                             <Typography variant="caption" color="text.secondary">
-                                              Condição Pagamento
+                                              {t?.documents?.paymentCondition || 'Condição Pagamento'}
                                             </Typography>
                                             <Typography variant="body2">{document.cond_pagamento}</Typography>
                                           </Grid>
@@ -1115,8 +1119,8 @@ const DocumentsTablePage: React.FC = () => {
             page={page}
             onPageChange={handleChangePage}
             onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="Linhas por página"
-            labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+            labelRowsPerPage={t?.table?.rowsPerPage || 'Linhas por página'}
+            labelDisplayedRows={({ from, to, count }) => formatMessage(t?.table?.displayedRows || '{{from}}-{{to}} de {{count}}', { from, to, count })}
           />
         </Paper>
 
@@ -1128,32 +1132,32 @@ const DocumentsTablePage: React.FC = () => {
         >
           <Box sx={{ p: 2, minWidth: 250 }}>
             <Typography variant="subtitle2" gutterBottom>
-              Filtros Avançados
+              {t?.filters?.advancedFilters || 'Filtros Avançados'}
             </Typography>
             <Divider sx={{ my: 1 }} />
             <Stack spacing={2}>
               <TextField
                 size="small"
-                label="Número"
+                label={t?.filters?.number || 'Número'}
                 value={filters.numero || ''}
                 onChange={(e) => setFilters({ ...filters, numero: e.target.value })}
               />
               <FormControl size="small">
-                <InputLabel>Tipo</InputLabel>
+                <InputLabel>{t?.filters?.type || 'Tipo'}</InputLabel>
                 <Select
                   value={filters.tipo || ''}
                   onChange={(e) => setFilters({ ...filters, tipo: e.target.value as string })}
                   label="Tipo"
                 >
-                  <MenuItem value="">Todos</MenuItem>
-                  <MenuItem value="IP">Pedido de Compra</MenuItem>
-                  <MenuItem value="SC">Solicitação</MenuItem>
-                  <MenuItem value="CP">Contrato</MenuItem>
+                  <MenuItem value="">{t?.common?.all || 'Todos'}</MenuItem>
+                  <MenuItem value="IP">{t?.documentTypes?.IP || 'Pedido de Compra'}</MenuItem>
+                  <MenuItem value="SC">{t?.documentTypes?.SC || 'Solicitação'}</MenuItem>
+                  <MenuItem value="CP">{t?.documentTypes?.CP || 'Contrato'}</MenuItem>
                 </Select>
               </FormControl>
               <TextField
                 size="small"
-                label="Fornecedor"
+                label={t?.filters?.supplier || 'Fornecedor'}
                 value={filters.nome_fornecedor || ''}
                 onChange={(e) => setFilters({ ...filters, nome_fornecedor: e.target.value })}
               />
@@ -1162,7 +1166,7 @@ const DocumentsTablePage: React.FC = () => {
                 size="small"
                 onClick={() => setFilters({})}
               >
-                Limpar Filtros
+                {t?.common?.clearFilters || 'Limpar Filtros'}
               </Button>
             </Stack>
           </Box>
@@ -1176,7 +1180,7 @@ const DocumentsTablePage: React.FC = () => {
         >
           <Box sx={{ p: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
-              Colunas Visíveis
+              {t?.filters?.visibleColumns || 'Colunas Visíveis'}
             </Typography>
             <Divider sx={{ my: 1 }} />
             <FormGroup>

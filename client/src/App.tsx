@@ -4,11 +4,13 @@ import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
 import DocumentsPage from './pages/DocumentsPage';
 import DocumentsTablePage from './pages/DocumentsTablePage';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 function App() {
   return (
     <ErrorBoundary level="critical">
-      <Router>
+      <LanguageProvider>
+        <Router>
         <Routes>
           {/* Public routes */}
           <Route 
@@ -50,6 +52,7 @@ function App() {
           <Route path="*" element={<Navigate to="/documents" replace />} />
         </Routes>
       </Router>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }
