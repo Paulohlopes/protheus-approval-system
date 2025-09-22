@@ -96,239 +96,241 @@ interface Column {
   group?: 'basic' | 'financial' | 'approval' | 'details';
 }
 
-const columns: Column[] = [
-  {
-    id: 'select',
-    label: '',
-    minWidth: 50,
-    align: 'center',
-    sortable: false,
-    filterable: false,
-    visible: true,
-  },
-  {
-    id: 'numero',
-    label: t?.documents?.number || 'Número',
-    minWidth: 120,
-    sortable: true,
-    filterable: true,
-    visible: true,
-    group: 'basic',
-    format: (value: string) => (
-      <Typography variant="body2" fontWeight={600}>
-        {value.trim()}
-      </Typography>
-    ),
-  },
-  {
-    id: 'tipo',
-    label: t?.documents?.type || 'Tipo',
-    minWidth: 130,
-    sortable: true,
-    filterable: true,
-    visible: true,
-    group: 'basic',
-    format: (value: string) => {
-      const getTypeInfo = (type: string) => {
-        switch (type) {
-          case 'IP': return { label: t?.documentTypes?.IP || 'Pedido de Compra', color: 'primary' };
-          case 'SC': return { label: t?.documentTypes?.SC || 'Solicitação', color: 'info' };
-          case 'CP': return { label: t?.documentTypes?.CP || 'Contrato', color: 'warning' };
-          default: return { label: type, color: 'default' };
-        }
-      };
-      const info = getTypeInfo(value);
-      return (
-        <Chip
-          label={info.label}
-          size="small"
-          color={info.color as any}
-          variant="outlined"
-        />
-      );
-    },
-  },
-  {
-    id: 'status',
-    label: t?.documents?.status || 'Status',
-    minWidth: 140,
-    sortable: true,
-    filterable: true,
-    visible: true,
-    group: 'approval',
-    format: (value: any, doc?: ProtheusDocument) => {
-      if (!doc) return '-';
-      const status = getCurrentApprovalStatus(doc.alcada, doc.userEmail);
-      const getStatusInfo = (situacao: string) => {
-        switch (situacao) {
-          case 'Liberado': return { color: 'success', icon: <CheckCircle fontSize="small" /> };
-          case 'Pendente': return { color: 'warning', icon: <Warning fontSize="small" /> };
-          case 'Rejeitado': return { color: 'error', icon: <Cancel fontSize="small" /> };
-          default: return { color: 'default', icon: null };
-        }
-      };
-      const info = getStatusInfo(status?.situacao_aprov || '');
-      return (
-        <Chip
-          label={status?.situacao_aprov}
-          size="small"
-          color={info.color as any}
-          icon={info.icon as any}
-          variant={status?.situacao_aprov === 'Pendente' ? 'filled' : 'outlined'}
-        />
-      );
-    },
-  },
-  {
-    id: 'nome_fornecedor',
-    label: t?.documents?.supplier || 'Fornecedor',
-    minWidth: 200,
-    sortable: true,
-    filterable: true,
-    visible: true,
-    group: 'basic',
-    format: (value: string) => (
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <Business fontSize="small" color="action" />
-        <Typography variant="body2">
-          {value ? String(value).trim() : 'N/A'}
-        </Typography>
-      </Stack>
-    ),
-  },
-  {
-    id: 'vl_tot_documento',
-    label: t?.documents?.totalValue || 'Valor Total',
-    minWidth: 140,
-    align: 'right',
-    sortable: true,
-    filterable: true,
-    visible: true,
-    group: 'financial',
-    format: (value: string) => {
-      if (!value || typeof value !== 'string') {
-        return (
-          <Typography variant="body2" fontWeight={600} color="primary">
-            R$ 0,00
-          </Typography>
-        );
-      }
-      const numValue = parseFloat(value.replace(/\./g, '').replace(',', '.'));
-      return (
-        <Typography variant="body2" fontWeight={600} color="primary">
-          {new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-          }).format(isNaN(numValue) ? 0 : numValue)}
-        </Typography>
-      );
-    },
-  },
-  {
-    id: 'Emissao',
-    label: t?.documents?.issueDate || 'Emissão',
-    minWidth: 110,
-    sortable: true,
-    filterable: true,
-    visible: true,
-    group: 'basic',
-    format: (value: string) => {
-      if (!value || typeof value !== 'string') {
-        return '-';
-      }
-      if (value.length === 8) {
-        const year = value.substring(0, 4);
-        const month = value.substring(4, 6);
-        const day = value.substring(6, 8);
-        return (
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <CalendarToday fontSize="small" color="action" />
-            <Typography variant="body2">
-              {`${day}/${month}/${year}`}
-            </Typography>
-          </Stack>
-        );
-      }
-      return value || '-';
-    },
-  },
-  {
-    id: 'comprador',
-    label: t?.documents?.buyer || 'Comprador',
-    minWidth: 150,
-    sortable: true,
-    filterable: true,
-    visible: false,
-    group: 'details',
-    format: (value: string) => (
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <Person fontSize="small" color="action" />
-        <Typography variant="body2">{value || '-'}</Typography>
-      </Stack>
-    ),
-  },
-  {
-    id: 'cond_pagamento',
-    label: t?.documents?.paymentCondition || 'Cond. Pagamento',
-    minWidth: 130,
-    sortable: true,
-    filterable: true,
-    visible: false,
-    group: 'financial',
-  },
-  {
-    id: 'filial',
-    label: t?.documents?.branch || 'Filial',
-    minWidth: 80,
-    sortable: true,
-    filterable: true,
-    visible: false,
-    group: 'basic',
-  },
-  {
-    id: 'aprovadores',
-    label: t?.documents?.approvers || 'Aprovadores',
-    minWidth: 200,
-    sortable: false,
-    filterable: false,
-    visible: true,
-    group: 'approval',
-    format: (value: any, doc?: ProtheusDocument) => {
-      if (!doc) return '-';
-      const pending = doc.alcada.filter(a => a.situacao_aprov === 'Pendente').length;
-      const approved = doc.alcada.filter(a => a.situacao_aprov === 'Liberado').length;
-      const total = doc.alcada.length;
-
-      return (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LinearProgress
-            variant="determinate"
-            value={(approved / total) * 100}
-            sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
-          />
-          <Typography variant="caption" color="text.secondary">
-            {approved}/{total}
-          </Typography>
-        </Box>
-      );
-    },
-  },
-  {
-    id: 'actions',
-    label: t?.common?.actions || 'Ações',
-    minWidth: 150,
-    align: 'center',
-    sortable: false,
-    filterable: false,
-    visible: true,
-  },
-];
 
 const DocumentsTablePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const theme = useTheme();
   const { t, formatMessage } = useLanguage();
+
+  // Define columns inside component to access 't' variable
+  const columns: Column[] = useMemo(() => [
+    {
+      id: 'select',
+      label: '',
+      minWidth: 50,
+      align: 'center',
+      sortable: false,
+      filterable: false,
+      visible: true,
+    },
+    {
+      id: 'numero',
+      label: t?.documents?.number || 'Número',
+      minWidth: 120,
+      sortable: true,
+      filterable: true,
+      visible: true,
+      group: 'basic',
+      format: (value: string) => (
+        <Typography variant="body2" fontWeight={600}>
+          {value.trim()}
+        </Typography>
+      ),
+    },
+    {
+      id: 'tipo',
+      label: t?.documents?.type || 'Tipo',
+      minWidth: 130,
+      sortable: true,
+      filterable: true,
+      visible: true,
+      group: 'basic',
+      format: (value: string) => {
+        const getTypeInfo = (type: string) => {
+          switch (type) {
+            case 'IP': return { label: t?.documentTypes?.IP || 'Pedido de Compra', color: 'primary' };
+            case 'SC': return { label: t?.documentTypes?.SC || 'Solicitação', color: 'info' };
+            case 'CP': return { label: t?.documentTypes?.CP || 'Contrato', color: 'warning' };
+            default: return { label: type, color: 'default' };
+          }
+        };
+        const info = getTypeInfo(value);
+        return (
+          <Chip
+            label={info.label}
+            size="small"
+            color={info.color as any}
+            variant="outlined"
+          />
+        );
+      },
+    },
+    {
+      id: 'status',
+      label: t?.documents?.status || 'Status',
+      minWidth: 140,
+      sortable: true,
+      filterable: true,
+      visible: true,
+      group: 'approval',
+      format: (value: any, doc?: ProtheusDocument) => {
+        if (!doc) return '-';
+        const status = getCurrentApprovalStatus(doc.alcada, doc.userEmail);
+        const getStatusInfo = (situacao: string) => {
+          switch (situacao) {
+            case 'Liberado': return { color: 'success', icon: <CheckCircle fontSize="small" /> };
+            case 'Pendente': return { color: 'warning', icon: <Warning fontSize="small" /> };
+            case 'Rejeitado': return { color: 'error', icon: <Cancel fontSize="small" /> };
+            default: return { color: 'default', icon: null };
+          }
+        };
+        const info = getStatusInfo(status?.situacao_aprov || '');
+        return (
+          <Chip
+            label={status?.situacao_aprov}
+            size="small"
+            color={info.color as any}
+            icon={info.icon as any}
+            variant={status?.situacao_aprov === 'Pendente' ? 'filled' : 'outlined'}
+          />
+        );
+      },
+    },
+    {
+      id: 'nome_fornecedor',
+      label: t?.documents?.supplier || 'Fornecedor',
+      minWidth: 200,
+      sortable: true,
+      filterable: true,
+      visible: true,
+      group: 'basic',
+      format: (value: string) => (
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Business fontSize="small" color="action" />
+          <Typography variant="body2">
+            {value ? String(value).trim() : 'N/A'}
+          </Typography>
+        </Stack>
+      ),
+    },
+    {
+      id: 'vl_tot_documento',
+      label: t?.documents?.totalValue || 'Valor Total',
+      minWidth: 140,
+      align: 'right',
+      sortable: true,
+      filterable: true,
+      visible: true,
+      group: 'financial',
+      format: (value: string) => {
+        if (!value || typeof value !== 'string') {
+          return (
+            <Typography variant="body2" fontWeight={600} color="primary">
+              R$ 0,00
+            </Typography>
+          );
+        }
+        const numValue = parseFloat(value.replace(/\./g, '').replace(',', '.'));
+        return (
+          <Typography variant="body2" fontWeight={600} color="primary">
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL'
+            }).format(isNaN(numValue) ? 0 : numValue)}
+          </Typography>
+        );
+      },
+    },
+    {
+      id: 'Emissao',
+      label: t?.documents?.issueDate || 'Emissão',
+      minWidth: 110,
+      sortable: true,
+      filterable: true,
+      visible: true,
+      group: 'basic',
+      format: (value: string) => {
+        if (!value || typeof value !== 'string') {
+          return '-';
+        }
+        if (value.length === 8) {
+          const year = value.substring(0, 4);
+          const month = value.substring(4, 6);
+          const day = value.substring(6, 8);
+          return (
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <CalendarToday fontSize="small" color="action" />
+              <Typography variant="body2">
+                {`${day}/${month}/${year}`}
+              </Typography>
+            </Stack>
+          );
+        }
+        return value || '-';
+      },
+    },
+    {
+      id: 'comprador',
+      label: t?.documents?.buyer || 'Comprador',
+      minWidth: 150,
+      sortable: true,
+      filterable: true,
+      visible: false,
+      group: 'details',
+      format: (value: string) => (
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Person fontSize="small" color="action" />
+          <Typography variant="body2">{value || '-'}</Typography>
+        </Stack>
+      ),
+    },
+    {
+      id: 'cond_pagamento',
+      label: t?.documents?.paymentCondition || 'Cond. Pagamento',
+      minWidth: 130,
+      sortable: true,
+      filterable: true,
+      visible: false,
+      group: 'financial',
+    },
+    {
+      id: 'filial',
+      label: t?.documents?.branch || 'Filial',
+      minWidth: 80,
+      sortable: true,
+      filterable: true,
+      visible: false,
+      group: 'basic',
+    },
+    {
+      id: 'aprovadores',
+      label: t?.documents?.approvers || 'Aprovadores',
+      minWidth: 200,
+      sortable: false,
+      filterable: false,
+      visible: true,
+      group: 'approval',
+      format: (value: any, doc?: ProtheusDocument) => {
+        if (!doc) return '-';
+        const pending = doc.alcada.filter(a => a.situacao_aprov === 'Pendente').length;
+        const approved = doc.alcada.filter(a => a.situacao_aprov === 'Liberado').length;
+        const total = doc.alcada.length;
+
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LinearProgress
+              variant="determinate"
+              value={(approved / total) * 100}
+              sx={{ flexGrow: 1, height: 6, borderRadius: 3 }}
+            />
+            <Typography variant="caption" color="text.secondary">
+              {approved}/{total}
+            </Typography>
+          </Box>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      label: t?.common?.actions || 'Ações',
+      minWidth: 150,
+      align: 'center',
+      sortable: false,
+      filterable: false,
+      visible: true,
+    },
+  ], [t]);
 
   // Estados
   const [page, setPage] = useState(0);
