@@ -19,7 +19,7 @@ import {
   ExpandLess
 } from '@mui/icons-material';
 import { config, logger, isDevelopment } from '../config/environment';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage, LanguageContext } from '../contexts/LanguageContext';
 
 interface Props {
   children?: ReactNode;
@@ -374,7 +374,9 @@ const ErrorBoundaryContent: React.FC<ErrorBoundaryContentProps> = ({
   onToggleDetails,
   renderErrorDetails
 }) => {
-  const { t } = useLanguage();
+  // Usar React.useContext diretamente para ter mais controle
+  const context = React.useContext(LanguageContext);
+  const t = context?.t || null;
 
   switch (level) {
     case 'critical':

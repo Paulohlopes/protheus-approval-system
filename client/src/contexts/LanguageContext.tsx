@@ -9,7 +9,7 @@ interface LanguageContextType {
   formatMessage: (key: string, params?: Record<string, any>) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const useLanguage = () => {
   const context = useContext(LanguageContext);

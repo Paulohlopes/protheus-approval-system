@@ -1446,7 +1446,7 @@ const DocumentsTablePage: React.FC = () => {
         onClose={handleCloseDialog}
         onConfirm={handleConfirmAction}
         action={confirmDialog.action}
-        documentNumber={confirmDialog.document?.numero.trim()}
+        documentNumber={confirmDialog.document?.numero?.trim()}
         documentValue={formatDocumentValue(confirmDialog.document)}
         loading={isProcessing}
       />
