@@ -153,7 +153,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
-  const { t } = useLanguage();
+  const { t, formatMessage } = useLanguage();
   const formatCurrency = (value: string) => {
     if (!value || typeof value !== 'string') {
       return 'R$ 0,00';

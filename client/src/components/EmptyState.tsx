@@ -14,6 +14,7 @@ import {
   CheckCircle,
   Folder,
 } from '@mui/icons-material';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface EmptyStateProps {
   type: 'no-documents' | 'no-results' | 'no-purchase-requests' | 'error' | 'success' | 'empty-folder';
@@ -29,49 +30,49 @@ interface EmptyStateProps {
   };
 }
 
-const getEmptyStateConfig = (type: EmptyStateProps['type']) => {
+const getEmptyStateConfig = (type: EmptyStateProps['type'], t?: any) => {
   switch (type) {
     case 'no-documents':
       return {
         icon: <Assignment sx={{ fontSize: 80, color: 'text.secondary', opacity: 0.6 }} />,
-        title: 'Nenhum documento pendente',
-        description: 'Não há documentos aguardando aprovação no momento. Que tal aproveitar para uma pausa? ☕',
+        title: t?.emptyState?.noDocumentsTitle || 'Nenhum documento pendente',
+        description: t?.emptyState?.noDocumentsDesc || 'Não há documentos aguardando aprovação no momento. Que tal aproveitar para uma pausa? ☕',
       };
-    
+
     case 'no-results':
       return {
         icon: <Search sx={{ fontSize: 80, color: 'text.secondary', opacity: 0.6 }} />,
-        title: 'Nenhum resultado encontrado',
-        description: 'Tente ajustar os filtros de busca ou limpar os filtros para ver todos os itens.',
+        title: t?.emptyState?.noResultsTitle || 'Nenhum resultado encontrado',
+        description: t?.emptyState?.noResultsDesc || 'Tente ajustar os filtros de busca ou limpar os filtros para ver todos os itens.',
       };
-    
+
     case 'no-purchase-requests':
       return {
         icon: <ShoppingCart sx={{ fontSize: 80, color: 'text.secondary', opacity: 0.6 }} />,
-        title: 'Nenhuma solicitação de compra',
-        description: 'Não há solicitações de compra cadastradas no momento.',
+        title: t?.emptyState?.noPurchaseRequestsTitle || 'Nenhuma solicitação de compra',
+        description: t?.emptyState?.noPurchaseRequestsDesc || 'Não há solicitações de compra cadastradas no momento.',
       };
-    
+
     case 'error':
       return {
         icon: <ErrorOutline sx={{ fontSize: 80, color: 'error.main' }} />,
-        title: 'Ops! Algo deu errado',
-        description: 'Não foi possível carregar os dados. Verifique sua conexão e tente novamente.',
+        title: t?.emptyState?.errorTitle || 'Ops! Algo deu errado',
+        description: t?.emptyState?.errorDesc || 'Não foi possível carregar os dados. Verifique sua conexão e tente novamente.',
       };
-    
+
     case 'success':
       return {
         icon: <CheckCircle sx={{ fontSize: 80, color: 'success.main' }} />,
-        title: 'Tudo certo!',
-        description: 'A operação foi concluída com sucesso.',
+        title: t?.emptyState?.successTitle || 'Tudo certo!',
+        description: t?.emptyState?.successDesc || 'A operação foi concluída com sucesso.',
       };
-    
+
     case 'empty-folder':
     default:
       return {
         icon: <Folder sx={{ fontSize: 80, color: 'text.secondary', opacity: 0.6 }} />,
-        title: 'Pasta vazia',
-        description: 'Esta seção não possui itens no momento.',
+        title: t?.emptyState?.emptyFolderTitle || 'Pasta vazia',
+        description: t?.emptyState?.emptyFolderDesc || 'Esta seção não possui itens no momento.',
       };
   }
 };
@@ -83,7 +84,8 @@ export const EmptyState: React.FC<EmptyStateProps> = React.memo(({
   action,
   secondaryAction,
 }) => {
-  const config = getEmptyStateConfig(type);
+  const { t } = useLanguage();
+  const config = getEmptyStateConfig(type, t);
   
   return (
     <Box

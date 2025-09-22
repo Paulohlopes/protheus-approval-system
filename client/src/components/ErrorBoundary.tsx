@@ -19,6 +19,7 @@ import {
   ExpandLess
 } from '@mui/icons-material';
 import { config, logger, isDevelopment } from '../config/environment';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface Props {
   children?: ReactNode;
@@ -181,18 +182,18 @@ export class ErrorBoundary extends Component<Props, State> {
           }}
         >
           <Typography variant="subtitle2" gutterBottom>
-            Error Details
+            {t?.errorBoundary?.errorDetails || 'Error Details'}
           </Typography>
           
           <Box sx={{ mb: 2 }}>
             <Typography variant="caption" color="text.secondary">
-              Error ID: {errorId}
+              {t?.errorBoundary?.errorId || 'Error ID'}: {errorId}
             </Typography>
           </Box>
 
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" fontWeight="medium" gutterBottom>
-              Message:
+              {t?.errorBoundary?.message || 'Message'}:
             </Typography>
             <Typography 
               variant="body2" 
@@ -214,7 +215,7 @@ export class ErrorBoundary extends Component<Props, State> {
           {isDevelopment && error.stack && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" fontWeight="medium" gutterBottom>
-                Stack Trace:
+                {t?.errorBoundary?.stackTrace || 'Stack Trace'}:
               </Typography>
               <Typography 
                 variant="body2" 
@@ -239,7 +240,7 @@ export class ErrorBoundary extends Component<Props, State> {
           {isDevelopment && errorInfo.componentStack && (
             <Box>
               <Typography variant="body2" fontWeight="medium" gutterBottom>
-                Component Stack:
+                {t?.errorBoundary?.componentStack || 'Component Stack'}:
               </Typography>
               <Typography 
                 variant="body2" 
@@ -273,105 +274,41 @@ export class ErrorBoundary extends Component<Props, State> {
     switch (level) {
       case 'critical':
         return (
-          <Container maxWidth="md" sx={{ py: 8 }}>
-            <Box textAlign="center">
-              <ErrorIcon sx={{ fontSize: 80, color: 'error.main', mb: 3 }} />
-              <Typography variant="h3" component="h1" gutterBottom>
-                Oops! Algo deu errado
-              </Typography>
-              <Typography variant="h6" color="text.secondary" paragraph>
-                Uma falha crítica ocorreu no sistema. Nossa equipe foi notificada.
-              </Typography>
-              <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 4 }}>
-                <Button
-                  variant="contained"
-                  startIcon={<Refresh />}
-                  onClick={this.handleReload}
-                  size="large"
-                >
-                  Recarregar Aplicação
-                </Button>
-              </Stack>
-            </Box>
-          </Container>
+          <ErrorBoundaryContent
+            level="critical"
+            onRetry={this.handleRetry}
+            onReload={this.handleReload}
+            canRetry={canRetry}
+            showDetails={this.state.showDetails}
+            onToggleDetails={this.toggleDetails}
+            renderErrorDetails={this.renderErrorDetails}
+          />
         );
 
       case 'page':
         return (
-          <Container maxWidth="sm" sx={{ py: 6 }}>
-            <Alert severity="error" sx={{ mb: 3 }}>
-              <AlertTitle>Erro na Página</AlertTitle>
-              Não foi possível carregar esta página. Tente novamente ou volte para a página inicial.
-            </Alert>
-            
-            <Stack direction="row" spacing={2} justifyContent="center">
-              {canRetry && (
-                <Button
-                  variant="contained"
-                  startIcon={<Refresh />}
-                  onClick={this.handleRetry}
-                >
-                  Tentar Novamente
-                </Button>
-              )}
-              <Button
-                variant="outlined"
-                onClick={() => window.history.back()}
-              >
-                Voltar
-              </Button>
-            </Stack>
-
-            {(isDevelopment || config.dev.logLevel === 'debug') && (
-              <Box sx={{ mt: 3 }}>
-                <Button
-                  variant="text"
-                  startIcon={this.state.showDetails ? <ExpandLess /> : <ExpandMore />}
-                  onClick={this.toggleDetails}
-                  size="small"
-                >
-                  {this.state.showDetails ? 'Ocultar' : 'Mostrar'} Detalhes
-                </Button>
-                {this.renderErrorDetails()}
-              </Box>
-            )}
-          </Container>
+          <ErrorBoundaryContent
+            level="page"
+            onRetry={this.handleRetry}
+            onReload={this.handleReload}
+            canRetry={canRetry}
+            showDetails={this.state.showDetails}
+            onToggleDetails={this.toggleDetails}
+            renderErrorDetails={this.renderErrorDetails}
+          />
         );
 
       default: // component level
         return (
-          <Alert 
-            severity="error" 
-            sx={{ m: 2 }}
-            action={
-              <Stack direction="row" spacing={1}>
-                {canRetry && (
-                  <IconButton
-                    size="small"
-                    onClick={this.handleRetry}
-                    title="Tentar novamente"
-                  >
-                    <Refresh fontSize="small" />
-                  </IconButton>
-                )}
-                {(isDevelopment || config.dev.logLevel === 'debug') && (
-                  <IconButton
-                    size="small"
-                    onClick={this.toggleDetails}
-                    title="Detalhes do erro"
-                  >
-                    <BugReport fontSize="small" />
-                  </IconButton>
-                )}
-              </Stack>
-            }
-          >
-            <AlertTitle>Componente com Error</AlertTitle>
-            Este componente encontrou um problema e não pode ser exibido.
-            {!canRetry && ' Recarregue a página para tentar novamente.'}
-            
-            {this.renderErrorDetails()}
-          </Alert>
+          <ErrorBoundaryContent
+            level="component"
+            onRetry={this.handleRetry}
+            onReload={this.handleReload}
+            canRetry={canRetry}
+            showDetails={this.state.showDetails}
+            onToggleDetails={this.toggleDetails}
+            renderErrorDetails={this.renderErrorDetails}
+          />
         );
     }
   };
@@ -415,6 +352,134 @@ export const useErrorHandler = () => {
     // This will trigger the nearest error boundary
     throw error;
   };
+};
+
+// Functional component for rendering error content with translations
+interface ErrorBoundaryContentProps {
+  level: 'page' | 'component' | 'critical';
+  onRetry: () => void;
+  onReload: () => void;
+  canRetry: boolean;
+  showDetails: boolean;
+  onToggleDetails: () => void;
+  renderErrorDetails: () => React.ReactNode;
+}
+
+const ErrorBoundaryContent: React.FC<ErrorBoundaryContentProps> = ({
+  level,
+  onRetry,
+  onReload,
+  canRetry,
+  showDetails,
+  onToggleDetails,
+  renderErrorDetails
+}) => {
+  const { t } = useLanguage();
+
+  switch (level) {
+    case 'critical':
+      return (
+        <Container maxWidth="md" sx={{ py: 8 }}>
+          <Box textAlign="center">
+            <ErrorIcon sx={{ fontSize: 80, color: 'error.main', mb: 3 }} />
+            <Typography variant="h3" component="h1" gutterBottom>
+              {t?.errorBoundary?.criticalTitle || 'Oops! Algo deu errado'}
+            </Typography>
+            <Typography variant="h6" color="text.secondary" paragraph>
+              {t?.errorBoundary?.criticalSubtitle || 'Uma falha crítica ocorreu no sistema. Nossa equipe foi notificada.'}
+            </Typography>
+            <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 4 }}>
+              <Button
+                variant="contained"
+                startIcon={<Refresh />}
+                onClick={onReload}
+                size="large"
+              >
+                {t?.errorBoundary?.reloadApp || 'Recarregar Aplicação'}
+              </Button>
+            </Stack>
+          </Box>
+        </Container>
+      );
+
+    case 'page':
+      return (
+        <Container maxWidth="sm" sx={{ py: 6 }}>
+          <Alert severity="error" sx={{ mb: 3 }}>
+            <AlertTitle>{t?.errorBoundary?.pageTitle || 'Erro na Página'}</AlertTitle>
+            {t?.errorBoundary?.pageSubtitle || 'Não foi possível carregar esta página. Tente novamente ou volte para a página inicial.'}
+          </Alert>
+
+          <Stack direction="row" spacing={2} justifyContent="center">
+            {canRetry && (
+              <Button
+                variant="contained"
+                startIcon={<Refresh />}
+                onClick={onRetry}
+              >
+                {t?.common?.tryAgain || 'Tentar Novamente'}
+              </Button>
+            )}
+            <Button
+              variant="outlined"
+              onClick={() => window.history.back()}
+            >
+              {t?.common?.back || 'Voltar'}
+            </Button>
+          </Stack>
+
+          {(isDevelopment || config.dev.logLevel === 'debug') && (
+            <Box sx={{ mt: 3 }}>
+              <Button
+                variant="text"
+                startIcon={showDetails ? <ExpandLess /> : <ExpandMore />}
+                onClick={onToggleDetails}
+                size="small"
+              >
+                {showDetails ? (t?.common?.hideDetails || 'Ocultar') : (t?.common?.showDetails || 'Mostrar')} Detalhes
+              </Button>
+              {renderErrorDetails()}
+            </Box>
+          )}
+        </Container>
+      );
+
+    default: // component level
+      return (
+        <Alert
+          severity="error"
+          sx={{ m: 2 }}
+          action={
+            <Stack direction="row" spacing={1}>
+              {canRetry && (
+                <IconButton
+                  size="small"
+                  onClick={onRetry}
+                  title={t?.common?.tryAgain || 'Tentar novamente'}
+                >
+                  <Refresh fontSize="small" />
+                </IconButton>
+              )}
+              {(isDevelopment || config.dev.logLevel === 'debug') && (
+                <IconButton
+                  size="small"
+                  onClick={onToggleDetails}
+                  title={t?.errorBoundary?.errorDetails || 'Detalhes do erro'}
+                >
+                  <BugReport fontSize="small" />
+                </IconButton>
+              )}
+            </Stack>
+          }
+        >
+          <AlertTitle>{t?.errorBoundary?.componentTitle || 'Componente com Error'}</AlertTitle>
+          {t?.errorBoundary?.componentSubtitle || 'Este componente encontrou um problema e não pode ser exibido.'}
+          {!canRetry && ` ${t?.common?.reload || 'Recarregue a página para tentar novamente.'}`}
+
+          {renderErrorDetails()}
+        </Alert>
+      );
+  }
 };
 
 export default ErrorBoundary;
