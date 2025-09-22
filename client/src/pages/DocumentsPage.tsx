@@ -442,13 +442,13 @@ const DocumentsPage: React.FC = () => {
             <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
               <Stack direction="row" spacing={2} alignItems="center">
                 <Chip
-                  label={`${selectedDocuments.size} ${t?.common?.selected || 'documento(s) selecionado(s)'}`}
+                  label={formatMessage(t?.documentPage?.selectedDocuments || '{{count}} documento(s) selecionado(s)', { count: selectedDocuments.size })}
                   color="primary"
                   variant="filled"
                   sx={{ fontWeight: 600 }}
                 />
                 <Typography variant="body2" color="text.secondary">
-                  de {pendingDocuments.length} {t?.documents?.title?.split(' ')[0]?.toLowerCase() || 'documentos'} {t?.status?.pending?.toLowerCase() || 'pendentes'}
+                  de {pendingDocuments.length} {t?.documentPage?.pendingDocuments || 'documentos pendentes'}
                 </Typography>
               </Stack>
 
@@ -462,7 +462,7 @@ const DocumentsPage: React.FC = () => {
                   disabled={isProcessing}
                   sx={{ minWidth: 150 }}
                 >
-                  {t?.common?.approve || 'Aprovar'} {t?.common?.all || 'Todos'}
+                  {t?.documentActions?.approveAll || 'Aprovar Todos'}
                 </Button>
                 <Button
                   variant="outlined"
@@ -473,7 +473,7 @@ const DocumentsPage: React.FC = () => {
                   disabled={isProcessing}
                   sx={{ minWidth: 150 }}
                 >
-                  {t?.common?.reject || 'Rejeitar'} {t?.common?.all || 'Todos'}
+                  {t?.documentActions?.rejectAll || 'Rejeitar Todos'}
                 </Button>
                 <IconButton
                   color="default"
@@ -521,8 +521,8 @@ const DocumentsPage: React.FC = () => {
         onClose={handleCloseBulkDialog}
         onConfirm={(comments) => handleBulkConfirmAction(documents, comments)}
         action={bulkConfirmDialog.action}
-        documentNumber={`${bulkConfirmDialog.documentCount} documentos`}
-        documentValue="Operação em massa"
+        documentNumber={formatMessage(t?.documentPage?.bulkDocuments || '{{count}} documentos', { count: bulkConfirmDialog.documentCount })}
+        documentValue={t?.documentPage?.massOperation || 'Operação em massa'}
         loading={isProcessing}
       />
     </Box>

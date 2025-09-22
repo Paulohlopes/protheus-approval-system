@@ -526,11 +526,11 @@ const DocumentsTablePage: React.FC = () => {
       const doc = new jsPDF();
 
       doc.setFontSize(18);
-      doc.text(t?.documents?.title || 'Relatório de Documentos', 14, 22);
+      doc.text(t?.export?.documentsReport || 'Relatório de Documentos', 14, 22);
 
       doc.setFontSize(11);
-      doc.text(`${t?.table?.item ? 'Data' : 'Data'}: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
-      doc.text(`Total de ${t?.documents?.title?.split(' ')[0]?.toLowerCase() || 'documentos'}: ${processedDocuments.length}`, 14, 38);
+      doc.text(`${t?.export?.dateLabel || 'Data'}: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
+      doc.text(`${t?.export?.totalDocuments || 'Total de documentos'}: ${processedDocuments.length}`, 14, 38);
 
       const tableData = processedDocuments.map(doc => [
         doc.numero.trim(),
@@ -779,7 +779,7 @@ const DocumentsTablePage: React.FC = () => {
                     fontWeight: 500,
                   }}
                 >
-                  Aprovador
+                  {t?.documentPage?.approver || 'Aprovador'}
                 </Typography>
               </Box>
             </Box>
@@ -850,7 +850,7 @@ const DocumentsTablePage: React.FC = () => {
                   maxWidth: 600,
                 }}
               >
-                Visualização avançada com controles completos de filtragem e ordenação.
+                {t?.documentPage?.advancedView || 'Visualização avançada com controles completos de filtragem e ordenação.'}
               </Typography>
             </Box>
 
@@ -869,7 +869,7 @@ const DocumentsTablePage: React.FC = () => {
           >
             {selected.length > 0 ? (
               <Typography sx={{ flex: '1 1 100%' }} color="inherit" variant="subtitle1" component="div">
-                {selected.length} {t?.common?.selected || 'selecionado(s)'}
+                {formatMessage(t?.documentPage?.selectedDocuments || '{{count}} selecionado(s)', { count: selected.length })}
               </Typography>
             ) : (
               <Typography sx={{ flex: '1 1 100%' }} variant="h6" id="tableTitle" component="div">
@@ -902,7 +902,7 @@ const DocumentsTablePage: React.FC = () => {
               <Stack direction="row" spacing={1}>
                 <TextField
                   size="small"
-                  placeholder={t?.common?.search || 'Buscar...'}
+                  placeholder={t?.searchPlaceholders?.general || 'Buscar...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   InputProps={{

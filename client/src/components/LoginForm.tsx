@@ -20,6 +20,7 @@ import {
   CheckCircle,
 } from '@mui/icons-material';
 import { protheusLoginSchema, type ProtheusLoginFormData } from '../schemas/loginSchema';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface LoginFormProps {
   onSubmit: (data: ProtheusLoginFormData) => Promise<void>;
@@ -29,6 +30,7 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, error }) => {
   const [emailValid, setEmailValid] = useState(false);
+  const { t } = useLanguage();
 
   const {
     control,
@@ -101,10 +103,10 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
 
             <Box textAlign="center">
               <Typography variant="h5" fontWeight={600} gutterBottom>
-                Sistema Protheus
+                {t?.login?.title || 'Sistema Protheus'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Aprovação de Documentos
+                {t?.login?.subtitle || 'Aprovação de Documentos'}
               </Typography>
             </Box>
           </Stack>
@@ -126,11 +128,11 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
                   <TextField
                     {...field}
                     fullWidth
-                    label="E-mail"
+                    label={t?.login?.emailLabel || 'E-mail'}
                     type="email"
                     autoComplete="email"
                     autoFocus
-                    placeholder="seu@email.com"
+                    placeholder={t?.login?.emailPlaceholder || 'seu@email.com'}
                     error={!!errors.email}
                     helperText={errors.email?.message}
                     InputProps={{
@@ -166,10 +168,10 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
                 {loading ? (
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CircularProgress size={20} color="inherit" />
-                    Entrando...
+                    {t?.login?.loggingIn || 'Entrando...'}
                   </Box>
                 ) : (
-                  'Entrar'
+                  t?.login?.loginButton || 'Entrar'
                 )}
               </Button>
             </Stack>

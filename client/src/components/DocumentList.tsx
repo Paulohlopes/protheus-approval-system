@@ -62,6 +62,7 @@ import { useAuthStore } from '../stores/authStore';
 import ConfirmationDialog from './ConfirmationDialog';
 import { EmptyState } from './EmptyState';
 import type { ProtheusDocument, DocumentApprovalLevel } from '../types/auth';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Type colors
 const getTypeColor = (type: ProtheusDocument['tipo']) => {
@@ -78,14 +79,14 @@ const getTypeColor = (type: ProtheusDocument['tipo']) => {
 };
 
 // Type labels
-const getTypeLabel = (type: ProtheusDocument['tipo']) => {
+const getTypeLabel = (type: ProtheusDocument['tipo'], t?: any) => {
   switch (type) {
     case 'IP':
-      return 'Pedido de Compra';
+      return t?.documentTypes?.IP || 'Pedido de Compra';
     case 'SC':
-      return 'Solicitação de Compra';
+      return t?.documentTypes?.SC || 'Solicitação de Compra';
     case 'CP':
-      return 'Contrato de Parceria';
+      return t?.documentTypes?.CP || 'Contrato de Parceria';
     default:
       return type;
   }
@@ -137,10 +138,10 @@ interface DocumentCardWithDensityProps extends DocumentCardProps {
   };
 }
 
-const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({ 
-  document, 
-  onApprove, 
-  onReject, 
+const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
+  document,
+  onApprove,
+  onReject,
   loading,
   densityStyles,
   userEmail,
@@ -152,6 +153,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const { t } = useLanguage();
   const formatCurrency = (value: string) => {
     if (!value || typeof value !== 'string') {
       return 'R$ 0,00';
@@ -235,7 +237,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
               <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, flexWrap: 'wrap' }}>
                 {/* Tipo de Documento */}
                 <Chip
-                  label={getTypeLabel(document.tipo)}
+                  label={getTypeLabel(document.tipo, t)}
                   color={getTypeColor(document.tipo)}
                   size="small"
                   variant="outlined"
@@ -294,7 +296,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
               <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CalendarToday sx={{ fontSize: 18, color: 'action.active' }} />
                 <Box component="span">
-                  Emissão: {formatDate(document.Emissao)}
+                  {t?.documentDetails?.issueDateShort || 'Emissão'}: {formatDate(document.Emissao)}
                 </Box>
               </Typography>
             </Box>
@@ -319,7 +321,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                   fontWeight: 500
                 }}
               >
-                Valor Total
+                {t?.documents?.totalValue || 'Valor Total'}
               </Typography>
               <Typography 
                 variant={isMobile ? "h6" : "h5"} 
@@ -366,7 +368,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                   }
                 }}
               >
-                Aprovar
+                {t?.common?.approve || 'Aprovar'}
               </Button>
               <Button
                 variant="outlined"
@@ -387,7 +389,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                   }
                 }}
               >
-                Rejeitar
+                {t?.common?.reject || 'Rejeitar'}
               </Button>
             </Stack>
           </Box>
@@ -411,7 +413,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
             onClick={() => setExpanded(!expanded)}
             endIcon={<ExpandMore sx={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}
           >
-            {expanded ? 'Ocultar Detalhes' : 'Ver Detalhes'}
+            {expanded ? (t?.common?.hideDetails || 'Ocultar Detalhes') : (t?.common?.viewDetails || 'Ver Detalhes')}
           </Button>
         </Box>
       </CardContent>
@@ -426,13 +428,13 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
           <Grid item xs={12} md={6}>
             <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Description fontSize="small" />
-              Informações Gerais
+              {t?.documentDetails?.generalInfo || 'Informações Gerais'}
             </Typography>
             <Box sx={{ pl: 2 }}>
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Filial
+                    {t?.documentDetails?.branch || 'Filial'}
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
                     {document.filial}
@@ -440,7 +442,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Data de Emissão
+                    {t?.documentDetails?.issueDate || 'Data de Emissão'}
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
                     {formatDate(document.Emissao)}
@@ -448,7 +450,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Comprador
+                    {t?.documentDetails?.buyerInfo || 'Comprador'}
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
                     {document.comprador}
@@ -456,7 +458,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 </Grid>
                 <Grid item xs={6}>
                   <Typography variant="caption" color="text.secondary">
-                    Condição de Pagamento
+                    {t?.documentDetails?.paymentCondition || 'Condição de Pagamento'}
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
                     {document.cond_pagamento}
@@ -464,7 +466,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                 </Grid>
                 <Grid item xs={12}>
                   <Typography variant="caption" color="text.secondary">
-                    Fornecedor
+                    {t?.documentDetails?.supplierInfo || 'Fornecedor'}
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
                     {document.cod_fornecedor}/{document.loja} - {document.nome_fornecedor ? String(document.nome_fornecedor).trim() : 'N/A'}
@@ -478,20 +480,20 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
         {/* Itens do documento */}
         <Accordion sx={{ mb: 2 }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
-            <Typography variant="h6">Itens ({document.itens.length})</Typography>
+            <Typography variant="h6">{formatMessage(t?.documentDetails?.itemsCount || 'Itens ({{count}})', { count: document.itens.length })}</Typography>
           </AccordionSummary>
           <AccordionDetails>
             <TableContainer component={Paper} variant="outlined">
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell>Item</TableCell>
-                    <TableCell>Produto</TableCell>
-                    <TableCell>Descrição</TableCell>
-                    <TableCell>Qtd</TableCell>
-                    <TableCell>Unidade</TableCell>
-                    <TableCell>Preço</TableCell>
-                    <TableCell>Total</TableCell>
+                    <TableCell>{t?.table?.item || 'Item'}</TableCell>
+                    <TableCell>{t?.table?.product || 'Produto'}</TableCell>
+                    <TableCell>{t?.table?.description || 'Descrição'}</TableCell>
+                    <TableCell>{t?.table?.quantity || 'Qtd'}</TableCell>
+                    <TableCell>{t?.table?.unit || 'Unidade'}</TableCell>
+                    <TableCell>{t?.table?.price || 'Preço'}</TableCell>
+                    <TableCell>{t?.table?.total || 'Total'}</TableCell>
                     <TableCell>Centro de Custo</TableCell>
                   </TableRow>
                 </TableHead>
@@ -733,6 +735,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const { user } = useAuthStore();
   const { filters, pagination, setFilters, setPagination } = useDocumentStore();
   const queryClient = useQueryClient();
+  const { t, formatMessage } = useLanguage();
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
   const [numeroTerm, setNumeroTerm] = useState(filters.numero || '');
   const [confirmDialog, setConfirmDialog] = useState<{

@@ -16,6 +16,7 @@ import {
   Cancel,
   Warning,
 } from '@mui/icons-material';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ConfirmationDialogProps {
   open: boolean;
@@ -38,6 +39,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
 }) => {
   const [comments, setComments] = useState('');
   const isApprove = action === 'approve';
+  const { t } = useLanguage();
 
   const handleClose = () => {
     setComments('');
@@ -52,21 +54,21 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
   const getActionConfig = () => {
     if (isApprove) {
       return {
-        title: 'Confirmar Aprovação',
-        message: 'Você tem certeza que deseja aprovar este documento?',
-        warning: 'Esta ação não pode ser desfeita após a confirmação.',
+        title: t?.dialog?.confirmApprovalTitle || 'Confirmar Aprovação',
+        message: t?.dialog?.confirmApprovalMessage || 'Você tem certeza que deseja aprovar este documento?',
+        warning: t?.dialog?.approvalWarning || 'Esta ação não pode ser desfeita após a confirmação.',
         icon: <CheckCircle sx={{ fontSize: 48, color: 'success.main' }} />,
-        confirmButtonText: 'Aprovar Documento',
+        confirmButtonText: t?.dialog?.approveButton || 'Aprovar Documento',
         confirmButtonColor: 'success' as const,
         severity: 'info' as const,
       };
     } else {
       return {
-        title: 'Confirmar Rejeição',
-        message: 'Você tem certeza que deseja rejeitar este documento?',
-        warning: 'Esta ação não pode ser desfeita e o documento será devolvido ao solicitante.',
+        title: t?.dialog?.confirmRejectionTitle || 'Confirmar Rejeição',
+        message: t?.dialog?.confirmRejectionMessage || 'Você tem certeza que deseja rejeitar este documento?',
+        warning: t?.dialog?.rejectionWarning || 'Esta ação não pode ser desfeita e o documento será devolvido ao solicitante.',
         icon: <Cancel sx={{ fontSize: 48, color: 'error.main' }} />,
-        confirmButtonText: 'Rejeitar Documento',
+        confirmButtonText: t?.dialog?.rejectButton || 'Rejeitar Documento',
         confirmButtonColor: 'error' as const,
         severity: 'warning' as const,
       };
@@ -101,7 +103,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
         {documentNumber && (
           <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              Documento:
+              {t?.dialog?.documentLabel || 'Documento:'}
             </Typography>
             <Typography variant="body1" fontWeight="medium">
               {documentNumber}
@@ -109,7 +111,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
             {documentValue && (
               <>
                 <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mt: 1 }}>
-                  Valor:
+                  {t?.dialog?.valueLabel || 'Valor:'}
                 </Typography>
                 <Typography variant="body1" fontWeight="medium" color="primary">
                   {documentValue}
@@ -123,8 +125,8 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
           fullWidth
           multiline
           rows={3}
-          label={isApprove ? 'Observações da aprovação (opcional)' : 'Motivo da rejeição (opcional)'}
-          placeholder={isApprove ? 'Digite observações sobre a aprovação...' : 'Digite o motivo da rejeição...'}
+          label={isApprove ? (t?.dialog?.approvalObservations || 'Observações da aprovação (opcional)') : (t?.dialog?.rejectionReason || 'Motivo da rejeição (opcional)')}
+          placeholder={isApprove ? (t?.dialog?.approvalPlaceholder || 'Digite observações sobre a aprovação...') : (t?.dialog?.rejectionPlaceholder || 'Digite o motivo da rejeição...')}
           value={comments}
           onChange={(e) => setComments(e.target.value)}
           disabled={loading}
@@ -147,7 +149,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
           disabled={loading}
           size="large"
         >
-          Cancelar
+          {t?.common?.cancel || 'Cancelar'}
         </Button>
         <Button
           onClick={handleConfirm}
@@ -158,7 +160,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
           autoFocus
           startIcon={loading ? null : (isApprove ? <CheckCircle /> : <Cancel />)}
         >
-          {loading ? 'Processando...' : config.confirmButtonText}
+          {loading ? (t?.common?.processing || 'Processando...') : config.confirmButtonText}
         </Button>
       </DialogActions>
     </Dialog>
