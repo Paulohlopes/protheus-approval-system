@@ -343,7 +343,7 @@ const DocumentsTablePage: React.FC = () => {
       sortable: false,
       filterable: false,
       visible: true,
-    };
+    }
   }, [t]);
 
   // Estados
