@@ -86,7 +86,6 @@ import ConfirmationDialog from '../components/ConfirmationDialog';
 import LanguageSelector from '../components/LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
 import ErrorBoundary from '../components/ErrorBoundary';
-import { getTranslation } from '../utils/translationHelpers';
 import type { ProtheusDocument } from '../types/auth';
 // import * as XLSX from 'xlsx';
 // import jsPDF from 'jspdf';

@@ -1,4 +1,4 @@
-import { TranslationKeys } from '../locales';
+import type { TranslationKeys } from '../locales';
 
 /**
  * Safely get nested translation value with fallback
