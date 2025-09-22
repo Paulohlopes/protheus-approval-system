@@ -110,6 +110,16 @@ const DocumentsTablePage: React.FC = () => {
   const theme = useTheme();
   const { t, formatMessage } = useLanguage();
 
+  // Função helper para traduzir status
+  const translateStatus = useCallback((situacao: string): string => {
+    switch (situacao) {
+      case 'Liberado': return t?.status?.approved || 'Liberado';
+      case 'Pendente': return t?.status?.pending || 'Pendente';
+      case 'Rejeitado': return t?.status?.rejected || 'Rejeitado';
+      default: return situacao;
+    }
+  }, [t]);
+
   // Memoize columns to prevent unnecessary re-renders
   const columns: Column[] = useMemo(() => {
     // Early return if translations not loaded yet
@@ -188,10 +198,11 @@ const DocumentsTablePage: React.FC = () => {
             default: return { color: 'default', icon: null };
           }
         };
+
         const info = getStatusInfo(status?.situacao_aprov || '');
         return (
           <Chip
-            label={status?.situacao_aprov}
+            label={translateStatus(status?.situacao_aprov || '')}
             size="small"
             color={info.color as any}
             icon={info.icon as any}
@@ -344,7 +355,7 @@ const DocumentsTablePage: React.FC = () => {
       visible: true,
     }
   ];
-  }, [t]);
+  }, [t, translateStatus]);
 
   // Estados
   const [page, setPage] = useState(0);
@@ -1320,7 +1331,7 @@ const DocumentsTablePage: React.FC = () => {
                                           {document.alcada.map((nivel, index) => (
                                             <Chip
                                               key={index}
-                                              label={`${nivel.CNOME || nivel.aprovador_aprov} - ${nivel.situacao_aprov}`}
+                                              label={`${nivel.CNOME || nivel.aprovador_aprov} - ${translateStatus(nivel.situacao_aprov)}`}
                                               size="small"
                                               color={
                                                 nivel.situacao_aprov === 'Liberado' ? 'success' :

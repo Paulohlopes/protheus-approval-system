@@ -154,6 +154,17 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const { t, formatMessage } = useLanguage();
+
+  // Função helper para traduzir status
+  const translateStatus = (situacao: string): string => {
+    switch (situacao) {
+      case 'Liberado': return t?.status?.approved || 'Liberado';
+      case 'Pendente': return t?.status?.pending || 'Pendente';
+      case 'Rejeitado': return t?.status?.rejected || 'Rejeitado';
+      default: return situacao;
+    }
+  };
+
   const formatCurrency = (value: string) => {
     if (!value || typeof value !== 'string') {
       return 'R$ 0,00';
@@ -637,7 +648,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                         </TableCell>
                         <TableCell>
                           <Chip 
-                            label={nivel.situacao_aprov} 
+                            label={translateStatus(nivel.situacao_aprov)} 
                             size="small"
                             color={getStatusColor(nivel.situacao_aprov) as any}
                             variant={nivel.situacao_aprov === 'Pendente' ? 'filled' : 'outlined'}
