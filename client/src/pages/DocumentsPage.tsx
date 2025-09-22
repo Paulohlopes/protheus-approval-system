@@ -571,12 +571,13 @@ const DocumentsPage: React.FC = () => {
         </Paper>
 
         {/* Document List */}
-        <DocumentList 
+        <DocumentList
           selectedDocuments={selectedDocuments}
           showBulkActions={showBulkActions}
           onSelectDocument={handleSelectDocument}
           onSelectAll={handleSelectAll}
           onToggleBulkActions={toggleBulkActions}
+          hideSearchBar={true}
         />
       </Container>
 

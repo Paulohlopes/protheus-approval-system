@@ -734,6 +734,7 @@ interface DocumentListProps {
   onSelectDocument?: (documentNumber: string, selected: boolean) => void;
   onSelectAll?: (pendingDocs: ProtheusDocument[]) => void;
   onToggleBulkActions?: () => void;
+  hideSearchBar?: boolean;
 }
 
 const DocumentList: React.FC<DocumentListProps> = ({
@@ -742,6 +743,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   onSelectDocument: externalOnSelectDocument,
   onSelectAll: externalOnSelectAll,
   onToggleBulkActions,
+  hideSearchBar = false,
 }) => {
   const { user } = useAuthStore();
   const { filters, pagination, setFilters, setPagination } = useDocumentStore();
@@ -1085,6 +1087,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
   return (
     <Box component="section" aria-label="Lista de documentos para aprovação">
       {/* Enhanced Filters */}
+      {!hideSearchBar && (
       <Card sx={{ mb: 3, borderRadius: 2 }} role="search" aria-label="Filtros de busca de documentos">
         <CardContent>
           <Grid container spacing={2} alignItems="center">
@@ -1220,6 +1223,7 @@ const DocumentList: React.FC<DocumentListProps> = ({
           </Grid>
         </CardContent>
       </Card>
+      )}
 
       {/* Barra de ações em massa */}
       {showBulkActions && (
