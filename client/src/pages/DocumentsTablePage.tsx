@@ -43,6 +43,8 @@ import {
   Container,
   AppBar,
   Toolbar as MuiToolbar,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
   Search,
@@ -70,6 +72,10 @@ import {
   Logout,
   Dashboard,
   ViewList,
+  Notifications,
+  Language,
+  Assignment,
+  Analytics,
 } from '@mui/icons-material';
 import { useDocuments } from '../hooks/useDocuments';
 import { useDocumentActions } from '../hooks/useDocumentActions';
@@ -566,30 +572,188 @@ const DocumentsTablePage: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'grey.50' }}>
-      {/* Header */}
-      <AppBar position="static" elevation={0}>
-        <MuiToolbar sx={{ minHeight: 70 }}>
+      {/* Enhanced Modern Header */}
+      <AppBar
+        position="static"
+        elevation={0}
+        sx={{
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+          backdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `linear-gradient(45deg, ${alpha(theme.palette.secondary.main, 0.1)} 0%, transparent 100%)`,
+            pointerEvents: 'none',
+          }
+        }}
+      >
+        <MuiToolbar
+          sx={{
+            minHeight: 84,
+            px: { xs: 2, sm: 3 },
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          {/* Enhanced Brand Section */}
           <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
-            <Avatar sx={{ bgcolor: 'primary.dark' }}>
-              <Business />
-            </Avatar>
+            <Box
+              sx={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 56,
+                height: 56,
+                borderRadius: '16px',
+                background: `linear-gradient(135deg, ${alpha(theme.palette.common.white, 0.2)} 0%, ${alpha(theme.palette.common.white, 0.05)} 100%)`,
+                backdropFilter: 'blur(10px)',
+                border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.3)}`,
+                }
+              }}
+            >
+              <Analytics sx={{
+                fontSize: 28,
+                color: theme.palette.common.white,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+              }} />
+            </Box>
             <Box>
-              <Typography variant="h6" fontWeight={600}>
+              <Typography
+                variant="h5"
+                fontWeight={700}
+                sx={{
+                  background: `linear-gradient(135deg, ${theme.palette.common.white} 0%, ${alpha(theme.palette.common.white, 0.8)} 100%)`,
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  color: 'transparent',
+                  textShadow: `0 2px 4px ${alpha(theme.palette.common.black, 0.3)}`,
+                  letterSpacing: '-0.5px',
+                }}
+              >
                 {t?.header?.title || 'Sistema Protheus - Tabela Avançada'}
               </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: alpha(theme.palette.common.white, 0.85),
+                  fontWeight: 500,
+                  letterSpacing: '0.5px',
+                }}
+              >
                 {t?.header?.subtitle || 'Visualização completa de documentos'}
               </Typography>
+            </Box>
+
+            {/* Stats Pills */}
+            <Box sx={{ ml: 'auto', mr: 3, display: { xs: 'none', lg: 'flex' }, gap: 2 }}>
+              <Chip
+                icon={<Assignment />}
+                label={`${processedDocuments.length} docs`}
+                size="small"
+                sx={{
+                  bgcolor: alpha(theme.palette.common.white, 0.15),
+                  color: theme.palette.common.white,
+                  backdropFilter: 'blur(10px)',
+                  border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+                  '& .MuiChip-icon': {
+                    color: 'inherit',
+                  }
+                }}
+              />
+              <Chip
+                icon={<Warning />}
+                label={`${processedDocuments.filter(doc => {
+                  const status = getCurrentApprovalStatus(doc.alcada, user?.email);
+                  return status?.situacao_aprov === 'Pendente';
+                }).length} pendentes`}
+                size="small"
+                sx={{
+                  bgcolor: alpha(theme.palette.warning.main, 0.2),
+                  color: theme.palette.common.white,
+                  backdropFilter: 'blur(10px)',
+                  border: `1px solid ${alpha(theme.palette.warning.light, 0.3)}`,
+                  '& .MuiChip-icon': {
+                    color: 'inherit',
+                  }
+                }}
+              />
             </Box>
           </Stack>
 
           <Stack direction="row" spacing={2} alignItems="center">
-            <LanguageSelector />
+            {/* Notification Badge */}
+            <IconButton
+              sx={{
+                color: alpha(theme.palette.common.white, 0.9),
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'translateY(-1px)',
+                  bgcolor: alpha(theme.palette.common.white, 0.1),
+                }
+              }}
+            >
+              <Badge
+                badgeContent={processedDocuments.filter(doc => {
+                  const status = getCurrentApprovalStatus(doc.alcada, user?.email);
+                  return status?.situacao_aprov === 'Pendente';
+                }).length}
+                color="warning"
+              >
+                <Notifications />
+              </Badge>
+            </IconButton>
+
+            {/* Language Selector with Enhanced Styling */}
+            <Box
+              sx={{
+                '& .MuiSelect-select': {
+                  color: theme.palette.common.white,
+                },
+                '& .MuiSvgIcon-root': {
+                  color: alpha(theme.palette.common.white, 0.7),
+                },
+              }}
+            >
+              <LanguageSelector />
+            </Box>
+
+            {/* Modern Toggle Buttons */}
             <ToggleButtonGroup
               value="table"
               exclusive
               size="small"
-              sx={{ bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}
+              sx={{
+                bgcolor: alpha(theme.palette.common.white, 0.15),
+                borderRadius: '12px',
+                border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+                backdropFilter: 'blur(10px)',
+                '& .MuiToggleButton-root': {
+                  color: alpha(theme.palette.common.white, 0.7),
+                  border: 'none',
+                  borderRadius: '10px !important',
+                  margin: '2px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&.Mui-selected': {
+                    bgcolor: alpha(theme.palette.common.white, 0.25),
+                    color: theme.palette.common.white,
+                    boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
+                  },
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.common.white, 0.15),
+                    transform: 'scale(1.05)',
+                  }
+                }
+              }}
             >
               <ToggleButton value="cards" onClick={() => navigate('/documents')}>
                 <Dashboard fontSize="small" />
@@ -599,20 +763,92 @@ const DocumentsTablePage: React.FC = () => {
               </ToggleButton>
             </ToggleButtonGroup>
 
-            <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
-
-            <Chip
-              avatar={<Avatar sx={{ bgcolor: 'primary.dark' }}>{user?.email?.charAt(0).toUpperCase()}</Avatar>}
-              label={user?.email}
-              sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'white' }}
+            <Divider
+              orientation="vertical"
+              flexItem
+              sx={{
+                bgcolor: alpha(theme.palette.common.white, 0.2),
+                mx: 2,
+                height: '40px',
+                alignSelf: 'center',
+              }}
             />
 
+            {/* Enhanced User Profile Section */}
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              p: 1.5,
+              borderRadius: '16px',
+              background: alpha(theme.palette.common.white, 0.1),
+              backdropFilter: 'blur(10px)',
+              border: `1px solid ${alpha(theme.palette.common.white, 0.15)}`,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                background: alpha(theme.palette.common.white, 0.15),
+                transform: 'translateY(-1px)',
+              }
+            }}>
+              <Avatar
+                sx={{
+                  width: 40,
+                  height: 40,
+                  mr: 2,
+                  background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
+                  border: `2px solid ${alpha(theme.palette.common.white, 0.3)}`,
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
+                }}
+              >
+                {user?.email?.charAt(0).toUpperCase()}
+              </Avatar>
+              <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  sx={{
+                    color: theme.palette.common.white,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {user?.email?.split('@')[0]}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: alpha(theme.palette.common.white, 0.75),
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                  }}
+                >
+                  Aprovador
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Enhanced Logout Button */}
             <Button
               color="inherit"
               onClick={handleLogout}
               startIcon={<Logout />}
               variant="outlined"
-              sx={{ borderColor: 'rgba(255,255,255,0.3)' }}
+              sx={{
+                borderColor: alpha(theme.palette.common.white, 0.3),
+                color: theme.palette.common.white,
+                borderRadius: '12px',
+                px: 2.5,
+                py: 1,
+                fontWeight: 600,
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  borderColor: alpha(theme.palette.common.white, 0.5),
+                  bgcolor: alpha(theme.palette.common.white, 0.1),
+                  transform: 'translateY(-1px)',
+                  boxShadow: `0 6px 20px ${alpha(theme.palette.common.black, 0.2)}`,
+                }
+              }}
             >
               {t?.common?.logout || 'Sair'}
             </Button>
@@ -621,7 +857,92 @@ const DocumentsTablePage: React.FC = () => {
       </AppBar>
 
       {/* Main Content */}
-      <Container maxWidth={false} sx={{ py: 3, flexGrow: 1 }}>
+      <Container maxWidth={false} sx={{ py: 4, flexGrow: 1 }}>
+        {/* Enhanced Table Header */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', md: 'center' },
+            mb: 3,
+          }}>
+            <Box>
+              <Typography
+                variant="h4"
+                component="h1"
+                gutterBottom
+                fontWeight={700}
+                sx={{
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  color: 'transparent',
+                  letterSpacing: '-0.5px',
+                  mb: 1,
+                }}
+              >
+                {t?.documents?.title || 'Tabela de Documentos'}
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{
+                  fontWeight: 400,
+                  lineHeight: 1.6,
+                  maxWidth: 600,
+                }}
+              >
+                Visualização avançada com controles completos de filtragem e ordenação.
+              </Typography>
+            </Box>
+
+            {/* Quick Stats Cards */}
+            <Grid container spacing={2} sx={{ mt: { xs: 2, md: 0 }, maxWidth: { md: 400 } }}>
+              <Grid item xs={6}>
+                <Card
+                  sx={{
+                    background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
+                    color: 'white',
+                    borderRadius: '12px',
+                    border: 'none',
+                  }}
+                >
+                  <CardContent sx={{ py: 2, px: 2, textAlign: 'center' }}>
+                    <Typography variant="h6" fontWeight={800}>
+                      {processedDocuments.length}
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                      Total
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={6}>
+                <Card
+                  sx={{
+                    background: `linear-gradient(135deg, ${theme.palette.warning.light} 0%, ${theme.palette.warning.main} 100%)`,
+                    color: 'white',
+                    borderRadius: '12px',
+                    border: 'none',
+                  }}
+                >
+                  <CardContent sx={{ py: 2, px: 2, textAlign: 'center' }}>
+                    <Typography variant="h6" fontWeight={800}>
+                      {processedDocuments.filter(doc => {
+                        const status = getCurrentApprovalStatus(doc.alcada, user?.email);
+                        return status?.situacao_aprov === 'Pendente';
+                      }).length}
+                    </Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                      Pendentes
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        </Box>
         <Paper sx={{ width: '100%', mb: 2 }}>
           {/* Toolbar */}
           <Toolbar

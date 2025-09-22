@@ -17,6 +17,11 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Divider,
+  Badge,
+  alpha,
+  useTheme,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
   Logout,
@@ -27,6 +32,12 @@ import {
   Close,
   Dashboard,
   ViewList,
+  Notifications,
+  Language,
+  Person,
+  TrendingUp,
+  Schedule,
+  Assignment,
 } from '@mui/icons-material';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -46,6 +57,7 @@ const DocumentsPage: React.FC = () => {
   const { filters, pagination } = useDocumentStore();
   const [scrolled, setScrolled] = useState(false);
   const { t, formatMessage } = useLanguage();
+  const theme = useTheme();
 
   // Use document actions hook
   const {
@@ -94,33 +106,157 @@ const DocumentsPage: React.FC = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Professional Header */}
-      <AppBar position="static" sx={{ mb: 0 }}>
-        <Toolbar sx={{ minHeight: 80 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 2 }}>
-            <Avatar sx={{ bgcolor: 'primary.dark', mr: 2 }}>
-              <Business />
-            </Avatar>
+      {/* Modern Professional Header */}
+      <AppBar
+        position="static"
+        elevation={0}
+        sx={{
+          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+          backdropFilter: 'blur(20px)',
+          borderBottom: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `linear-gradient(45deg, ${alpha(theme.palette.secondary.main, 0.1)} 0%, transparent 100%)`,
+            pointerEvents: 'none',
+          }
+        }}
+      >
+        <Toolbar
+          sx={{
+            minHeight: 84,
+            px: { xs: 2, sm: 3 },
+            position: 'relative',
+            zIndex: 1,
+          }}
+        >
+          {/* Brand Section with Enhanced Design */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            mr: 3,
+            position: 'relative',
+          }}>
+            <Box
+              sx={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 56,
+                height: 56,
+                borderRadius: '16px',
+                background: `linear-gradient(135deg, ${alpha(theme.palette.common.white, 0.2)} 0%, ${alpha(theme.palette.common.white, 0.05)} 100%)`,
+                backdropFilter: 'blur(10px)',
+                border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+                mr: 2,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.3)}`,
+                }
+              }}
+            >
+              <Business sx={{
+                fontSize: 28,
+                color: theme.palette.common.white,
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+              }} />
+            </Box>
             <Box>
-              <Typography variant="h6" component="div" fontWeight={600}>
+              <Typography
+                variant="h5"
+                component="div"
+                fontWeight={700}
+                sx={{
+                  background: `linear-gradient(135deg, ${theme.palette.common.white} 0%, ${alpha(theme.palette.common.white, 0.8)} 100%)`,
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  color: 'transparent',
+                  textShadow: `0 2px 4px ${alpha(theme.palette.common.black, 0.3)}`,
+                  letterSpacing: '-0.5px',
+                }}
+              >
                 {t?.header?.title?.split(' - ')[0] || 'Sistema Protheus'}
               </Typography>
-              <Typography variant="caption" color="rgba(255,255,255,0.7)">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: alpha(theme.palette.common.white, 0.85),
+                  fontWeight: 500,
+                  letterSpacing: '0.5px',
+                }}
+              >
                 {t?.documents?.title || 'Aprovação de Documentos'}
               </Typography>
             </Box>
           </Box>
-          
+
           <Box sx={{ flexGrow: 1 }} />
 
-          {/* Language Selector and Toggle View Buttons */}
+          {/* Enhanced Navigation Controls */}
           <Stack direction="row" spacing={2} alignItems="center" sx={{ mr: 3 }}>
-            <LanguageSelector />
+            {/* Notification Badge */}
+            <IconButton
+              sx={{
+                color: alpha(theme.palette.common.white, 0.9),
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'translateY(-1px)',
+                  bgcolor: alpha(theme.palette.common.white, 0.1),
+                }
+              }}
+            >
+              <Badge badgeContent={pendingDocuments.length} color="warning">
+                <Notifications />
+              </Badge>
+            </IconButton>
+
+            {/* Language Selector with Enhanced Styling */}
+            <Box
+              sx={{
+                '& .MuiSelect-select': {
+                  color: theme.palette.common.white,
+                },
+                '& .MuiSvgIcon-root': {
+                  color: alpha(theme.palette.common.white, 0.7),
+                },
+              }}
+            >
+              <LanguageSelector />
+            </Box>
+
+            {/* Modern Toggle Buttons */}
             <ToggleButtonGroup
               value="cards"
               exclusive
               size="small"
-              sx={{ bgcolor: 'rgba(255,255,255,0.1)', borderRadius: 1 }}
+              sx={{
+                bgcolor: alpha(theme.palette.common.white, 0.15),
+                borderRadius: '12px',
+                border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+                backdropFilter: 'blur(10px)',
+                '& .MuiToggleButton-root': {
+                  color: alpha(theme.palette.common.white, 0.7),
+                  border: 'none',
+                  borderRadius: '10px !important',
+                  margin: '2px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&.Mui-selected': {
+                    bgcolor: alpha(theme.palette.common.white, 0.25),
+                    color: theme.palette.common.white,
+                    boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
+                  },
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.common.white, 0.15),
+                    transform: 'scale(1.05)',
+                  }
+                }
+              }}
             >
               <ToggleButton value="cards">
                 <Dashboard fontSize="small" />
@@ -131,29 +267,94 @@ const DocumentsPage: React.FC = () => {
             </ToggleButtonGroup>
           </Stack>
 
-          <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+          <Divider
+            orientation="vertical"
+            flexItem
+            sx={{
+              bgcolor: alpha(theme.palette.common.white, 0.2),
+              mx: 2,
+              height: '40px',
+              alignSelf: 'center',
+            }}
+          />
 
-          {/* Status do usuário */}
-          <Box sx={{ display: 'flex', alignItems: 'center', ml: 3, mr: 3 }}>
-            <Avatar sx={{ width: 32, height: 32, mr: 1, bgcolor: 'primary.dark' }}>
+          {/* Enhanced User Profile Section */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            ml: 2,
+            mr: 3,
+            p: 1.5,
+            borderRadius: '16px',
+            background: alpha(theme.palette.common.white, 0.1),
+            backdropFilter: 'blur(10px)',
+            border: `1px solid ${alpha(theme.palette.common.white, 0.15)}`,
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              background: alpha(theme.palette.common.white, 0.15),
+              transform: 'translateY(-1px)',
+            }
+          }}>
+            <Avatar
+              sx={{
+                width: 40,
+                height: 40,
+                mr: 2,
+                background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
+                border: `2px solid ${alpha(theme.palette.common.white, 0.3)}`,
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
+              }}
+            >
               {user?.email?.charAt(0).toUpperCase()}
             </Avatar>
             <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-              <Typography variant="body2" color="inherit">
-                {user?.email}
+              <Typography
+                variant="body2"
+                fontWeight={600}
+                sx={{
+                  color: theme.palette.common.white,
+                  lineHeight: 1.2,
+                }}
+              >
+                {user?.email?.split('@')[0]}
               </Typography>
-              <Typography variant="caption" color="rgba(255,255,255,0.7)">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: alpha(theme.palette.common.white, 0.75),
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                }}
+              >
                 {t?.documents?.approvers?.slice(0, -2) || 'Aprovador'}
               </Typography>
             </Box>
           </Box>
-          
+
+          {/* Enhanced Logout Button */}
           <Button
             color="inherit"
             onClick={handleLogout}
             startIcon={<Logout />}
             variant="outlined"
-            sx={{ borderColor: 'rgba(255,255,255,0.3)' }}
+            sx={{
+              borderColor: alpha(theme.palette.common.white, 0.3),
+              color: theme.palette.common.white,
+              borderRadius: '12px',
+              px: 2.5,
+              py: 1,
+              fontWeight: 600,
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              '&:hover': {
+                borderColor: alpha(theme.palette.common.white, 0.5),
+                bgcolor: alpha(theme.palette.common.white, 0.1),
+                transform: 'translateY(-1px)',
+                boxShadow: `0 6px 20px ${alpha(theme.palette.common.black, 0.2)}`,
+              }
+            }}
           >
             {t?.common?.logout || 'Sair'}
           </Button>
@@ -161,65 +362,263 @@ const DocumentsPage: React.FC = () => {
       </AppBar>
 
       {/* Main Content */}
-      <Container maxWidth="xl" sx={{ flexGrow: 1, py: 3 }}>
-        {/* Page Header with Welcome Message */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom fontWeight={700} color="primary.main">
-            {t?.documents?.title || 'Documentos para Aprovação'}
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            {user?.email?.split('@')[0]}, {t?.messages?.noDocuments ? 'bem-vindo(a)! Aqui estão os documentos aguardando sua aprovação.' : 'bem-vindo(a)! Aqui estão os documentos aguardando sua aprovação.'}
-          </Typography>
-          
-          {/* Quick Info Cards com dados reais */}
-          <Grid container spacing={2} sx={{ mt: 2 }}>
-            <Grid item xs={12} sm={3}>
-              <Paper 
-                sx={{ 
-                  p: 2, 
-                  textAlign: 'center',
-                  bgcolor: pendingDocuments.length > 0 ? 'warning.50' : 'grey.100',
-                  border: '1px solid',
-                  borderColor: pendingDocuments.length > 0 ? 'warning.300' : 'grey.300'
+      <Container maxWidth="xl" sx={{ flexGrow: 1, py: 4 }}>
+        {/* Enhanced Page Header */}
+        <Box sx={{ mb: 5 }}>
+          <Box sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', md: 'flex-end' },
+            mb: 3,
+          }}>
+            <Box>
+              <Typography
+                variant="h3"
+                component="h1"
+                gutterBottom
+                fontWeight={800}
+                sx={{
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  color: 'transparent',
+                  letterSpacing: '-1px',
+                  mb: 1,
                 }}
               >
-                <Typography variant="h4" fontWeight={700} color="warning.dark">
-                  {pendingDocuments.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {`${t?.documents?.title?.split(' ')[0] || 'Documentos'} ${t?.status?.pending || 'Pendentes'}`}
-                </Typography>
-              </Paper>
+                {t?.documents?.title || 'Documentos para Aprovação'}
+              </Typography>
+              <Typography
+                variant="h6"
+                color="text.secondary"
+                sx={{
+                  fontWeight: 400,
+                  lineHeight: 1.6,
+                  maxWidth: 600,
+                }}
+              >
+                Olá, <strong>{user?.email?.split('@')[0]}</strong>! Aqui estão os documentos aguardando sua aprovação.
+              </Typography>
+            </Box>
+
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              mt: { xs: 2, md: 0 },
+            }}>
+              <Chip
+                icon={<Schedule />}
+                label={new Date().toLocaleDateString('pt-BR', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long'
+                })}
+                variant="outlined"
+                sx={{
+                  borderColor: theme.palette.primary.main,
+                  color: theme.palette.primary.main,
+                  fontWeight: 500,
+                }}
+              />
+            </Box>
+          </Box>
+          
+          {/* Enhanced Statistics Cards */}
+          <Grid container spacing={3}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card
+                sx={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: pendingDocuments.length > 0
+                    ? `linear-gradient(135deg, ${theme.palette.warning.light} 0%, ${theme.palette.warning.main} 100%)`
+                    : `linear-gradient(135deg, ${alpha(theme.palette.grey[400], 0.3)} 0%, ${alpha(theme.palette.grey[300], 0.5)} 100%)`,
+                  border: 'none',
+                  borderRadius: '16px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 12px 40px ${alpha(theme.palette.warning.main, 0.3)}`,
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(45deg, ${alpha(theme.palette.common.white, 0.1)} 0%, transparent 100%)`,
+                    pointerEvents: 'none',
+                  }
+                }}
+              >
+                <CardContent sx={{ position: 'relative', zIndex: 1, textAlign: 'center', py: 3 }}>
+                  <IconButton
+                    sx={{
+                      bgcolor: alpha(theme.palette.common.white, 0.2),
+                      color: theme.palette.common.white,
+                      mb: 2,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.common.white, 0.3),
+                      }
+                    }}
+                  >
+                    <Assignment fontSize="large" />
+                  </IconButton>
+                  <Typography variant="h3" fontWeight={800} color="white" sx={{ mb: 1 }}>
+                    {pendingDocuments.length}
+                  </Typography>
+                  <Typography variant="body1" color="white" fontWeight={600}>
+                    {`${t?.documents?.title?.split(' ')[0] || 'Documentos'} ${t?.status?.pending || 'Pendentes'}`}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
-            <Grid item xs={12} sm={3}>
-              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.50', border: '1px solid', borderColor: 'grey.300' }}>
-                <Typography variant="h4" fontWeight={700} color="primary.main">
-                  {documents.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {`Total de ${t?.documents?.title?.split(' ')[0] || 'Documentos'}`}
-                </Typography>
-              </Paper>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card
+                sx={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
+                  border: 'none',
+                  borderRadius: '16px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 12px 40px ${alpha(theme.palette.primary.main, 0.3)}`,
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(45deg, ${alpha(theme.palette.common.white, 0.1)} 0%, transparent 100%)`,
+                    pointerEvents: 'none',
+                  }
+                }}
+              >
+                <CardContent sx={{ position: 'relative', zIndex: 1, textAlign: 'center', py: 3 }}>
+                  <IconButton
+                    sx={{
+                      bgcolor: alpha(theme.palette.common.white, 0.2),
+                      color: theme.palette.common.white,
+                      mb: 2,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.common.white, 0.3),
+                      }
+                    }}
+                  >
+                    <TrendingUp fontSize="large" />
+                  </IconButton>
+                  <Typography variant="h3" fontWeight={800} color="white" sx={{ mb: 1 }}>
+                    {documents.length}
+                  </Typography>
+                  <Typography variant="body1" color="white" fontWeight={600}>
+                    {`Total de ${t?.documents?.title?.split(' ')[0] || 'Documentos'}`}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
-            <Grid item xs={12} sm={3}>
-              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'success.50', border: '1px solid', borderColor: 'success.300' }}>
-                <Typography variant="h4" fontWeight={700} color="success.dark">
-                  {documents.filter(doc => getCurrentApprovalStatus(doc.alcada, user?.email)?.situacao_aprov === 'Liberado').length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t?.status?.approved || 'Aprovados'}
-                </Typography>
-              </Paper>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card
+                sx={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: `linear-gradient(135deg, ${theme.palette.success.light} 0%, ${theme.palette.success.main} 100%)`,
+                  border: 'none',
+                  borderRadius: '16px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 12px 40px ${alpha(theme.palette.success.main, 0.3)}`,
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(45deg, ${alpha(theme.palette.common.white, 0.1)} 0%, transparent 100%)`,
+                    pointerEvents: 'none',
+                  }
+                }}
+              >
+                <CardContent sx={{ position: 'relative', zIndex: 1, textAlign: 'center', py: 3 }}>
+                  <IconButton
+                    sx={{
+                      bgcolor: alpha(theme.palette.common.white, 0.2),
+                      color: theme.palette.common.white,
+                      mb: 2,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.common.white, 0.3),
+                      }
+                    }}
+                  >
+                    <CheckCircle fontSize="large" />
+                  </IconButton>
+                  <Typography variant="h3" fontWeight={800} color="white" sx={{ mb: 1 }}>
+                    {documents.filter(doc => getCurrentApprovalStatus(doc.alcada, user?.email)?.situacao_aprov === 'Liberado').length}
+                  </Typography>
+                  <Typography variant="body1" color="white" fontWeight={600}>
+                    {t?.status?.approved || 'Aprovados'}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
-            <Grid item xs={12} sm={3}>
-              <Paper sx={{ p: 2, textAlign: 'center', bgcolor: 'grey.100', border: '1px solid', borderColor: 'grey.300' }}>
-                <Typography variant="h4" fontWeight={700} color="text.primary">
-                  {new Date().toLocaleDateString('pt-BR')}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {t?.table?.item ? 'Data Atual' : 'Data Atual'}
-                </Typography>
-              </Paper>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card
+                sx={{
+                  position: 'relative',
+                  overflow: 'hidden',
+                  background: `linear-gradient(135deg, ${theme.palette.info.light} 0%, ${theme.palette.info.main} 100%)`,
+                  border: 'none',
+                  borderRadius: '16px',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 12px 40px ${alpha(theme.palette.info.main, 0.3)}`,
+                  },
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(45deg, ${alpha(theme.palette.common.white, 0.1)} 0%, transparent 100%)`,
+                    pointerEvents: 'none',
+                  }
+                }}
+              >
+                <CardContent sx={{ position: 'relative', zIndex: 1, textAlign: 'center', py: 3 }}>
+                  <IconButton
+                    sx={{
+                      bgcolor: alpha(theme.palette.common.white, 0.2),
+                      color: theme.palette.common.white,
+                      mb: 2,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.common.white, 0.3),
+                      }
+                    }}
+                  >
+                    <Schedule fontSize="large" />
+                  </IconButton>
+                  <Typography variant="h3" fontWeight={800} color="white" sx={{ mb: 1 }}>
+                    {new Date().getDate()}
+                  </Typography>
+                  <Typography variant="body1" color="white" fontWeight={600}>
+                    {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
           </Grid>
 
