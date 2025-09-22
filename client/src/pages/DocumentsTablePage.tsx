@@ -1124,7 +1124,7 @@ const DocumentsTablePage: React.FC = () => {
                                       <Paper variant="outlined" sx={{ p: 2 }}>
                                         <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                           <Description fontSize="small" />
-                                          Itens do Documento ({document.itens.length})
+                                          {t?.documents?.documentItems || 'Itens do Documento'} ({document.itens.length})
                                         </Typography>
 
                                         {document.itens.length <= 3 ? (
@@ -1300,7 +1300,7 @@ const DocumentsTablePage: React.FC = () => {
                                             </Grid>
                                             <Grid item xs={12} sm={6}>
                                               <Typography variant="caption" color="text.secondary">
-                                                Centro de Custo Principal
+                                                {t?.documents?.costCenterMain || 'Centro de Custo Principal'}
                                               </Typography>
                                               <Typography variant="body2">
                                                 {document.itens[0]?.centro_custo} - {document.itens[0]?.descr_cc}
@@ -1314,7 +1314,7 @@ const DocumentsTablePage: React.FC = () => {
                                     <Grid item xs={12}>
                                       <Paper variant="outlined" sx={{ p: 2 }}>
                                         <Typography variant="subtitle2" gutterBottom>
-                                          Alçada de Aprovação
+                                          {t?.documents?.approvalHierarchy || 'Alçada de Aprovação'}
                                         </Typography>
                                         <Stack direction="row" spacing={2} flexWrap="wrap">
                                           {document.alcada.map((nivel, index) => (

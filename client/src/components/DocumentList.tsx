@@ -494,7 +494,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                     <TableCell>{t?.table?.unit || 'Unidade'}</TableCell>
                     <TableCell>{t?.table?.price || 'Preço'}</TableCell>
                     <TableCell>{t?.table?.total || 'Total'}</TableCell>
-                    <TableCell>Centro de Custo</TableCell>
+                    <TableCell>{t?.documents?.costCenter || 'Centro de Custo'}</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -542,9 +542,9 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
         <Accordion sx={{ mb: 2 }}>
           <AccordionSummary expandIcon={<ExpandMore />}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Typography variant="h6">Alçada de Aprovação</Typography>
+              <Typography variant="h6">{t?.documents?.approvalHierarchy || 'Alçada de Aprovação'}</Typography>
               <Typography variant="body2" color="text.secondary">
-                ({document.alcada.length} {document.alcada.length === 1 ? 'nível' : 'níveis'})
+                ({formatMessage(document.alcada.length === 1 ? (t?.documentDetails?.levelCount || '{{count}} nível') : (t?.documentDetails?.levelCountPlural || '{{count}} níveis'), { count: document.alcada.length })})
               </Typography>
               {(() => {
                 const pendingCount = document.alcada.filter(n => n.situacao_aprov === 'Pendente').length;
@@ -564,7 +564,7 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                     )}
                     {pendingCount > 0 && (
                       <Chip 
-                        label={`${pendingCount} pendente${pendingCount > 1 ? 's' : ''}`}
+                        label={formatMessage(pendingCount === 1 ? (t?.documentDetails?.pendingCount || '{{count}} pendente') : (t?.documentDetails?.pendingCountPlural || '{{count}} pendentes'), { count: pendingCount })}
                         size="small"
                         color="warning"
                         variant="filled"

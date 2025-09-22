@@ -34,6 +34,7 @@ import {
 import type { ProtheusDocument, DocumentApprovalLevel } from '../../types/auth';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { getTypeColor, getTypeLabel, getStatusColor } from '../../utils/documentHelpers';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface DocumentCardProps {
   document: ProtheusDocument;
@@ -61,6 +62,7 @@ const DocumentCard: React.FC<DocumentCardProps> = memo(({
   isPending,
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <Card 
@@ -279,7 +281,7 @@ const DocumentDetails: React.FC<DocumentDetailsProps> = ({
         <Grid item xs={12} md={6}>
           <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Person fontSize="small" />
-            Alçada de Aprovação
+            {t?.documents?.approvalHierarchy || 'Alçada de Aprovação'}
           </Typography>
           <Box sx={{ pl: 2 }}>
             {document.alcada.map((nivel, index) => (
@@ -376,7 +378,7 @@ const DocumentItems: React.FC<DocumentItemsProps> = ({ items }) => {
                 <TableCell>Unidade</TableCell>
                 <TableCell>Preço</TableCell>
                 <TableCell>Total</TableCell>
-                <TableCell>Centro de Custo</TableCell>
+                <TableCell>{t?.documents?.costCenter || 'Centro de Custo'}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
