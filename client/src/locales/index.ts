@@ -2,8 +2,14 @@ import { ptBR } from './pt-BR';
 import { en } from './en';
 import { es } from './es';
 
-// Type definitions
-export type Language = 'pt-BR' | 'en' | 'es';
+// Exportar como const e inferir o tipo
+export const LANGUAGES = {
+  'pt-BR': 'pt-BR',
+  'en': 'en',
+  'es': 'es'
+} as const;
+
+export type Language = keyof typeof LANGUAGES;
 export type TranslationKeys = typeof ptBR;
 
 // Data exports
@@ -13,16 +19,13 @@ export const translations: Record<Language, TranslationKeys> = {
   'es': es,
 };
 
-export const languages: Array<{ code: Language; name: string; flag: string }> = [
-  { code: 'pt-BR', name: 'Português (BR)', flag: '🇧🇷' },
-  { code: 'en', name: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
+export const languages = [
+  { code: 'pt-BR' as const, name: 'Português (BR)', flag: '🇧🇷' },
+  { code: 'en' as const, name: 'English', flag: '🇺🇸' },
+  { code: 'es' as const, name: 'Español', flag: '🇪🇸' },
 ];
 
 export const defaultLanguage: Language = 'pt-BR';
 
 // Re-export translations
 export { ptBR, en, es };
-
-// Re-export types from types file
-export type { Language as LanguageType } from './types';
