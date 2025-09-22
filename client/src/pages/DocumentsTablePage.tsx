@@ -654,65 +654,9 @@ const DocumentsTablePage: React.FC = () => {
               </Typography>
             </Box>
 
-            {/* Stats Pills */}
-            <Box sx={{ ml: 'auto', mr: 3, display: { xs: 'none', lg: 'flex' }, gap: 2 }}>
-              <Chip
-                icon={<Assignment />}
-                label={`${processedDocuments.length} docs`}
-                size="small"
-                sx={{
-                  bgcolor: alpha(theme.palette.common.white, 0.15),
-                  color: theme.palette.common.white,
-                  backdropFilter: 'blur(10px)',
-                  border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
-                  '& .MuiChip-icon': {
-                    color: 'inherit',
-                  }
-                }}
-              />
-              <Chip
-                icon={<Warning />}
-                label={`${processedDocuments.filter(doc => {
-                  const status = getCurrentApprovalStatus(doc.alcada, user?.email);
-                  return status?.situacao_aprov === 'Pendente';
-                }).length} pendentes`}
-                size="small"
-                sx={{
-                  bgcolor: alpha(theme.palette.warning.main, 0.2),
-                  color: theme.palette.common.white,
-                  backdropFilter: 'blur(10px)',
-                  border: `1px solid ${alpha(theme.palette.warning.light, 0.3)}`,
-                  '& .MuiChip-icon': {
-                    color: 'inherit',
-                  }
-                }}
-              />
-            </Box>
           </Stack>
 
           <Stack direction="row" spacing={2} alignItems="center">
-            {/* Notification Badge */}
-            <IconButton
-              sx={{
-                color: alpha(theme.palette.common.white, 0.9),
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  transform: 'translateY(-1px)',
-                  bgcolor: alpha(theme.palette.common.white, 0.1),
-                }
-              }}
-            >
-              <Badge
-                badgeContent={processedDocuments.filter(doc => {
-                  const status = getCurrentApprovalStatus(doc.alcada, user?.email);
-                  return status?.situacao_aprov === 'Pendente';
-                }).length}
-                color="warning"
-              >
-                <Notifications />
-              </Badge>
-            </IconButton>
-
             {/* Language Selector with Enhanced Styling */}
             <Box
               sx={{
@@ -897,50 +841,6 @@ const DocumentsTablePage: React.FC = () => {
               </Typography>
             </Box>
 
-            {/* Quick Stats Cards */}
-            <Grid container spacing={2} sx={{ mt: { xs: 2, md: 0 }, maxWidth: { md: 400 } }}>
-              <Grid item xs={6}>
-                <Card
-                  sx={{
-                    background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
-                    color: 'white',
-                    borderRadius: '12px',
-                    border: 'none',
-                  }}
-                >
-                  <CardContent sx={{ py: 2, px: 2, textAlign: 'center' }}>
-                    <Typography variant="h6" fontWeight={800}>
-                      {processedDocuments.length}
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                      Total
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item xs={6}>
-                <Card
-                  sx={{
-                    background: `linear-gradient(135deg, ${theme.palette.warning.light} 0%, ${theme.palette.warning.main} 100%)`,
-                    color: 'white',
-                    borderRadius: '12px',
-                    border: 'none',
-                  }}
-                >
-                  <CardContent sx={{ py: 2, px: 2, textAlign: 'center' }}>
-                    <Typography variant="h6" fontWeight={800}>
-                      {processedDocuments.filter(doc => {
-                        const status = getCurrentApprovalStatus(doc.alcada, user?.email);
-                        return status?.situacao_aprov === 'Pendente';
-                      }).length}
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                      Pendentes
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
           </Box>
         </Box>
         <Paper sx={{ width: '100%', mb: 2 }}>
