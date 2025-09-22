@@ -22,6 +22,9 @@ import {
   useTheme,
   Card,
   CardContent,
+  TextField,
+  InputAdornment,
+  IconButton,
 } from '@mui/material';
 import {
   Logout,
@@ -38,6 +41,8 @@ import {
   TrendingUp,
   Schedule,
   Assignment,
+  Search,
+  Refresh,
 } from '@mui/icons-material';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -54,8 +59,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 const DocumentsPage: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const { filters, pagination } = useDocumentStore();
+  const { filters, pagination, setFilters } = useDocumentStore();
   const [scrolled, setScrolled] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { t, formatMessage } = useLanguage();
   const theme = useTheme();
 
@@ -102,6 +108,27 @@ const DocumentsPage: React.FC = () => {
     await logout();
     navigate('/login');
   };
+
+  // Funções de busca e filtro
+  const handleSearch = () => {
+    setFilters({
+      ...filters,
+      search: searchTerm.trim()
+    });
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setFilters({
+      ...filters,
+      search: ''
+    });
+  };
+
+  // Sincronizar searchTerm com os filtros do store
+  useEffect(() => {
+    setSearchTerm(filters.search || '');
+  }, [filters.search]);
 
 
   return (
@@ -410,6 +437,139 @@ const DocumentsPage: React.FC = () => {
           </Box>
 
         </Box>
+
+        {/* Controles de Busca e Ações */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Stack spacing={2}>
+            {/* Barra de Busca */}
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <TextField
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+                placeholder={t?.searchPlaceholders?.general || 'Buscar por fornecedor, valor...'}
+                variant="outlined"
+                size="medium"
+                sx={{
+                  flexGrow: 1,
+                  minWidth: 280,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  }
+                }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: searchTerm && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={handleClearSearch}
+                        edge="end"
+                      >
+                        <Close fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              {/* Botões de Ação */}
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="outlined"
+                  startIcon={<Search />}
+                  onClick={handleSearch}
+                  sx={{
+                    minWidth: 120,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                  }}
+                >
+                  {t?.common?.search || 'Buscar'}
+                </Button>
+
+                <Button
+                  variant="outlined"
+                  startIcon={<Refresh />}
+                  onClick={() => refetch()}
+                  sx={{
+                    minWidth: 120,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                  }}
+                >
+                  {t?.common?.refresh || 'Atualizar'}
+                </Button>
+
+                <Button
+                  variant={showBulkActions ? "contained" : "outlined"}
+                  startIcon={showBulkActions ? <Close /> : <Assignment />}
+                  onClick={toggleBulkActions}
+                  sx={{
+                    minWidth: 120,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                  }}
+                >
+                  {showBulkActions ? (t?.common?.close || 'Fechar') : (t?.common?.selectAll || 'Seleção')}
+                </Button>
+              </Stack>
+            </Box>
+
+            {/* Estatísticas rápidas */}
+            {documents.length > 0 && (
+              <Box sx={{
+                display: 'flex',
+                gap: 2,
+                alignItems: 'center',
+                pt: 1,
+                borderTop: '1px solid',
+                borderColor: 'divider',
+              }}>
+                <Chip
+                  icon={<TrendingUp />}
+                  label={formatMessage(t?.table?.displayedRows || '{{from}}-{{to}} de {{count}}', {
+                    from: 1,
+                    to: documents.length,
+                    count: documents.length
+                  })}
+                  variant="outlined"
+                  size="small"
+                  sx={{ fontWeight: 500 }}
+                />
+                <Chip
+                  icon={<Schedule />}
+                  label={`${pendingDocuments.length} ${t?.documentPage?.pendingDocuments || 'pendentes'}`}
+                  color="warning"
+                  variant="outlined"
+                  size="small"
+                  sx={{ fontWeight: 500 }}
+                />
+              </Box>
+            )}
+          </Stack>
+        </Paper>
 
         {/* Document List */}
         <DocumentList 
