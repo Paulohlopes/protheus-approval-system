@@ -13,6 +13,7 @@ import {
   Tooltip
 } from '@mui/material';
 import { Visibility, MoreVert } from '@mui/icons-material';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export interface CardField {
   label: string;
@@ -107,6 +108,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   elevation = 1,
   highlight = false
 }) => {
+  const { t } = useLanguage();
   return (
     <Card 
       elevation={elevation}
@@ -219,7 +221,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                 variant="text"
                 color="primary"
               >
-                Ver Detalhes
+                {t?.common?.details || 'Ver Detalhes'}
               </Button>
             )}
           </CardActions>

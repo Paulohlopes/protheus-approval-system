@@ -37,12 +37,15 @@ import { getCurrentApprovalStatus } from '../utils/documentHelpers';
 import DocumentList from '../components/DocumentList';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import { formatDocumentValue } from '../hooks/useDocumentActions';
+import LanguageSelector from '../components/LanguageSelector';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const DocumentsPage: React.FC = () => {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const { filters, pagination } = useDocumentStore();
   const [scrolled, setScrolled] = useState(false);
+  const { t, formatMessage } = useLanguage();
 
   // Use document actions hook
   const {
@@ -100,18 +103,19 @@ const DocumentsPage: React.FC = () => {
             </Avatar>
             <Box>
               <Typography variant="h6" component="div" fontWeight={600}>
-                Sistema Protheus
+                {t?.header?.title?.split(' - ')[0] || 'Sistema Protheus'}
               </Typography>
               <Typography variant="caption" color="rgba(255,255,255,0.7)">
-                Aprovação de Documentos
+                {t?.documents?.title || 'Aprovação de Documentos'}
               </Typography>
             </Box>
           </Box>
           
           <Box sx={{ flexGrow: 1 }} />
 
-          {/* Toggle View Buttons */}
+          {/* Language Selector and Toggle View Buttons */}
           <Stack direction="row" spacing={2} alignItems="center" sx={{ mr: 3 }}>
+            <LanguageSelector />
             <ToggleButtonGroup
               value="cards"
               exclusive
@@ -139,7 +143,7 @@ const DocumentsPage: React.FC = () => {
                 {user?.email}
               </Typography>
               <Typography variant="caption" color="rgba(255,255,255,0.7)">
-                Aprovador
+                {t?.documents?.approvers?.slice(0, -2) || 'Aprovador'}
               </Typography>
             </Box>
           </Box>
@@ -151,7 +155,7 @@ const DocumentsPage: React.FC = () => {
             variant="outlined"
             sx={{ borderColor: 'rgba(255,255,255,0.3)' }}
           >
-            Sair
+            {t?.common?.logout || 'Sair'}
           </Button>
         </Toolbar>
       </AppBar>
@@ -161,10 +165,10 @@ const DocumentsPage: React.FC = () => {
         {/* Page Header with Welcome Message */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom fontWeight={700} color="primary.main">
-            Documentos para Aprovação
+            {t?.documents?.title || 'Documentos para Aprovação'}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-            Bem-vindo(a), {user?.email?.split('@')[0]}! Aqui estão os documentos aguardando sua aprovação.
+            {user?.email?.split('@')[0]}, {t?.messages?.noDocuments ? 'bem-vindo(a)! Aqui estão os documentos aguardando sua aprovação.' : 'bem-vindo(a)! Aqui estão os documentos aguardando sua aprovação.'}
           </Typography>
           
           {/* Quick Info Cards com dados reais */}
@@ -183,7 +187,7 @@ const DocumentsPage: React.FC = () => {
                   {pendingDocuments.length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Documentos Pendentes
+                  {`${t?.documents?.title?.split(' ')[0] || 'Documentos'} ${t?.status?.pending || 'Pendentes'}`}
                 </Typography>
               </Paper>
             </Grid>
@@ -193,7 +197,7 @@ const DocumentsPage: React.FC = () => {
                   {documents.length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Total de Documentos
+                  {`Total de ${t?.documents?.title?.split(' ')[0] || 'Documentos'}`}
                 </Typography>
               </Paper>
             </Grid>
@@ -203,7 +207,7 @@ const DocumentsPage: React.FC = () => {
                   {documents.filter(doc => getCurrentApprovalStatus(doc.alcada, user?.email)?.situacao_aprov === 'Liberado').length}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Aprovados
+                  {t?.status?.approved || 'Aprovados'}
                 </Typography>
               </Paper>
             </Grid>
@@ -213,7 +217,7 @@ const DocumentsPage: React.FC = () => {
                   {new Date().toLocaleDateString('pt-BR')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Data Atual
+                  {t?.table?.item ? 'Data Atual' : 'Data Atual'}
                 </Typography>
               </Paper>
             </Grid>
@@ -252,13 +256,13 @@ const DocumentsPage: React.FC = () => {
             <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
               <Stack direction="row" spacing={2} alignItems="center">
                 <Chip
-                  label={`${selectedDocuments.size} documento(s) selecionado(s)`}
+                  label={`${selectedDocuments.size} ${t?.common?.selected || 'documento(s) selecionado(s)'}`}
                   color="primary"
                   variant="filled"
                   sx={{ fontWeight: 600 }}
                 />
                 <Typography variant="body2" color="text.secondary">
-                  de {pendingDocuments.length} documentos pendentes
+                  de {pendingDocuments.length} {t?.documents?.title?.split(' ')[0]?.toLowerCase() || 'documentos'} {t?.status?.pending?.toLowerCase() || 'pendentes'}
                 </Typography>
               </Stack>
 
@@ -272,7 +276,7 @@ const DocumentsPage: React.FC = () => {
                   disabled={isProcessing}
                   sx={{ minWidth: 150 }}
                 >
-                  Aprovar Todos
+                  {t?.common?.approve || 'Aprovar'} {t?.common?.all || 'Todos'}
                 </Button>
                 <Button
                   variant="outlined"
@@ -283,7 +287,7 @@ const DocumentsPage: React.FC = () => {
                   disabled={isProcessing}
                   sx={{ minWidth: 150 }}
                 >
-                  Rejeitar Todos
+                  {t?.common?.reject || 'Rejeitar'} {t?.common?.all || 'Todos'}
                 </Button>
                 <IconButton
                   color="default"
