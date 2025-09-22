@@ -718,8 +718,16 @@ const DocumentsTablePage: React.FC = () => {
                   <TableCell padding="checkbox">
                     <Checkbox
                       color="primary"
-                      indeterminate={selected.length > 0 && selected.length < processedDocuments.length}
-                      checked={processedDocuments.length > 0 && selected.length === processedDocuments.length}
+                      indeterminate={
+                        selected.length > 0 &&
+                        selected.length < processedDocuments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).length
+                      }
+                      checked={
+                        processedDocuments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).length > 0 &&
+                        selected.length === processedDocuments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).length &&
+                        processedDocuments.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                          .every(doc => selected.includes(doc.numero.trim()))
+                      }
                       onChange={handleSelectAllClick}
                     />
                   </TableCell>
