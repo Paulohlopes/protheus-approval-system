@@ -489,14 +489,14 @@ const DocumentsTablePage: React.FC = () => {
       const XLSX = await import('xlsx');
 
       const exportData = processedDocuments.map(doc => ({
-        'Número': doc.numero.trim(),
-        'Tipo': doc.tipo,
-        'Fornecedor': doc.nome_fornecedor,
-        'Valor Total': doc.vl_tot_documento,
-        'Emissão': doc.Emissao,
-        'Comprador': doc.comprador,
-        'Filial': doc.filial,
-        'Condição Pagamento': doc.cond_pagamento,
+        [t?.documents?.number || 'Número']: doc.numero.trim(),
+        [t?.documents?.type || 'Tipo']: doc.tipo,
+        [t?.documents?.supplier || 'Fornecedor']: doc.nome_fornecedor,
+        [t?.documents?.totalValue || 'Valor Total']: doc.vl_tot_documento,
+        [t?.documents?.issueDate || 'Emissão']: doc.Emissao,
+        [t?.documents?.buyer || 'Comprador']: doc.comprador,
+        [t?.documents?.branch || 'Filial']: doc.filial,
+        [t?.documents?.paymentCondition || 'Condição Pagamento']: doc.cond_pagamento,
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -518,11 +518,11 @@ const DocumentsTablePage: React.FC = () => {
       const doc = new jsPDF();
 
       doc.setFontSize(18);
-      doc.text('Relatório de Documentos', 14, 22);
+      doc.text(t?.documents?.title || 'Relatório de Documentos', 14, 22);
 
       doc.setFontSize(11);
-      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
-      doc.text(`Total de documentos: ${processedDocuments.length}`, 14, 38);
+      doc.text(`${t?.table?.item ? 'Data' : 'Data'}: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
+      doc.text(`Total de ${t?.documents?.title?.split(' ')[0]?.toLowerCase() || 'documentos'}: ${processedDocuments.length}`, 14, 38);
 
       const tableData = processedDocuments.map(doc => [
         doc.numero.trim(),
@@ -534,7 +534,7 @@ const DocumentsTablePage: React.FC = () => {
       ]);
 
       (doc as any).autoTable({
-        head: [['Número', 'Tipo', 'Fornecedor', 'Valor', 'Emissão', 'Comprador']],
+        head: [[t?.documents?.number || 'Número', t?.documents?.type || 'Tipo', t?.documents?.supplier || 'Fornecedor', t?.documents?.totalValue || 'Valor', t?.documents?.issueDate || 'Emissão', t?.documents?.buyer || 'Comprador']],
         body: tableData,
         startY: 45,
         styles: { fontSize: 8 },
@@ -1131,7 +1131,7 @@ const DocumentsTablePage: React.FC = () => {
                                                 <Grid container spacing={2} alignItems="center">
                                                   <Grid item xs={12} sm={1}>
                                                     <Chip
-                                                      label={`Item ${item.item}`}
+                                                      label={`${t?.table?.item || 'Item'} ${item.item}`}
                                                       size="small"
                                                       color="primary"
                                                       variant="outlined"
@@ -1139,7 +1139,7 @@ const DocumentsTablePage: React.FC = () => {
                                                   </Grid>
                                                   <Grid item xs={12} sm={2}>
                                                     <Typography variant="caption" color="text.secondary">
-                                                      Produto
+                                                      {t?.table?.product || 'Produto'}
                                                     </Typography>
                                                     <Typography variant="body2" fontWeight={500}>
                                                       {item.produto}
@@ -1147,7 +1147,7 @@ const DocumentsTablePage: React.FC = () => {
                                                   </Grid>
                                                   <Grid item xs={12} sm={4}>
                                                     <Typography variant="caption" color="text.secondary">
-                                                      Descrição
+                                                      {t?.table?.description || 'Descrição'}
                                                     </Typography>
                                                     <Typography variant="body2">
                                                       {item.descr_produto}
@@ -1155,7 +1155,7 @@ const DocumentsTablePage: React.FC = () => {
                                                   </Grid>
                                                   <Grid item xs={6} sm={2}>
                                                     <Typography variant="caption" color="text.secondary">
-                                                      Quantidade
+                                                      {t?.table?.quantity || 'Quantidade'}
                                                     </Typography>
                                                     <Typography variant="body2" fontWeight={500}>
                                                       {item.quantidade} {item.unidade_medida}
@@ -1163,7 +1163,7 @@ const DocumentsTablePage: React.FC = () => {
                                                   </Grid>
                                                   <Grid item xs={6} sm={3}>
                                                     <Typography variant="caption" color="text.secondary">
-                                                      Valor Total
+                                                      {t?.table?.totalValue || 'Valor Total'}
                                                     </Typography>
                                                     <Typography variant="body2" fontWeight={600} color="primary">
                                                       R$ {item.total}
@@ -1174,7 +1174,7 @@ const DocumentsTablePage: React.FC = () => {
                                                 {item.observacao && (
                                                   <Box sx={{ mt: 1, p: 1, bgcolor: 'info.50', borderRadius: 1 }}>
                                                     <Typography variant="caption" color="info.main" fontWeight={500}>
-                                                      Observação: {item.observacao}
+                                                      {t?.table?.observation || 'Observação'}: {item.observacao}
                                                     </Typography>
                                                   </Box>
                                                 )}
@@ -1187,13 +1187,13 @@ const DocumentsTablePage: React.FC = () => {
                                             <Table size="small">
                                               <TableHead>
                                                 <TableRow sx={{ bgcolor: 'grey.100' }}>
-                                                  <TableCell><strong>Item</strong></TableCell>
-                                                  <TableCell><strong>Produto</strong></TableCell>
-                                                  <TableCell><strong>Descrição</strong></TableCell>
-                                                  <TableCell align="right"><strong>Qtd</strong></TableCell>
-                                                  <TableCell><strong>UN</strong></TableCell>
-                                                  <TableCell align="right"><strong>Preço</strong></TableCell>
-                                                  <TableCell align="right"><strong>Total</strong></TableCell>
+                                                  <TableCell><strong>{t?.table?.item || 'Item'}</strong></TableCell>
+                                                  <TableCell><strong>{t?.table?.product || 'Produto'}</strong></TableCell>
+                                                  <TableCell><strong>{t?.table?.description || 'Descrição'}</strong></TableCell>
+                                                  <TableCell align="right"><strong>{t?.table?.quantity || 'Qtd'}</strong></TableCell>
+                                                  <TableCell><strong>{t?.table?.unit || 'UN'}</strong></TableCell>
+                                                  <TableCell align="right"><strong>{t?.table?.price || 'Preço'}</strong></TableCell>
+                                                  <TableCell align="right"><strong>{t?.table?.total || 'Total'}</strong></TableCell>
                                                 </TableRow>
                                               </TableHead>
                                               <TableBody>
@@ -1264,7 +1264,7 @@ const DocumentsTablePage: React.FC = () => {
                                           <Grid container spacing={2}>
                                             <Grid item xs={6} sm={3}>
                                               <Typography variant="caption" color="text.secondary">
-                                                Total de Itens
+                                                {t?.table?.totalItems || 'Total de Itens'}
                                               </Typography>
                                               <Typography variant="body2" fontWeight={600}>
                                                 {document.itens.length}
@@ -1272,7 +1272,7 @@ const DocumentsTablePage: React.FC = () => {
                                             </Grid>
                                             <Grid item xs={6} sm={3}>
                                               <Typography variant="caption" color="text.secondary">
-                                                Valor Total
+                                                {t?.table?.totalValue || 'Valor Total'}
                                               </Typography>
                                               <Typography variant="body2" fontWeight={600} color="primary">
                                                 {(() => {

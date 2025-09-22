@@ -69,6 +69,8 @@ export const es = {
     price: 'Precio',
     total: 'Total',
     observation: 'Observación',
+    totalItems: 'Total de Ítems',
+    totalValue: 'Valor Total',
   },
   filters: {
     advancedFilters: 'Filtros Avanzados',

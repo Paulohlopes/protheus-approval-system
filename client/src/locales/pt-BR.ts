@@ -69,6 +69,8 @@ export const ptBR = {
     price: 'Preço',
     total: 'Total',
     observation: 'Observação',
+    totalItems: 'Total de Itens',
+    totalValue: 'Valor Total',
   },
   filters: {
     advancedFilters: 'Filtros Avançados',
