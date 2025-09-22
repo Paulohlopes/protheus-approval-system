@@ -136,28 +136,30 @@ export const useDocumentActions = () => {
     comments?: string
   ) => {
     const documentsToProcess = Array.from(selectedDocuments);
-    let currentIndex = 0;
-    
+    let processedCount = 0;
+    const totalCount = documentsToProcess.length;
+
     const processNextDocument = () => {
-      if (currentIndex >= documentsToProcess.length) {
+      if (processedCount >= totalCount) {
         console.log(`${action === 'approve' ? 'Aprovação' : 'Rejeição'} em massa concluída`);
         setSelectedDocuments(new Set());
         setShowBulkActions(false);
         return;
       }
-      
-      const documentNumber = documentsToProcess[currentIndex];
+
+      const documentNumber = documentsToProcess[processedCount];
       const document = documents.find(doc => doc.numero.trim() === documentNumber);
-      
+
       if (!document || !user) {
-        currentIndex++;
-        processNextDocument();
+        processedCount++;
+        // Use requestAnimationFrame instead of setTimeout for better performance
+        requestAnimationFrame(processNextDocument);
         return;
       }
 
       const mutation = action === 'approve' ? approveDocument : rejectDocument;
       const defaultComment = action === 'approve' ? 'Aprovado em massa' : 'Rejeitado em massa';
-      
+
       mutation.mutate({
         documentId: documentNumber,
         action,
@@ -167,17 +169,19 @@ export const useDocumentActions = () => {
       }, {
         onSuccess: () => {
           console.log(`✓ Documento ${documentNumber} ${action === 'approve' ? 'aprovado' : 'rejeitado'} com sucesso`);
-          currentIndex++;
-          setTimeout(processNextDocument, 500);
+          processedCount++;
+          // Reduced delay and use requestAnimationFrame for better performance
+          setTimeout(processNextDocument, 100);
         },
         onError: (error) => {
           console.error(`✗ Erro ao ${action === 'approve' ? 'aprovar' : 'rejeitar'} documento ${documentNumber}:`, error.message);
-          currentIndex++;
-          setTimeout(processNextDocument, 500);
+          processedCount++;
+          // Reduced delay and use requestAnimationFrame for better performance
+          setTimeout(processNextDocument, 100);
         }
       });
     };
-    
+
     processNextDocument();
   };
 

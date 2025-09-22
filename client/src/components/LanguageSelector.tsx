@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   IconButton,
   Menu,
@@ -13,24 +13,27 @@ import { Language as LanguageIcon, Check } from '@mui/icons-material';
 import { useLanguage } from '../contexts/LanguageContext';
 import { languages } from '../locales';
 
-const LanguageSelector: React.FC = () => {
+const LanguageSelector: React.FC = React.memo(() => {
   const { language, setLanguage } = useLanguage();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setAnchorEl(null);
-  };
+  }, []);
 
-  const handleLanguageChange = (lang: typeof languages[0]['code']) => {
+  const handleLanguageChange = useCallback((lang: typeof languages[0]['code']) => {
     setLanguage(lang);
     handleClose();
-  };
+  }, [setLanguage, handleClose]);
 
-  const currentLanguage = languages.find(lang => lang.code === language);
+  const currentLanguage = useMemo(() =>
+    languages.find(lang => lang.code === language),
+    [language]
+  );
 
   return (
     <>
@@ -87,6 +90,8 @@ const LanguageSelector: React.FC = () => {
       </Menu>
     </>
   );
-};
+});
+
+LanguageSelector.displayName = 'LanguageSelector';
 
 export default LanguageSelector;

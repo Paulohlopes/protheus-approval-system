@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import {
   Box,
   Paper,
@@ -84,7 +84,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCurrentApprovalStatus } from '../utils/documentHelpers';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import LanguageSelector from '../components/LanguageSelector';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/LanguageContext';\nimport ErrorBoundary from '../components/ErrorBoundary';\nimport { getTranslation } from '../utils/translationHelpers';
 import type { ProtheusDocument } from '../types/auth';
 // import * as XLSX from 'xlsx';
 // import jsPDF from 'jspdf';
@@ -109,8 +109,14 @@ const DocumentsTablePage: React.FC = () => {
   const theme = useTheme();
   const { t, formatMessage } = useLanguage();
 
-  // Define columns inside component to access 't' variable
-  const columns: Column[] = useMemo(() => [
+  // Memoize columns to prevent unnecessary re-renders
+  const columns: Column[] = useMemo(() => {
+    // Early return if translations not loaded yet
+    if (!t) {
+      return [];
+    }
+
+    return [
     {
       id: 'select',
       label: '',
@@ -335,8 +341,8 @@ const DocumentsTablePage: React.FC = () => {
       sortable: false,
       filterable: false,
       visible: true,
-    },
-  ], [t]);
+    };
+  }, [t]);
 
   // Estados
   const [page, setPage] = useState(0);
@@ -418,14 +424,14 @@ const DocumentsTablePage: React.FC = () => {
     return filtered;
   }, [documents, searchTerm, filters, orderBy, order, groupBy]);
 
-  // Handlers
-  const handleRequestSort = (property: string) => {
+  // Memoized handlers to prevent unnecessary re-renders
+  const handleRequestSort = useCallback((property: string) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
-  };
+  }, [orderBy, order]);
 
-  const handleSelectAllClick = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectAllClick = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.checked) {
       const newSelecteds = processedDocuments
         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -434,9 +440,9 @@ const DocumentsTablePage: React.FC = () => {
       return;
     }
     setSelected([]);
-  };
+  }, [processedDocuments, page, rowsPerPage]);
 
-  const handleClick = (documentNumber: string) => {
+  const handleClick = useCallback((documentNumber: string) => {
     const selectedIndex = selected.indexOf(documentNumber);
     let newSelected: string[] = [];
 
@@ -454,18 +460,18 @@ const DocumentsTablePage: React.FC = () => {
     }
 
     setSelected(newSelected);
-  };
+  }, [selected]);
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = useCallback((event: unknown, newPage: number) => {
     setPage(newPage);
-  };
+  }, []);
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
-  };
+  }, []);
 
-  const handleToggleRow = (documentNumber: string) => {
+  const handleToggleRow = useCallback((documentNumber: string) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(documentNumber)) {
       newExpanded.delete(documentNumber);
@@ -473,15 +479,15 @@ const DocumentsTablePage: React.FC = () => {
       newExpanded.add(documentNumber);
     }
     setExpandedRows(newExpanded);
-  };
+  }, [expandedRows]);
 
-  const handleColumnToggle = (columnId: string) => {
+  const handleColumnToggle = useCallback((columnId: string) => {
     setVisibleColumns(prev =>
       prev.includes(columnId)
         ? prev.filter(id => id !== columnId)
         : [...prev, columnId]
     );
-  };
+  }, []);
 
   const handleExportExcel = async () => {
     try {
@@ -548,14 +554,18 @@ const DocumentsTablePage: React.FC = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const handleLogout = useCallback(async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  }, [logout, navigate]);
 
-  const isSelected = (documentNumber: string) => selected.indexOf(documentNumber) !== -1;
+  const isSelected = useCallback((documentNumber: string) => selected.indexOf(documentNumber) !== -1, [selected]);
 
-  const formatDocumentValue = (document: ProtheusDocument | null): string | undefined => {
+  const formatDocumentValue = useCallback((document: ProtheusDocument | null): string | undefined => {
     if (!document || !document.vl_tot_documento) return undefined;
 
     try {
@@ -568,10 +578,11 @@ const DocumentsTablePage: React.FC = () => {
       console.error('Erro ao formatar valor do documento:', error);
       return 'R$ 0,00';
     }
-  };
+  }, []);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'grey.50' }}>
+    <ErrorBoundary level="page">
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'grey.50' }}>
       {/* Enhanced Modern Header */}
       <AppBar
         position="static"
@@ -1448,6 +1459,7 @@ const DocumentsTablePage: React.FC = () => {
         loading={isProcessing}
       />
     </Box>
+    </ErrorBoundary>
   );
 };
 

@@ -62,6 +62,9 @@ export class ErrorBoundary extends Component<Props, State> {
       errorInfo
     });
 
+    // Check if error is related to browser extensions
+    const isExtensionError = this.isExtensionRelatedError(error);
+
     // Log error
     logger.error('ErrorBoundary caught an error:', {
       error: error.message,
@@ -69,8 +72,13 @@ export class ErrorBoundary extends Component<Props, State> {
       componentStack: errorInfo.componentStack,
       errorId: this.state.errorId,
       level: this.props.level || 'component',
-      retryCount: this.retryCount
+      retryCount: this.retryCount,
+      isExtensionError
     });
+
+    if (isExtensionError) {
+      logger.warn('Browser extension interference detected:', error.message);
+    }
 
     // Call custom error handler
     if (this.props.onError) {
@@ -80,6 +88,25 @@ export class ErrorBoundary extends Component<Props, State> {
     // Send error to monitoring service (if configured)
     this.reportError(error, errorInfo);
   }
+
+  private isExtensionRelatedError = (error: Error): boolean => {
+    const errorMessage = error.message?.toLowerCase() || '';
+    const errorStack = error.stack?.toLowerCase() || '';
+
+    return (
+      errorMessage.includes('extension context invalidated') ||
+      errorMessage.includes('message channel closed') ||
+      errorMessage.includes('extension') ||
+      errorMessage.includes('chrome-extension') ||
+      errorMessage.includes('moz-extension') ||
+      errorStack.includes('extension://') ||
+      errorStack.includes('chrome-extension://') ||
+      errorStack.includes('moz-extension://') ||
+      // Common extension-related error patterns
+      errorMessage.includes('script error') ||
+      errorMessage.includes('non-error promise rejection')
+    );
+  };
 
   private reportError = async (error: Error, errorInfo: ErrorInfo) => {
     try {

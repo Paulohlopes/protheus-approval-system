@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from 'react';
 import { translations, defaultLanguage } from '../locales';
 import type { Language, TranslationKeys } from '../locales';
 
@@ -25,16 +25,31 @@ interface LanguageProviderProps {
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const savedLanguage = localStorage.getItem('preferredLanguage') as Language;
-    return savedLanguage || defaultLanguage;
+    try {
+      const savedLanguage = localStorage.getItem('preferredLanguage') as Language;
+      return savedLanguage && translations[savedLanguage] ? savedLanguage : defaultLanguage;
+    } catch (error) {
+      console.warn('Failed to access localStorage for language preference:', error);
+      return defaultLanguage;
+    }
   });
 
-  const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
-    localStorage.setItem('preferredLanguage', lang);
-  };
+  const setLanguage = useCallback((lang: Language) => {
+    if (!translations[lang]) {
+      console.warn(`Language '${lang}' not available, using default`);
+      return;
+    }
 
-  const formatMessage = (key: string, params?: Record<string, any>): string => {
+    setLanguageState(lang);
+
+    try {
+      localStorage.setItem('preferredLanguage', lang);
+    } catch (error) {
+      console.warn('Failed to save language preference to localStorage:', error);
+    }
+  }, []);
+
+  const formatMessage = useCallback((key: string, params?: Record<string, any>): string => {
     let message = key;
     if (params) {
       Object.entries(params).forEach(([param, value]) => {
@@ -42,12 +57,26 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       });
     }
     return message;
-  };
+  }, []);
 
-  const t = translations[language];
+  const t = useMemo(() => {
+    const currentTranslations = translations[language];
+    if (!currentTranslations) {
+      console.warn(`Translations for language '${language}' not found, using default`);
+      return translations[defaultLanguage];
+    }
+    return currentTranslations;
+  }, [language]);
+
+  const contextValue = useMemo(() => ({
+    language,
+    setLanguage,
+    t,
+    formatMessage
+  }), [language, setLanguage, t, formatMessage]);
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, formatMessage }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );
