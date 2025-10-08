@@ -3,6 +3,8 @@
  * Centralized configuration management for the application
  */
 
+import { getApiConfig, getActiveCountry, getActiveERP } from './api-endpoints';
+
 interface AppConfig {
   // Protheus ERP Configuration
   protheus: {
@@ -16,11 +18,18 @@ interface AppConfig {
   api: {
     genericQuery: string;
     purchaseRequests: string;
+    purchaseOrders: string;
     documents: string;
     dashboardStats: string;
     users: string;
     docAprov: string;
     aprovaDocumento: string;
+  };
+
+  // Active Configuration
+  active: {
+    country: string;
+    erp: string;
   };
 
   // Application Configuration
@@ -90,24 +99,35 @@ function getEnvVar(key: string, defaultValue: string | number | boolean): string
 }
 
 /**
+ * Get API configuration based on active country and ERP
+ */
+const apiConfig = getApiConfig();
+
+/**
  * Application configuration object
  */
 export const config: AppConfig = {
   protheus: {
-    baseUrl: getEnvVar('VITE_PROTHEUS_BASE_URL', 'http://localhost:8029/rest'),
-    oauth2TokenUrl: getEnvVar('VITE_OAUTH2_TOKEN_URL', '/tlpp/oauth2/token'),
-    oauth2RefreshUrl: getEnvVar('VITE_OAUTH2_REFRESH_URL', '/tlpp/oauth2/token'),
-    apiTimeout: getEnvVar('VITE_API_TIMEOUT', 30000),
+    baseUrl: apiConfig.baseUrl,
+    oauth2TokenUrl: apiConfig.oauth2TokenUrl,
+    oauth2RefreshUrl: apiConfig.oauth2RefreshUrl,
+    apiTimeout: apiConfig.apiTimeout,
   },
 
   api: {
-    genericQuery: getEnvVar('VITE_API_GENERIC_QUERY', '/api/framework/v1/genericQuery'),
-    purchaseRequests: getEnvVar('VITE_API_PURCHASE_REQUESTS', '/api/framework/v1/genericQuery'),
-    documents: getEnvVar('VITE_API_DOCUMENTS', '/api/documents'),
-    dashboardStats: getEnvVar('VITE_API_DASHBOARD_STATS', '/api/dashboard/stats'),
-    users: getEnvVar('VITE_API_USERS', '/api/framework/v1/users'),
-    docAprov: getEnvVar('VITE_API_DOC_APROV', '/DocAprov/documentos'),
-    aprovaDocumento: getEnvVar('VITE_API_APROVA_DOCUMENTO', '/aprova_documento'),
+    genericQuery: apiConfig.endpoints.genericQuery,
+    purchaseRequests: apiConfig.endpoints.purchaseRequests,
+    purchaseOrders: apiConfig.endpoints.purchaseOrders,
+    documents: apiConfig.endpoints.documents,
+    dashboardStats: apiConfig.endpoints.dashboardStats,
+    users: apiConfig.endpoints.users,
+    docAprov: apiConfig.endpoints.docAprov,
+    aprovaDocumento: apiConfig.endpoints.aprovaDocumento,
+  },
+
+  active: {
+    country: getActiveCountry(),
+    erp: getActiveERP(),
   },
 
   app: {
@@ -151,22 +171,25 @@ export const config: AppConfig = {
 export function validateEnvironment(): string[] {
   const errors: string[] = [];
 
-  // Required environment variables
-  const requiredVars = [
-    'VITE_PROTHEUS_BASE_URL',
-  ];
+  // Check if active country and ERP are set
+  if (!import.meta.env.VITE_ACTIVE_COUNTRY) {
+    errors.push('Missing VITE_ACTIVE_COUNTRY environment variable');
+  }
 
-  for (const varName of requiredVars) {
-    if (!import.meta.env[varName]) {
-      errors.push(`Missing required environment variable: ${varName}`);
-    }
+  if (!import.meta.env.VITE_ACTIVE_ERP) {
+    errors.push('Missing VITE_ACTIVE_ERP environment variable');
+  }
+
+  // Validate base URL
+  if (!config.protheus.baseUrl) {
+    errors.push(`Missing base URL for country: ${config.active.country}, ERP: ${config.active.erp}`);
   }
 
   // Validate URLs
   try {
     new URL(config.protheus.baseUrl);
   } catch {
-    errors.push('Invalid VITE_PROTHEUS_BASE_URL format');
+    errors.push(`Invalid base URL format: ${config.protheus.baseUrl}`);
   }
 
   // Validate numeric ranges

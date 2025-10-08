@@ -1,18 +1,15 @@
 import api from './api';
 import ProtheusQueryBuilder, { type WhereCondition, type QueryOptions } from '../utils/queryBuilder';
 import { purchaseRequestFiltersSchema, purchaseOrderFiltersSchema, ValidationUtils } from '../schemas/validation';
-import type { 
-  PurchaseRequest, 
-  PurchaseRequestsResponse, 
+import { config } from '../config/environment';
+import type {
+  PurchaseRequest,
+  PurchaseRequestsResponse,
   PurchaseRequestFilters,
   PurchaseOrder,
   PurchaseOrdersResponse,
   PurchaseOrderFilters
 } from '../types/purchase';
-
-// URLs das APIs
-const PURCHASE_REQUESTS_URL = import.meta.env.VITE_API_PURCHASE_REQUESTS;
-const GENERIC_QUERY_URL = '/api/framework/v1/genericQuery';
 
 export const purchaseService = {
   // Buscar todas as solicitações de compra com paginação
@@ -74,8 +71,8 @@ export const purchaseService = {
       };
 
       const queryString = ProtheusQueryBuilder.buildQuery(queryOptions);
-      const url = `/api/framework/v1/genericQuery?${queryString}`;
-      
+      const url = `${config.api.genericQuery}?${queryString}`;
+
       console.log('Buscando solicitações de compra (secure query)...', url);
       
       const response = await api.get<PurchaseRequestsResponse>(url);
@@ -194,8 +191,8 @@ export const purchaseService = {
         params.append('pageSize', validatedFilters.pageSize.toString());
       }
 
-      const url = `${GENERIC_QUERY_URL}?${params.toString()}`;
-      
+      const url = `${config.api.genericQuery}?${params.toString()}`;
+
       console.log('Buscando pedidos de compra...', url);
       
       const response = await api.get<PurchaseOrdersResponse>(url);
