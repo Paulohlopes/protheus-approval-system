@@ -79,6 +79,7 @@ export interface ProtheusDocument {
   loja: string;
   nome_fornecedor: string;
   vl_tot_documento: string;
+  _country?: string; // Country identifier for multi-country support
 }
 
 export interface ProtheusAttachment {

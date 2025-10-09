@@ -3,7 +3,7 @@
  * Centralized configuration management for the application
  */
 
-import { getApiConfig, getActiveCountry, getActiveERP } from './api-endpoints';
+import { getApiConfig, getActiveCountry, getActiveCountries, getActiveERP } from './api-endpoints';
 
 interface AppConfig {
   // Protheus ERP Configuration
@@ -28,7 +28,8 @@ interface AppConfig {
 
   // Active Configuration
   active: {
-    country: string;
+    country: string; // Primary country (first in the list)
+    countries: string[]; // All active countries
     erp: string;
   };
 
@@ -127,6 +128,7 @@ export const config: AppConfig = {
 
   active: {
     country: getActiveCountry(),
+    countries: getActiveCountries(),
     erp: getActiveERP(),
   },
 
@@ -180,17 +182,37 @@ export function validateEnvironment(): string[] {
     errors.push('Missing VITE_ACTIVE_ERP environment variable');
   }
 
-  // Validate base URL
+  // Validate base URL for primary country
   if (!config.protheus.baseUrl) {
     errors.push(`Missing base URL for country: ${config.active.country}, ERP: ${config.active.erp}`);
   }
 
-  // Validate URLs
+  // Validate URLs for primary country
   try {
     new URL(config.protheus.baseUrl);
   } catch {
     errors.push(`Invalid base URL format: ${config.protheus.baseUrl}`);
   }
+
+  // Validate all active countries have configuration
+  config.active.countries.forEach(country => {
+    const countryEnvPrefix = `VITE_${country}_${config.active.erp}`;
+    const baseUrlVar = `${countryEnvPrefix}_BASE_URL`;
+    const usernameVar = `${countryEnvPrefix}_USERNAME`;
+    const passwordVar = `${countryEnvPrefix}_PASSWORD`;
+
+    if (!import.meta.env[baseUrlVar]) {
+      errors.push(`Missing ${baseUrlVar} for active country: ${country}`);
+    }
+
+    if (!import.meta.env[usernameVar]) {
+      errors.push(`Missing ${usernameVar} for active country: ${country}`);
+    }
+
+    if (!import.meta.env[passwordVar]) {
+      errors.push(`Missing ${passwordVar} for active country: ${country}`);
+    }
+  });
 
   // Validate numeric ranges
   if (config.pagination.defaultPageSize <= 0 || config.pagination.defaultPageSize > config.pagination.maxPageSize) {

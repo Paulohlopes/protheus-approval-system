@@ -140,6 +140,36 @@ export const getActiveCountry = (): Country => {
 };
 
 /**
+ * Get all active countries from environment (supports comma-separated values)
+ */
+export const getActiveCountries = (): Country[] => {
+  const countriesStr = import.meta.env.VITE_ACTIVE_COUNTRY as string;
+  if (!countriesStr) {
+    console.warn('No active countries configured, defaulting to BR');
+    return ['BR'];
+  }
+
+  // Split by comma and trim whitespace
+  const countries = countriesStr.split(',').map(c => c.trim()) as Country[];
+
+  // Filter valid countries that have configuration
+  const validCountries = countries.filter(country => {
+    if (!API_CONFIGS[country]) {
+      console.warn(`Invalid country: ${country}, skipping`);
+      return false;
+    }
+    return true;
+  });
+
+  if (validCountries.length === 0) {
+    console.warn('No valid countries found, defaulting to BR');
+    return ['BR'];
+  }
+
+  return validCountries;
+};
+
+/**
  * Get current active ERP from environment
  */
 export const getActiveERP = (): ERP => {
@@ -167,6 +197,26 @@ export const getApiConfig = (): ERPEndpoints => {
   }
 
   return config;
+};
+
+/**
+ * Get API configurations for all active countries
+ */
+export const getAllApiConfigs = (): Array<{ country: Country; config: ERPEndpoints }> => {
+  const countries = getActiveCountries();
+  const erp = getActiveERP();
+
+  return countries.map(country => {
+    const config = API_CONFIGS[country]?.[erp];
+
+    if (!config) {
+      throw new Error(
+        `No API configuration found for country: ${country}, ERP: ${erp}`
+      );
+    }
+
+    return { country, config };
+  });
 };
 
 /**

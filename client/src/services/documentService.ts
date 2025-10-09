@@ -1,6 +1,7 @@
 import api from './api';
 import axios from 'axios';
 import { config } from '../config/environment';
+import { getAllApiConfigs, getApiConfigFor, type Country } from '../config/api-endpoints';
 
 // Criar interceptor para debug de headers
 const debugAxios = axios.create();
@@ -37,7 +38,7 @@ import type {
 } from '../types/auth';
 
 export const documentService = {
-  // Get documents with filters and pagination
+  // Get documents with filters and pagination - from all active countries
   async getDocuments(
     userEmail: string,
     filters: DocumentFilters = {},
@@ -45,15 +46,15 @@ export const documentService = {
   ): Promise<ProtheusApiResponse> {
     try {
       const params = new URLSearchParams();
-      
+
       // Add the aprovador filter - required parameter
       params.append('aprovador', userEmail);
-      
+
       // Add numero filter if provided
       if (filters.numero) {
         params.append('numero', filters.numero);
       }
-      
+
       // Add search filter if provided (for compatibility)
       if (filters.search && !filters.numero) {
         // Se search for um número (apenas dígitos), usar como numero
@@ -67,29 +68,63 @@ export const documentService = {
 
       console.log('documentService.getDocuments - Filters received:', filters);
       console.log('documentService.getDocuments - URL params:', params.toString());
-      
-      // Call the new Protheus API endpoint with Basic Auth
-      const apiUrl = `${config.protheus.baseUrl}${config.api.docAprov}?${params.toString()}`;
-      console.log('documentService.getDocuments - Making authenticated API call to:', apiUrl);
-      
-      // Create Basic Auth header
-      const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
-      
-      const response = await axios.get(apiUrl, {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${credentials}`
-        },
-        timeout: 30000
+
+      // Get all active country configurations
+      const apiConfigs = getAllApiConfigs();
+      console.log(`documentService.getDocuments - Fetching documents from ${apiConfigs.length} countries:`, apiConfigs.map(c => c.country).join(', '));
+
+      // Fetch documents from all countries in parallel
+      const promises = apiConfigs.map(async ({ country, config: countryConfig }) => {
+        try {
+          const apiUrl = `${countryConfig.baseUrl}${countryConfig.endpoints.docAprov}?${params.toString()}`;
+          console.log(`documentService.getDocuments - [${country}] Making API call to:`, apiUrl);
+
+          // Create Basic Auth header with country-specific credentials
+          const credentials = btoa(`${countryConfig.auth.username}:${countryConfig.auth.password}`);
+
+          const response = await axios.get(apiUrl, {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Basic ${credentials}`
+            },
+            timeout: 30000
+          });
+
+          console.log(`documentService.getDocuments - [${country}] Response:`, response.data);
+
+          // Add country metadata to each document
+          const documentsWithCountry = (response.data.documentos || []).map((doc: ProtheusDocument) => ({
+            ...doc,
+            _country: country // Add country identifier
+          }));
+
+          return { country, documentos: documentsWithCountry };
+        } catch (error: any) {
+          console.error(`Error fetching documents from ${country}:`, error);
+          // Return empty array for this country instead of failing completely
+          return { country, documentos: [], error: error.message };
+        }
       });
-      
-      console.log('documentService.getDocuments - Response:', response.data);
-      
-      return response.data;
+
+      // Wait for all requests to complete
+      const results = await Promise.all(promises);
+
+      // Combine all documents from all countries
+      const allDocuments = results.flatMap(result => result.documentos);
+
+      // Log errors if any
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) {
+        console.warn('Some countries failed to fetch:', errors);
+      }
+
+      console.log(`documentService.getDocuments - Total documents from all countries: ${allDocuments.length}`);
+
+      return { documentos: allDocuments };
     } catch (error: any) {
       console.error('Error fetching documents:', error);
-      
+
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
           throw new Error('Sessão expirada. Faça login novamente.');
@@ -178,11 +213,23 @@ export const documentService = {
       const tenantId = `01,${action.document.filial}`;
       console.log(`🚀 APROVAÇÃO [${requestId}] - TenantId:`, JSON.stringify(tenantId));
       console.log(`🚀 APROVAÇÃO [${requestId}] - Documento: ${action.document.numero}`);
-      
-      // Create Basic Auth header
-      const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
-      
-      const apiUrl = `${config.protheus.baseUrl}${config.api.aprovaDocumento}`;
+
+      // Get the country-specific configuration if document has country metadata
+      const documentCountry = action.document._country as Country | undefined;
+      const countryConfig = documentCountry
+        ? getApiConfigFor(documentCountry, 'PROTHEUS')
+        : config;
+
+      console.log(`🚀 APROVAÇÃO [${requestId}] - Using config for country:`, documentCountry || 'default');
+
+      // Create Basic Auth header with country-specific credentials
+      const credentials = documentCountry
+        ? btoa(`${countryConfig.auth.username}:${countryConfig.auth.password}`)
+        : btoa(`${config.auth.username}:${config.auth.password}`);
+
+      const baseUrl = documentCountry ? countryConfig.baseUrl : config.protheus.baseUrl;
+      const endpoint = documentCountry ? countryConfig.endpoints.aprovaDocumento : config.api.aprovaDocumento;
+      const apiUrl = `${baseUrl}${endpoint}`;
       
       console.log('Calling approval API with axios:', {
         url: apiUrl,
@@ -283,11 +330,23 @@ export const documentService = {
       const requestId = Math.random().toString(36).substring(7);
       const tenantId = `01,${action.document.filial}`;
       console.log(`🚀 REJEIÇÃO [${requestId}] - TenantId:`, JSON.stringify(tenantId));
-      
-      // Create Basic Auth header
-      const credentials = btoa(`${config.auth.username}:${config.auth.password}`);
-      
-      const apiUrl = `${config.protheus.baseUrl}${config.api.aprovaDocumento}`;
+
+      // Get the country-specific configuration if document has country metadata
+      const documentCountry = action.document._country as Country | undefined;
+      const countryConfig = documentCountry
+        ? getApiConfigFor(documentCountry, 'PROTHEUS')
+        : config;
+
+      console.log(`🚀 REJEIÇÃO [${requestId}] - Using config for country:`, documentCountry || 'default');
+
+      // Create Basic Auth header with country-specific credentials
+      const credentials = documentCountry
+        ? btoa(`${countryConfig.auth.username}:${countryConfig.auth.password}`)
+        : btoa(`${config.auth.username}:${config.auth.password}`);
+
+      const baseUrl = documentCountry ? countryConfig.baseUrl : config.protheus.baseUrl;
+      const endpoint = documentCountry ? countryConfig.endpoints.aprovaDocumento : config.api.aprovaDocumento;
+      const apiUrl = `${baseUrl}${endpoint}`;
       
       console.log('Calling rejection API with axios:', {
         url: apiUrl,
