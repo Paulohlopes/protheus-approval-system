@@ -147,7 +147,7 @@ const DocumentsTablePage: React.FC = () => {
           BR: { color: '#009739', name: 'Brasil' },
           AR: { color: '#74ACDF', name: 'Argentina' },
           CL: { color: '#D52B1E', name: 'Chile' },
-          PE: { color: '#D91023', name: 'Peru' }
+          PE: { color: '#1565C0', name: 'Peru' } // Blue to contrast with red/white flag
         };
         const country = countryData[value || 'BR'];
         return (
