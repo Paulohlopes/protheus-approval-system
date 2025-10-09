@@ -5,13 +5,13 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Typography,
   Box,
   Tooltip,
 } from '@mui/material';
 import { Language as LanguageIcon, Check } from '@mui/icons-material';
 import { useLanguage } from '../contexts/LanguageContext';
 import { languages } from '../locales';
+import CountryFlag from './CountryFlag';
 
 const LanguageSelector: React.FC = React.memo(() => {
   const { language, setLanguage } = useLanguage();
@@ -50,9 +50,9 @@ const LanguageSelector: React.FC = React.memo(() => {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Typography sx={{ fontSize: '1.2rem' }}>
-              {currentLanguage?.flag}
-            </Typography>
+            {currentLanguage?.countryCode && (
+              <CountryFlag country={currentLanguage.countryCode} size={24} />
+            )}
             <LanguageIcon fontSize="small" />
           </Box>
         </IconButton>
@@ -77,9 +77,7 @@ const LanguageSelector: React.FC = React.memo(() => {
             selected={language === lang.code}
           >
             <ListItemIcon>
-              <Typography sx={{ fontSize: '1.5rem' }}>
-                {lang.flag}
-              </Typography>
+              <CountryFlag country={lang.countryCode} size={24} />
             </ListItemIcon>
             <ListItemText primary={lang.name} />
             {language === lang.code && (

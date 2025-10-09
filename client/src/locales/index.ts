@@ -20,9 +20,9 @@ export const translations: Record<Language, TranslationKeys> = {
 };
 
 export const languages = [
-  { code: 'pt-BR' as const, name: 'Português (BR)', flag: '🇧🇷' },
-  { code: 'en' as const, name: 'English', flag: '🇺🇸' },
-  { code: 'es' as const, name: 'Español', flag: '🇪🇸' },
+  { code: 'pt-BR' as const, name: 'Português (BR)', flag: '🇧🇷', countryCode: 'BR' },
+  { code: 'en' as const, name: 'English', flag: '🇺🇸', countryCode: 'US' },
+  { code: 'es' as const, name: 'Español', flag: '🇪🇸', countryCode: 'ES' },
 ];
 
 export const defaultLanguage: Language = 'pt-BR';
