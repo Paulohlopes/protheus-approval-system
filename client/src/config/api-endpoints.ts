@@ -11,6 +11,10 @@ export interface ERPEndpoints {
   oauth2TokenUrl: string;
   oauth2RefreshUrl: string;
   apiTimeout: number;
+  auth: {
+    username: string;
+    password: string;
+  };
   endpoints: {
     genericQuery: string;
     purchaseRequests: string;
@@ -39,6 +43,10 @@ const API_CONFIGS: APIConfig = {
       oauth2TokenUrl: import.meta.env.VITE_BR_PROTHEUS_OAUTH2_TOKEN_URL || '/tlpp/oauth2/token',
       oauth2RefreshUrl: import.meta.env.VITE_BR_PROTHEUS_OAUTH2_REFRESH_URL || '/tlpp/oauth2/token',
       apiTimeout: Number(import.meta.env.VITE_BR_PROTHEUS_API_TIMEOUT) || 30000,
+      auth: {
+        username: import.meta.env.VITE_BR_PROTHEUS_USERNAME || '',
+        password: import.meta.env.VITE_BR_PROTHEUS_PASSWORD || '',
+      },
       endpoints: {
         genericQuery: '/api/framework/v1/genericQuery',
         purchaseRequests: '/api/framework/v1/genericQuery',
@@ -57,6 +65,10 @@ const API_CONFIGS: APIConfig = {
       oauth2TokenUrl: import.meta.env.VITE_AR_PROTHEUS_OAUTH2_TOKEN_URL || '/tlpp/oauth2/token',
       oauth2RefreshUrl: import.meta.env.VITE_AR_PROTHEUS_OAUTH2_REFRESH_URL || '/tlpp/oauth2/token',
       apiTimeout: Number(import.meta.env.VITE_AR_PROTHEUS_API_TIMEOUT) || 30000,
+      auth: {
+        username: import.meta.env.VITE_AR_PROTHEUS_USERNAME || '',
+        password: import.meta.env.VITE_AR_PROTHEUS_PASSWORD || '',
+      },
       endpoints: {
         genericQuery: '/api/framework/v1/genericQuery',
         purchaseRequests: '/api/framework/v1/genericQuery',
@@ -75,6 +87,10 @@ const API_CONFIGS: APIConfig = {
       oauth2TokenUrl: import.meta.env.VITE_MX_PROTHEUS_OAUTH2_TOKEN_URL || '/tlpp/oauth2/token',
       oauth2RefreshUrl: import.meta.env.VITE_MX_PROTHEUS_OAUTH2_REFRESH_URL || '/tlpp/oauth2/token',
       apiTimeout: Number(import.meta.env.VITE_MX_PROTHEUS_API_TIMEOUT) || 30000,
+      auth: {
+        username: import.meta.env.VITE_MX_PROTHEUS_USERNAME || '',
+        password: import.meta.env.VITE_MX_PROTHEUS_PASSWORD || '',
+      },
       endpoints: {
         genericQuery: '/api/framework/v1/genericQuery',
         purchaseRequests: '/api/framework/v1/genericQuery',
@@ -93,6 +109,10 @@ const API_CONFIGS: APIConfig = {
       oauth2TokenUrl: import.meta.env.VITE_CL_PROTHEUS_OAUTH2_TOKEN_URL || '/tlpp/oauth2/token',
       oauth2RefreshUrl: import.meta.env.VITE_CL_PROTHEUS_OAUTH2_REFRESH_URL || '/tlpp/oauth2/token',
       apiTimeout: Number(import.meta.env.VITE_CL_PROTHEUS_API_TIMEOUT) || 30000,
+      auth: {
+        username: import.meta.env.VITE_CL_PROTHEUS_USERNAME || '',
+        password: import.meta.env.VITE_CL_PROTHEUS_PASSWORD || '',
+      },
       endpoints: {
         genericQuery: '/api/framework/v1/genericQuery',
         purchaseRequests: '/api/framework/v1/genericQuery',

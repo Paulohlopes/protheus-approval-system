@@ -46,7 +46,7 @@ interface AppConfig {
     maxLoginAttempts: number;
   };
 
-  // API Authentication
+  // API Authentication (per country/ERP)
   auth: {
     username: string;
     password: string;
@@ -143,8 +143,8 @@ export const config: AppConfig = {
   },
 
   auth: {
-    username: getEnvVar('VITE_API_USERNAME', ''),
-    password: getEnvVar('VITE_API_PASSWORD', ''),
+    username: apiConfig.auth.username,
+    password: apiConfig.auth.password,
   },
 
   pagination: {
