@@ -403,6 +403,7 @@ const DocumentsTablePage: React.FC = () => {
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(null);
   const [groupBy, setGroupBy] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
 
   // Hooks
   const { data: documentsResponse, refetch, isLoading } = useDocuments({}, { page: 1, limit: 1000 });
@@ -425,6 +426,13 @@ const DocumentsTablePage: React.FC = () => {
   // Filtrar e ordenar documentos
   const processedDocuments = useMemo(() => {
     let filtered = [...documents];
+
+    // Aplicar filtro por país
+    if (selectedCountries.length > 0) {
+      filtered = filtered.filter(doc =>
+        selectedCountries.includes(doc._country || 'BR')
+      );
+    }
 
     // Aplicar busca
     if (searchTerm) {
@@ -483,7 +491,7 @@ const DocumentsTablePage: React.FC = () => {
     }
 
     return filtered;
-  }, [documents, searchTerm, filters, orderBy, order, groupBy]);
+  }, [documents, searchTerm, filters, orderBy, order, groupBy, selectedCountries]);
 
   // Memoized handlers to prevent unnecessary re-renders
   const handleRequestSort = useCallback((property: string) => {
@@ -953,6 +961,65 @@ const DocumentsTablePage: React.FC = () => {
                   }}
                   sx={{ width: 250 }}
                 />
+
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>País</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedCountries}
+                    onChange={(e) => setSelectedCountries(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
+                    input={<OutlinedInput label="País" />}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map((value) => (
+                          <Chip
+                            key={value}
+                            label={value}
+                            size="small"
+                            icon={<CountryFlag country={value} size={16} />}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    <MenuItem value="BR">
+                      <Checkbox checked={selectedCountries.indexOf('BR') > -1} />
+                      <ListItemText primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CountryFlag country="BR" size={20} />
+                          <span>Brasil</span>
+                        </Box>
+                      } />
+                    </MenuItem>
+                    <MenuItem value="AR">
+                      <Checkbox checked={selectedCountries.indexOf('AR') > -1} />
+                      <ListItemText primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CountryFlag country="AR" size={20} />
+                          <span>Argentina</span>
+                        </Box>
+                      } />
+                    </MenuItem>
+                    <MenuItem value="CL">
+                      <Checkbox checked={selectedCountries.indexOf('CL') > -1} />
+                      <ListItemText primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CountryFlag country="CL" size={20} />
+                          <span>Chile</span>
+                        </Box>
+                      } />
+                    </MenuItem>
+                    <MenuItem value="PE">
+                      <Checkbox checked={selectedCountries.indexOf('PE') > -1} />
+                      <ListItemText primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CountryFlag country="PE" size={20} />
+                          <span>Peru</span>
+                        </Box>
+                      } />
+                    </MenuItem>
+                  </Select>
+                </FormControl>
 
                 <Tooltip title={t?.common?.filter || 'Filtros'}>
                   <IconButton onClick={(e) => setFilterMenuAnchor(e.currentTarget)}>
