@@ -134,6 +134,35 @@ const DocumentsTablePage: React.FC = () => {
       visible: true,
     },
     {
+      id: '_country',
+      label: 'País',
+      minWidth: 80,
+      sortable: true,
+      filterable: false,
+      visible: true,
+      group: 'basic',
+      format: (value: string) => {
+        const countryColors: { [key: string]: string } = {
+          BR: '#009739',
+          AR: '#74ACDF',
+          CL: '#D52B1E',
+          MX: '#006847'
+        };
+        return (
+          <Chip
+            label={value || 'BR'}
+            size="small"
+            sx={{
+              bgcolor: countryColors[value || 'BR'],
+              color: 'white',
+              fontWeight: 600,
+              minWidth: 45,
+            }}
+          />
+        );
+      },
+    },
+    {
       id: 'numero',
       label: t?.documents?.number || 'Número',
       minWidth: 120,
@@ -504,6 +533,7 @@ const DocumentsTablePage: React.FC = () => {
       const XLSX = await import('xlsx');
 
       const exportData = processedDocuments.map(doc => ({
+        'País': doc._country || 'BR',
         [t?.documents?.number || 'Número']: doc.numero.trim(),
         [t?.documents?.type || 'Tipo']: doc.tipo,
         [t?.documents?.supplier || 'Fornecedor']: doc.nome_fornecedor,
@@ -540,6 +570,7 @@ const DocumentsTablePage: React.FC = () => {
       doc.text(`${t?.export?.totalDocuments || 'Total de documentos'}: ${processedDocuments.length}`, 14, 38);
 
       const tableData = processedDocuments.map(doc => [
+        doc._country || 'BR',
         doc.numero.trim(),
         doc.tipo,
         doc.nome_fornecedor || 'N/A',
@@ -549,7 +580,7 @@ const DocumentsTablePage: React.FC = () => {
       ]);
 
       (doc as any).autoTable({
-        head: [[t?.documents?.number || 'Número', t?.documents?.type || 'Tipo', t?.documents?.supplier || 'Fornecedor', t?.documents?.totalValue || 'Valor', t?.documents?.issueDate || 'Emissão', t?.documents?.buyer || 'Comprador']],
+        head: [['País', t?.documents?.number || 'Número', t?.documents?.type || 'Tipo', t?.documents?.supplier || 'Fornecedor', t?.documents?.totalValue || 'Valor', t?.documents?.issueDate || 'Emissão', t?.documents?.buyer || 'Comprador']],
         body: tableData,
         startY: 45,
         styles: { fontSize: 8 },
