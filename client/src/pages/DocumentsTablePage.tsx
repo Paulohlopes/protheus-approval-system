@@ -77,7 +77,7 @@ import { useDocuments } from '../hooks/useDocuments';
 import { useDocumentActions } from '../hooks/useDocumentActions';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentApprovalStatus } from '../utils/documentHelpers';
+import { getCurrentApprovalStatus, getDocumentStatus } from '../utils/documentHelpers';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import LanguageSelector from '../components/LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -220,7 +220,7 @@ const DocumentsTablePage: React.FC = () => {
       group: 'approval',
       format: (value: any, doc?: ProtheusDocument) => {
         if (!doc) return '-';
-        const status = getCurrentApprovalStatus(doc.alcada, doc.userEmail);
+        const documentStatus = getDocumentStatus(doc.alcada);
         const getStatusInfo = (situacao: string) => {
           switch (situacao) {
             case 'Liberado': return { color: 'success', icon: <CheckCircle fontSize="small" /> };
@@ -230,14 +230,14 @@ const DocumentsTablePage: React.FC = () => {
           }
         };
 
-        const info = getStatusInfo(status?.situacao_aprov || '');
+        const info = getStatusInfo(documentStatus);
         return (
           <Chip
-            label={translateStatus(status?.situacao_aprov || '')}
+            label={translateStatus(documentStatus)}
             size="small"
             color={info.color as any}
             icon={info.icon as any}
-            variant={status?.situacao_aprov === 'Pendente' ? 'filled' : 'outlined'}
+            variant={documentStatus === 'Pendente' ? 'filled' : 'outlined'}
           />
         );
       },
@@ -442,7 +442,15 @@ const DocumentsTablePage: React.FC = () => {
     Object.entries(filters).forEach(([key, value]) => {
       if (value) {
         filtered = filtered.filter(doc => {
-          const docValue = (doc as any)[key];
+          let docValue: any;
+
+          // Special handling for status filter - calculate from alcada
+          if (key === 'status') {
+            docValue = getDocumentStatus(doc.alcada);
+          } else {
+            docValue = (doc as any)[key];
+          }
+
           if (docValue === undefined || docValue === null) return false;
           return String(docValue).toLowerCase().includes(value.toLowerCase());
         });
@@ -451,8 +459,17 @@ const DocumentsTablePage: React.FC = () => {
 
     // Ordenar
     filtered.sort((a, b) => {
-      const aValue = (a as any)[orderBy] || '';
-      const bValue = (b as any)[orderBy] || '';
+      let aValue: any;
+      let bValue: any;
+
+      // Special handling for status column - calculate from alcada
+      if (orderBy === 'status') {
+        aValue = getDocumentStatus(a.alcada);
+        bValue = getDocumentStatus(b.alcada);
+      } else {
+        aValue = (a as any)[orderBy] || '';
+        bValue = (b as any)[orderBy] || '';
+      }
 
       if (order === 'asc') {
         return aValue > bValue ? 1 : -1;
