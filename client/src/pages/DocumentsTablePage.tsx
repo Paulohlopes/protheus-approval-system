@@ -146,7 +146,7 @@ const DocumentsTablePage: React.FC = () => {
           BR: { flag: '🇧🇷', color: '#009739', name: 'Brasil' },
           AR: { flag: '🇦🇷', color: '#74ACDF', name: 'Argentina' },
           CL: { flag: '🇨🇱', color: '#D52B1E', name: 'Chile' },
-          MX: { flag: '🇲🇽', color: '#006847', name: 'México' }
+          PE: { flag: '🇵🇪', color: '#D91023', name: 'Peru' }
         };
         const country = countryData[value || 'BR'];
         return (
@@ -542,7 +542,7 @@ const DocumentsTablePage: React.FC = () => {
         BR: '🇧🇷 Brasil',
         AR: '🇦🇷 Argentina',
         CL: '🇨🇱 Chile',
-        MX: '🇲🇽 México'
+        PE: '🇵🇪 Peru'
       };
 
       const exportData = processedDocuments.map(doc => ({
@@ -586,7 +586,7 @@ const DocumentsTablePage: React.FC = () => {
         BR: 'Brasil',
         AR: 'Argentina',
         CL: 'Chile',
-        MX: 'México'
+        PE: 'Peru'
       };
 
       const tableData = processedDocuments.map(doc => [

@@ -3,7 +3,7 @@
  * Multi-country and multi-ERP support
  */
 
-export type Country = 'BR' | 'AR' | 'MX' | 'CL';
+export type Country = 'BR' | 'AR' | 'PE' | 'CL';
 export type ERP = 'PROTHEUS' | 'SAP' | 'ORACLE';
 
 export interface ERPEndpoints {
@@ -81,15 +81,15 @@ const API_CONFIGS: APIConfig = {
       },
     },
   },
-  MX: {
+  PE: {
     PROTHEUS: {
-      baseUrl: import.meta.env.VITE_MX_PROTHEUS_BASE_URL || '',
-      oauth2TokenUrl: import.meta.env.VITE_MX_PROTHEUS_OAUTH2_TOKEN_URL || '/tlpp/oauth2/token',
-      oauth2RefreshUrl: import.meta.env.VITE_MX_PROTHEUS_OAUTH2_REFRESH_URL || '/tlpp/oauth2/token',
-      apiTimeout: Number(import.meta.env.VITE_MX_PROTHEUS_API_TIMEOUT) || 30000,
+      baseUrl: import.meta.env.VITE_PE_PROTHEUS_BASE_URL || '',
+      oauth2TokenUrl: import.meta.env.VITE_PE_PROTHEUS_OAUTH2_TOKEN_URL || '/tlpp/oauth2/token',
+      oauth2RefreshUrl: import.meta.env.VITE_PE_PROTHEUS_OAUTH2_REFRESH_URL || '/tlpp/oauth2/token',
+      apiTimeout: Number(import.meta.env.VITE_PE_PROTHEUS_API_TIMEOUT) || 30000,
       auth: {
-        username: import.meta.env.VITE_MX_PROTHEUS_USERNAME || '',
-        password: import.meta.env.VITE_MX_PROTHEUS_PASSWORD || '',
+        username: import.meta.env.VITE_PE_PROTHEUS_USERNAME || '',
+        password: import.meta.env.VITE_PE_PROTHEUS_PASSWORD || '',
       },
       endpoints: {
         genericQuery: '/api/framework/v1/genericQuery',
