@@ -32,8 +32,6 @@ import {
   Avatar,
   LinearProgress,
   Badge,
-  ToggleButton,
-  ToggleButtonGroup,
   Select,
   FormControl,
   InputLabel,
@@ -70,8 +68,6 @@ import {
   Check,
   Clear,
   Logout,
-  Dashboard,
-  ViewList,
   Notifications,
   Language,
   Assignment,
@@ -694,42 +690,6 @@ const DocumentsTablePage: React.FC = () => {
             >
               <LanguageSelector />
             </Box>
-
-            {/* Modern Toggle Buttons */}
-            <ToggleButtonGroup
-              value="table"
-              exclusive
-              size="small"
-              sx={{
-                bgcolor: alpha(theme.palette.common.white, 0.15),
-                borderRadius: '12px',
-                border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
-                backdropFilter: 'blur(10px)',
-                '& .MuiToggleButton-root': {
-                  color: alpha(theme.palette.common.white, 0.7),
-                  border: 'none',
-                  borderRadius: '10px !important',
-                  margin: '2px',
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&.Mui-selected': {
-                    bgcolor: alpha(theme.palette.common.white, 0.25),
-                    color: theme.palette.common.white,
-                    boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
-                  },
-                  '&:hover': {
-                    bgcolor: alpha(theme.palette.common.white, 0.15),
-                    transform: 'scale(1.05)',
-                  }
-                }
-              }}
-            >
-              <ToggleButton value="cards" onClick={() => navigate('/documents')}>
-                <Dashboard fontSize="small" />
-              </ToggleButton>
-              <ToggleButton value="table">
-                <ViewList fontSize="small" />
-              </ToggleButton>
-            </ToggleButtonGroup>
 
             <Divider
               orientation="vertical"

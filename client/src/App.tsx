@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
-import DocumentsPage from './pages/DocumentsPage';
 import DocumentsTablePage from './pages/DocumentsTablePage';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -28,17 +27,6 @@ function App() {
             element={
               <ErrorBoundary level="page">
                 <ProtectedRoute>
-                  <DocumentsPage />
-                </ProtectedRoute>
-              </ErrorBoundary>
-            }
-          />
-
-          <Route
-            path="/documents-table"
-            element={
-              <ErrorBoundary level="page">
-                <ProtectedRoute>
                   <DocumentsTablePage />
                 </ProtectedRoute>
               </ErrorBoundary>
@@ -47,7 +35,7 @@ function App() {
           
           {/* Default redirect */}
           <Route path="/" element={<Navigate to="/documents" replace />} />
-          
+
           {/* Catch all - redirect to documents */}
           <Route path="*" element={<Navigate to="/documents" replace />} />
         </Routes>
