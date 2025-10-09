@@ -142,21 +142,27 @@ const DocumentsTablePage: React.FC = () => {
       visible: true,
       group: 'basic',
       format: (value: string) => {
-        const countryColors: { [key: string]: string } = {
-          BR: '#009739',
-          AR: '#74ACDF',
-          CL: '#D52B1E',
-          MX: '#006847'
+        const countryData: { [key: string]: { flag: string; color: string; name: string } } = {
+          BR: { flag: '🇧🇷', color: '#009739', name: 'Brasil' },
+          AR: { flag: '🇦🇷', color: '#74ACDF', name: 'Argentina' },
+          CL: { flag: '🇨🇱', color: '#D52B1E', name: 'Chile' },
+          MX: { flag: '🇲🇽', color: '#006847', name: 'México' }
         };
+        const country = countryData[value || 'BR'];
         return (
           <Chip
-            label={value || 'BR'}
+            label={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <span style={{ fontSize: '16px' }}>{country.flag}</span>
+                <span>{value || 'BR'}</span>
+              </Box>
+            }
             size="small"
             sx={{
-              bgcolor: countryColors[value || 'BR'],
+              bgcolor: country.color,
               color: 'white',
               fontWeight: 600,
-              minWidth: 45,
+              minWidth: 60,
             }}
           />
         );
@@ -532,8 +538,15 @@ const DocumentsTablePage: React.FC = () => {
       // Importação dinâmica para evitar problemas de build
       const XLSX = await import('xlsx');
 
+      const countryFlags: { [key: string]: string } = {
+        BR: '🇧🇷 Brasil',
+        AR: '🇦🇷 Argentina',
+        CL: '🇨🇱 Chile',
+        MX: '🇲🇽 México'
+      };
+
       const exportData = processedDocuments.map(doc => ({
-        'País': doc._country || 'BR',
+        'País': countryFlags[doc._country || 'BR'],
         [t?.documents?.number || 'Número']: doc.numero.trim(),
         [t?.documents?.type || 'Tipo']: doc.tipo,
         [t?.documents?.supplier || 'Fornecedor']: doc.nome_fornecedor,
@@ -569,8 +582,15 @@ const DocumentsTablePage: React.FC = () => {
       doc.text(`${t?.export?.dateLabel || 'Data'}: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
       doc.text(`${t?.export?.totalDocuments || 'Total de documentos'}: ${processedDocuments.length}`, 14, 38);
 
+      const countryNames: { [key: string]: string } = {
+        BR: 'Brasil',
+        AR: 'Argentina',
+        CL: 'Chile',
+        MX: 'México'
+      };
+
       const tableData = processedDocuments.map(doc => [
-        doc._country || 'BR',
+        countryNames[doc._country || 'BR'],
         doc.numero.trim(),
         doc.tipo,
         doc.nome_fornecedor || 'N/A',
