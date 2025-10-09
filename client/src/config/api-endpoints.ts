@@ -144,7 +144,6 @@ export const getActiveCountry = (): Country => {
  */
 export const getActiveCountries = (): Country[] => {
   const countriesStr = import.meta.env.VITE_ACTIVE_COUNTRY as string;
-  console.log('🌍 getActiveCountries - Raw VITE_ACTIVE_COUNTRY:', countriesStr);
 
   if (!countriesStr) {
     console.warn('No active countries configured, defaulting to BR');
@@ -153,7 +152,6 @@ export const getActiveCountries = (): Country[] => {
 
   // Split by comma and trim whitespace
   const countries = countriesStr.split(',').map(c => c.trim()) as Country[];
-  console.log('🌍 getActiveCountries - Parsed countries:', countries);
 
   // Filter valid countries that have configuration
   const validCountries = countries.filter(country => {
@@ -163,8 +161,6 @@ export const getActiveCountries = (): Country[] => {
     }
     return true;
   });
-
-  console.log('🌍 getActiveCountries - Valid countries:', validCountries);
 
   if (validCountries.length === 0) {
     console.warn('No valid countries found, defaulting to BR');
@@ -179,7 +175,8 @@ export const getActiveCountries = (): Country[] => {
  */
 export const getActiveERP = (): ERP => {
   const erp = import.meta.env.VITE_ACTIVE_ERP as ERP;
-  if (!erp || !API_CONFIGS[getActiveCountry()][erp]) {
+  const firstCountry = getActiveCountries()[0]; // Use first country for validation
+  if (!erp || !API_CONFIGS[firstCountry]?.[erp]) {
     console.warn(`Invalid ERP: ${erp}, defaulting to PROTHEUS`);
     return 'PROTHEUS';
   }

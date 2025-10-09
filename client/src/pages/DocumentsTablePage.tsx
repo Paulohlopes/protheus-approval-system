@@ -1024,7 +1024,7 @@ const DocumentsTablePage: React.FC = () => {
                       const isPending = currentStatus?.situacao_aprov === 'Pendente';
 
                       return (
-                        <React.Fragment key={document.numero.trim()}>
+                        <React.Fragment key={`${document._country || document.filial}-${document.numero.trim()}`}>
                           <TableRow
                             hover
                             role="checkbox"
