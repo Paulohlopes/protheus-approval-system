@@ -81,6 +81,7 @@ import { getCurrentApprovalStatus } from '../utils/documentHelpers';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import LanguageSelector from '../components/LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
+import CountryFlag from '../components/CountryFlag';
 import ErrorBoundary from '../components/ErrorBoundary';
 import type { ProtheusDocument } from '../types/auth';
 // import * as XLSX from 'xlsx';
@@ -142,27 +143,26 @@ const DocumentsTablePage: React.FC = () => {
       visible: true,
       group: 'basic',
       format: (value: string) => {
-        const countryData: { [key: string]: { flag: string; color: string; name: string } } = {
-          BR: { flag: '🇧🇷', color: '#009739', name: 'Brasil' },
-          AR: { flag: '🇦🇷', color: '#74ACDF', name: 'Argentina' },
-          CL: { flag: '🇨🇱', color: '#D52B1E', name: 'Chile' },
-          PE: { flag: '🇵🇪', color: '#D91023', name: 'Peru' }
+        const countryData: { [key: string]: { color: string; name: string } } = {
+          BR: { color: '#009739', name: 'Brasil' },
+          AR: { color: '#74ACDF', name: 'Argentina' },
+          CL: { color: '#D52B1E', name: 'Chile' },
+          PE: { color: '#D91023', name: 'Peru' }
         };
         const country = countryData[value || 'BR'];
         return (
           <Chip
-            label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <span style={{ fontSize: '16px' }}>{country.flag}</span>
-                <span>{value || 'BR'}</span>
-              </Box>
-            }
+            icon={<CountryFlag country={value || 'BR'} size={18} />}
+            label={value || 'BR'}
             size="small"
             sx={{
               bgcolor: country.color,
               color: 'white',
               fontWeight: 600,
-              minWidth: 60,
+              minWidth: 70,
+              '& .MuiChip-icon': {
+                marginLeft: '8px',
+              },
             }}
           />
         );
