@@ -164,6 +164,17 @@ export interface ApiResponse<T> {
   };
 }
 
+export interface ApiError {
+  country: string;
+  status?: number;
+  message: string;
+  type: 'network' | 'auth' | 'server' | 'unknown';
+}
+
 export interface ProtheusApiResponse {
   documentos: ProtheusDocument[];
+  errors?: ApiError[];
+  hasErrors?: boolean;
+  successfulCountries?: string[];
+  failedCountries?: string[];
 }

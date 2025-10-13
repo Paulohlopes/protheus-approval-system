@@ -27,14 +27,15 @@ debugAxios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-import type { 
-  ProtheusDocument, 
-  DocumentFilters, 
-  PaginationParams, 
-  ApprovalAction, 
+import type {
+  ProtheusDocument,
+  DocumentFilters,
+  PaginationParams,
+  ApprovalAction,
   DashboardStats,
   ApiResponse,
-  ProtheusApiResponse 
+  ProtheusApiResponse,
+  ApiError
 } from '../types/auth';
 
 export const documentService = {
@@ -99,29 +100,83 @@ export const documentService = {
             _country: country // Add country identifier
           }));
 
-          return { country, documentos: documentsWithCountry };
+          return { country, documentos: documentsWithCountry, success: true };
         } catch (error: any) {
           console.error(`Error fetching documents from ${country}:`, error);
-          // Return empty array for this country instead of failing completely
-          return { country, documentos: [], error: error.message };
+
+          // Classify error type and create detailed error info
+          let errorType: 'network' | 'auth' | 'server' | 'unknown' = 'unknown';
+          let errorMessage = 'Erro ao buscar documentos';
+          let statusCode: number | undefined;
+
+          if (axios.isAxiosError(error)) {
+            statusCode = error.response?.status;
+
+            if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+              errorType = 'network';
+              errorMessage = 'Tempo limite de conexão excedido';
+            } else if (error.code === 'ERR_NETWORK' || !error.response) {
+              errorType = 'network';
+              errorMessage = 'Erro de rede - Servidor não acessível';
+            } else if (statusCode === 401 || statusCode === 403) {
+              errorType = 'auth';
+              errorMessage = statusCode === 401 ? 'Não autorizado - Credenciais inválidas' : 'Acesso negado - Sem permissão';
+            } else if (statusCode && statusCode >= 500) {
+              errorType = 'server';
+              errorMessage = `Erro interno do servidor (${statusCode})`;
+            } else if (statusCode && statusCode >= 400) {
+              errorType = 'server';
+              errorMessage = `Erro na requisição (${statusCode})`;
+            }
+          } else {
+            errorMessage = error.message || 'Erro desconhecido';
+          }
+
+          return {
+            country,
+            documentos: [],
+            success: false,
+            error: {
+              country,
+              status: statusCode,
+              message: errorMessage,
+              type: errorType
+            } as ApiError
+          };
         }
       });
 
       // Wait for all requests to complete
       const results = await Promise.all(promises);
 
-      // Combine all documents from all countries
-      const allDocuments = results.flatMap(result => result.documentos);
+      // Separate successful and failed results
+      const successfulResults = results.filter(r => r.success);
+      const failedResults = results.filter(r => !r.success);
 
-      // Log errors if any
-      const errors = results.filter(r => r.error);
-      if (errors.length > 0) {
-        console.warn('Some countries failed to fetch:', errors);
+      // Combine all documents from successful countries
+      const allDocuments = successfulResults.flatMap(result => result.documentos);
+
+      // Collect error information
+      const apiErrors = failedResults.map(r => r.error!).filter(Boolean);
+      const successfulCountries = successfulResults.map(r => r.country);
+      const failedCountries = failedResults.map(r => r.country);
+
+      // Log summary
+      console.log(`documentService.getDocuments - Total documents from all countries: ${allDocuments.length}`);
+      if (apiErrors.length > 0) {
+        console.warn(`documentService.getDocuments - ${apiErrors.length} countries failed:`, failedCountries);
+        apiErrors.forEach(error => {
+          console.warn(`  [${error.country}] ${error.type}: ${error.message}${error.status ? ` (${error.status})` : ''}`);
+        });
       }
 
-      console.log(`documentService.getDocuments - Total documents from all countries: ${allDocuments.length}`);
-
-      return { documentos: allDocuments };
+      return {
+        documentos: allDocuments,
+        errors: apiErrors.length > 0 ? apiErrors : undefined,
+        hasErrors: apiErrors.length > 0,
+        successfulCountries,
+        failedCountries: failedCountries.length > 0 ? failedCountries : undefined
+      };
     } catch (error: any) {
       console.error('Error fetching documents:', error);
 

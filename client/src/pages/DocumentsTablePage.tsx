@@ -83,6 +83,7 @@ import LanguageSelector from '../components/LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
 import CountryFlag from '../components/CountryFlag';
 import ErrorBoundary from '../components/ErrorBoundary';
+import ApiErrorAlert from '../components/ApiErrorAlert';
 import type { ProtheusDocument } from '../types/auth';
 // import * as XLSX from 'xlsx';
 // import jsPDF from 'jspdf';
@@ -862,6 +863,13 @@ const DocumentsTablePage: React.FC = () => {
 
       {/* Main Content */}
       <Container maxWidth={false} sx={{ py: 4, flexGrow: 1 }}>
+        {/* API Error Alert */}
+        {documentsResponse?.hasErrors && (
+          <ApiErrorAlert
+            errors={documentsResponse.errors}
+            successfulCountries={documentsResponse.successfulCountries}
+          />
+        )}
         {/* Enhanced Table Header */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{

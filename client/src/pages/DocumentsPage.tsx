@@ -54,6 +54,7 @@ import ConfirmationDialog from '../components/ConfirmationDialog';
 import { formatDocumentValue } from '../hooks/useDocumentActions';
 import LanguageSelector from '../components/LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
+import ApiErrorAlert from '../components/ApiErrorAlert';
 
 const DocumentsPage: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -373,6 +374,13 @@ const DocumentsPage: React.FC = () => {
 
       {/* Main Content */}
       <Container maxWidth="xl" sx={{ flexGrow: 1, py: 4 }}>
+        {/* API Error Alert */}
+        {documentsResponse?.hasErrors && (
+          <ApiErrorAlert
+            errors={documentsResponse.errors}
+            successfulCountries={documentsResponse.successfulCountries}
+          />
+        )}
         {/* Enhanced Page Header */}
         <Box sx={{ mb: 5 }}>
           <Box sx={{

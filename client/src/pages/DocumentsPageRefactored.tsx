@@ -7,6 +7,7 @@ import { getCurrentApprovalStatus } from '../utils/documentHelpers';
 import AppHeader from '../components/layout/AppHeader';
 import DocumentStats from '../components/documents/DocumentStats';
 import DocumentListRefactored from '../components/documents/DocumentListRefactored';
+import ApiErrorAlert from '../components/ApiErrorAlert';
 
 const DocumentsPageRefactored: React.FC = () => {
   const { user } = useAuthStore();
@@ -26,6 +27,13 @@ const DocumentsPageRefactored: React.FC = () => {
       <AppHeader />
 
       <Container maxWidth="xl" sx={{ flexGrow: 1, py: 3 }}>
+        {/* API Error Alert */}
+        {documentsResponse?.hasErrors && (
+          <ApiErrorAlert
+            errors={documentsResponse.errors}
+            successfulCountries={documentsResponse.successfulCountries}
+          />
+        )}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom fontWeight={700} color="primary.main">
             Documentos para Aprovação
