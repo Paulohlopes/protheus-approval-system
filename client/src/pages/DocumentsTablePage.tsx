@@ -1337,7 +1337,6 @@ const DocumentsTablePage: React.FC = () => {
                       const isExpanded = expandedRows.has(document.numero.trim());
                       const currentStatus = getCurrentApprovalStatus(document.alcada, user?.email);
                       const canApprove = canUserApprove(document.alcada, user?.email);
-                      console.log(`[RENDER] Document ${document.numero.trim()} - canApprove:`, canApprove);
 
                       return (
                         <React.Fragment key={`${document._country || document.filial}-${document.numero.trim()}`}>
@@ -1367,7 +1366,6 @@ const DocumentsTablePage: React.FC = () => {
                               .filter(column => visibleColumns.includes(column.id) && column.id !== 'select')
                               .map(column => {
                                 if (column.id === 'actions') {
-                                  console.log(`[ACTIONS COLUMN] Document ${document.numero.trim()} - canApprove in render:`, canApprove);
                                   return (
                                     <TableCell key={column.id} align={column.align}>
                                       <Stack direction="row" spacing={1} justifyContent="center">
