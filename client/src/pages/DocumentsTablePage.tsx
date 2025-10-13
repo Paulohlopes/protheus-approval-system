@@ -86,9 +86,18 @@ import CountryFlag from '../components/CountryFlag';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ApiErrorAlert from '../components/ApiErrorAlert';
 import type { ProtheusDocument } from '../types/auth';
-// import * as XLSX from 'xlsx';
-// import jsPDF from 'jspdf';
-// import 'jspdf-autotable';
+// Tipos para jspdf-autotable
+import type { jsPDF as jsPDFType } from 'jspdf';
+
+// Extend jsPDF type with autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+    lastAutoTable: {
+      finalY: number;
+    };
+  }
+}
 
 interface Column {
   id: string;
@@ -597,7 +606,10 @@ const DocumentsTablePage: React.FC = () => {
   const handleExportPDF = async () => {
     try {
       // Importação dinâmica para evitar problemas de build
-      const { default: jsPDF } = await import('jspdf');
+      const jsPDFModule = await import('jspdf');
+      const jsPDF = jsPDFModule.default;
+
+      // Importar jspdf-autotable que estende o protótipo do jsPDF
       await import('jspdf-autotable');
 
       const doc = new jsPDF();
@@ -626,7 +638,7 @@ const DocumentsTablePage: React.FC = () => {
         doc.comprador,
       ]);
 
-      (doc as any).autoTable({
+      doc.autoTable({
         head: [['País', t?.documents?.number || 'Número', t?.documents?.type || 'Tipo', t?.documents?.supplier || 'Fornecedor', t?.documents?.totalValue || 'Valor', t?.documents?.issueDate || 'Emissão', t?.documents?.buyer || 'Comprador']],
         body: tableData,
         startY: 45,
@@ -659,7 +671,10 @@ const DocumentsTablePage: React.FC = () => {
   const handlePrintDocument = useCallback(async (document: ProtheusDocument) => {
     try {
       // Importação dinâmica para evitar problemas de build
-      const { default: jsPDF } = await import('jspdf');
+      const jsPDFModule = await import('jspdf');
+      const jsPDF = jsPDFModule.default;
+
+      // Importar jspdf-autotable que estende o protótipo do jsPDF
       await import('jspdf-autotable');
 
       const pdf = new jsPDF();
@@ -754,7 +769,7 @@ const DocumentsTablePage: React.FC = () => {
         `R$ ${item.total}`,
       ]);
 
-      (pdf as any).autoTable({
+      pdf.autoTable({
         startY: yPos,
         head: [[
           t?.table?.item || 'Item',
@@ -777,7 +792,7 @@ const DocumentsTablePage: React.FC = () => {
         }
       });
 
-      yPos = (pdf as any).lastAutoTable.finalY + 10;
+      yPos = pdf.lastAutoTable.finalY + 10;
 
       // Alçada de Aprovação
       if (yPos > 250) {
@@ -798,7 +813,7 @@ const DocumentsTablePage: React.FC = () => {
         nivel.observacao_aprov || '-'
       ]);
 
-      (pdf as any).autoTable({
+      pdf.autoTable({
         startY: yPos,
         head: [[
           '#',
@@ -818,7 +833,7 @@ const DocumentsTablePage: React.FC = () => {
       });
 
       // Rodapé
-      const totalPages = (pdf as any).internal.getNumberOfPages();
+      const totalPages = pdf.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
         pdf.setFontSize(8);
