@@ -72,6 +72,7 @@ import {
   Language,
   Assignment,
   Analytics,
+  Print,
 } from '@mui/icons-material';
 import { useDocuments } from '../hooks/useDocuments';
 import { useDocumentActions } from '../hooks/useDocumentActions';
@@ -640,6 +641,188 @@ const DocumentsTablePage: React.FC = () => {
     }
   };
 
+  const handlePrintDocument = useCallback(async (document: ProtheusDocument) => {
+    try {
+      // Importação dinâmica para evitar problemas de build
+      const { default: jsPDF } = await import('jspdf');
+      await import('jspdf-autotable');
+
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      let yPos = 20;
+
+      // Helper para formatar data
+      const formatDate = (dateStr: string) => {
+        if (!dateStr || dateStr.length !== 8) return dateStr;
+        const year = dateStr.substring(0, 4);
+        const month = dateStr.substring(4, 6);
+        const day = dateStr.substring(6, 8);
+        return `${day}/${month}/${year}`;
+      };
+
+      // Helper para traduzir tipo
+      const getTypeLabel = (type: string) => {
+        switch (type) {
+          case 'IP': return t?.documentTypes?.IP || 'Pedido de Compra';
+          case 'SC': return t?.documentTypes?.SC || 'Solicitação';
+          case 'CP': return t?.documentTypes?.CP || 'Contrato';
+          default: return type;
+        }
+      };
+
+      // Cabeçalho
+      pdf.setFillColor(63, 81, 181);
+      pdf.rect(0, 0, pageWidth, 40, 'F');
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(t?.documents?.documentDetails || 'Detalhes do Documento', 14, 15);
+
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${t?.documents?.number || 'Número'}: ${document.numero.trim()}`, 14, 25);
+      pdf.text(`${t?.documents?.type || 'Tipo'}: ${getTypeLabel(document.tipo)}`, 14, 32);
+
+      yPos = 50;
+
+      // Informações Gerais
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(t?.documents?.generalInfo || 'Informações Gerais', 14, yPos);
+      yPos += 8;
+
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+
+      const countryNames: { [key: string]: string } = {
+        BR: 'Brasil',
+        AR: 'Argentina',
+        CL: 'Chile',
+        PE: 'Peru'
+      };
+
+      const generalInfo = [
+        [`${t?.documents?.country || 'País'}:`, countryNames[document._country || 'BR']],
+        [`${t?.documents?.branch || 'Filial'}:`, document.filial],
+        [`${t?.documents?.supplier || 'Fornecedor'}:`, document.nome_fornecedor || 'N/A'],
+        [`${t?.documents?.totalValue || 'Valor Total'}:`, formatDocumentValue(document) || 'R$ 0,00'],
+        [`${t?.documents?.issueDate || 'Emissão'}:`, formatDate(document.Emissao)],
+        [`${t?.documents?.buyer || 'Comprador'}:`, document.comprador || '-'],
+        [`${t?.documents?.paymentCondition || 'Condição Pagamento'}:`, document.cond_pagamento || '-'],
+      ];
+
+      generalInfo.forEach(([label, value]) => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(label, 14, yPos);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(String(value), 70, yPos);
+        yPos += 6;
+      });
+
+      yPos += 5;
+
+      // Itens do Documento
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${t?.documents?.documentItems || 'Itens do Documento'} (${document.itens.length})`, 14, yPos);
+      yPos += 8;
+
+      const itemsData = document.itens.map((item, index) => [
+        item.item,
+        item.produto,
+        item.descr_produto.substring(0, 30) + (item.descr_produto.length > 30 ? '...' : ''),
+        item.quantidade.toString(),
+        item.unidade_medida,
+        `R$ ${item.preco}`,
+        `R$ ${item.total}`,
+      ]);
+
+      (pdf as any).autoTable({
+        startY: yPos,
+        head: [[
+          t?.table?.item || 'Item',
+          t?.table?.product || 'Produto',
+          t?.table?.description || 'Descrição',
+          t?.table?.quantity || 'Qtd',
+          t?.table?.unit || 'UN',
+          t?.table?.price || 'Preço',
+          t?.table?.total || 'Total'
+        ]],
+        body: itemsData,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [63, 81, 181], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: {
+          2: { cellWidth: 40 },
+          3: { halign: 'right' },
+          5: { halign: 'right' },
+          6: { halign: 'right', fontStyle: 'bold' }
+        }
+      });
+
+      yPos = (pdf as any).lastAutoTable.finalY + 10;
+
+      // Alçada de Aprovação
+      if (yPos > 250) {
+        pdf.addPage();
+        yPos = 20;
+      }
+
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(t?.documents?.approvalHierarchy || 'Alçada de Aprovação', 14, yPos);
+      yPos += 8;
+
+      const alcadaData = document.alcada.map((nivel, index) => [
+        (index + 1).toString(),
+        nivel.CNOME || nivel.aprovador_aprov,
+        translateStatus(nivel.situacao_aprov),
+        nivel.data_lib_aprov ? formatDate(nivel.data_lib_aprov) : '-',
+        nivel.observacao_aprov || '-'
+      ]);
+
+      (pdf as any).autoTable({
+        startY: yPos,
+        head: [[
+          '#',
+          t?.documents?.approver || 'Aprovador',
+          t?.documents?.status || 'Status',
+          t?.documents?.date || 'Data',
+          t?.documents?.comments || 'Observação'
+        ]],
+        body: alcadaData,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [63, 81, 181], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          4: { cellWidth: 50 }
+        }
+      });
+
+      // Rodapé
+      const totalPages = (pdf as any).internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(128, 128, 128);
+        pdf.text(
+          `${t?.export?.page || 'Página'} ${i} ${t?.export?.of || 'de'} ${totalPages} - ${t?.export?.generated || 'Gerado em'}: ${new Date().toLocaleString('pt-BR')}`,
+          pageWidth / 2,
+          pdf.internal.pageSize.getHeight() - 10,
+          { align: 'center' }
+        );
+      }
+
+      pdf.save(`documento_${document.numero.trim()}_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Erro ao gerar PDF do documento:', error);
+      alert('Erro ao gerar PDF do documento');
+    }
+  }, [t, translateStatus, formatDocumentValue]);
+
   const handleLogout = useCallback(async () => {
     try {
       await logout();
@@ -1156,33 +1339,39 @@ const DocumentsTablePage: React.FC = () => {
                                 if (column.id === 'actions') {
                                   return (
                                     <TableCell key={column.id} align={column.align}>
-                                      {isPending && (
-                                        <Stack direction="row" spacing={1} justifyContent="center">
-                                          <Tooltip title={t?.common?.approve || 'Aprovar'}>
-                                            <IconButton
-                                              size="small"
-                                              color="success"
-                                              onClick={() => handleApprove(document.numero.trim())}
-                                            >
-                                              <CheckCircle fontSize="small" />
-                                            </IconButton>
-                                          </Tooltip>
-                                          <Tooltip title={t?.common?.reject || 'Rejeitar'}>
-                                            <IconButton
-                                              size="small"
-                                              color="error"
-                                              onClick={() => handleReject(document.numero.trim())}
-                                            >
-                                              <Cancel fontSize="small" />
-                                            </IconButton>
-                                          </Tooltip>
-                                          <Tooltip title={t?.common?.more || 'Mais'}>
-                                            <IconButton size="small">
-                                              <MoreVert fontSize="small" />
-                                            </IconButton>
-                                          </Tooltip>
-                                        </Stack>
-                                      )}
+                                      <Stack direction="row" spacing={1} justifyContent="center">
+                                        {isPending && (
+                                          <>
+                                            <Tooltip title={t?.common?.approve || 'Aprovar'}>
+                                              <IconButton
+                                                size="small"
+                                                color="success"
+                                                onClick={() => handleApprove(document.numero.trim())}
+                                              >
+                                                <CheckCircle fontSize="small" />
+                                              </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title={t?.common?.reject || 'Rejeitar'}>
+                                              <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={() => handleReject(document.numero.trim())}
+                                              >
+                                                <Cancel fontSize="small" />
+                                              </IconButton>
+                                            </Tooltip>
+                                          </>
+                                        )}
+                                        <Tooltip title={t?.common?.printPdf || 'Imprimir PDF'}>
+                                          <IconButton
+                                            size="small"
+                                            color="primary"
+                                            onClick={() => handlePrintDocument(document)}
+                                          >
+                                            <Print fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Stack>
                                     </TableCell>
                                   );
                                 }
