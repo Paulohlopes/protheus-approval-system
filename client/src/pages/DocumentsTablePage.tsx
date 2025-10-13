@@ -919,7 +919,7 @@ const DocumentsTablePage: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const link = window.document.createElement('a');
       link.href = url;
-      link.download = `documento_${document.numero.trim()}_${new Date().toISOString().split('T')[0]}.pdf`;
+      link.download = `${document._country || 'BR'}_documento_${document.numero.trim()}_${new Date().toISOString().split('T')[0]}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
