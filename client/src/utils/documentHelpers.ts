@@ -74,3 +74,42 @@ export const getDocumentStatus = (alcada: DocumentApprovalLevel[]): string => {
   // Default to pending if status is unclear
   return 'Pendente';
 };
+
+/**
+ * Checks if the current user can approve/reject the document
+ * Returns true only if:
+ * 1. The user is in the approval hierarchy
+ * 2. All previous levels are approved
+ * 3. The user's level is pending
+ */
+export const canUserApprove = (
+  alcada: DocumentApprovalLevel[],
+  userEmail?: string
+): boolean => {
+  if (!alcada || alcada.length === 0 || !userEmail) return false;
+
+  // Find user's position in the hierarchy
+  const userIndex = alcada.findIndex(level =>
+    level.CIDENTIFICADOR === userEmail.split('@')[0] ||
+    level.CNOME === userEmail.split('@')[0] ||
+    level.aprovador_aprov === userEmail.split('@')[0]
+  );
+
+  // User not in hierarchy
+  if (userIndex === -1) return false;
+
+  const userLevel = alcada[userIndex];
+
+  // User's level must be pending
+  if (userLevel.situacao_aprov !== 'Pendente') return false;
+
+  // Check if all previous levels are approved
+  for (let i = 0; i < userIndex; i++) {
+    if (alcada[i].situacao_aprov !== 'Liberado') {
+      return false; // Previous level not approved yet
+    }
+  }
+
+  // User can approve
+  return true;
+};

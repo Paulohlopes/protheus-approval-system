@@ -78,7 +78,7 @@ import { useDocuments } from '../hooks/useDocuments';
 import { useDocumentActions } from '../hooks/useDocumentActions';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentApprovalStatus, getDocumentStatus } from '../utils/documentHelpers';
+import { getCurrentApprovalStatus, getDocumentStatus, canUserApprove } from '../utils/documentHelpers';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import LanguageSelector from '../components/LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -1336,7 +1336,7 @@ const DocumentsTablePage: React.FC = () => {
                       const isItemSelected = isSelected(document.numero.trim());
                       const isExpanded = expandedRows.has(document.numero.trim());
                       const currentStatus = getCurrentApprovalStatus(document.alcada, user?.email);
-                      const isPending = currentStatus?.situacao_aprov === 'Pendente';
+                      const canApprove = canUserApprove(document.alcada, user?.email);
 
                       return (
                         <React.Fragment key={`${document._country || document.filial}-${document.numero.trim()}`}>
@@ -1369,7 +1369,7 @@ const DocumentsTablePage: React.FC = () => {
                                   return (
                                     <TableCell key={column.id} align={column.align}>
                                       <Stack direction="row" spacing={1} justifyContent="center">
-                                        {isPending && (
+                                        {canApprove && (
                                           <>
                                             <Tooltip title={t?.common?.approve || 'Aprovar'}>
                                               <IconButton
