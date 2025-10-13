@@ -641,6 +641,21 @@ const DocumentsTablePage: React.FC = () => {
     }
   };
 
+  const formatDocumentValue = useCallback((document: ProtheusDocument | null): string | undefined => {
+    if (!document || !document.vl_tot_documento) return undefined;
+
+    try {
+      const numValue = parseFloat(document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
+      return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      }).format(isNaN(numValue) ? 0 : numValue);
+    } catch (error) {
+      console.error('Erro ao formatar valor do documento:', error);
+      return 'R$ 0,00';
+    }
+  }, []);
+
   const handlePrintDocument = useCallback(async (document: ProtheusDocument) => {
     try {
       // Importação dinâmica para evitar problemas de build
@@ -833,21 +848,6 @@ const DocumentsTablePage: React.FC = () => {
   }, [logout, navigate]);
 
   const isSelected = useCallback((documentNumber: string) => selected.indexOf(documentNumber) !== -1, [selected]);
-
-  const formatDocumentValue = useCallback((document: ProtheusDocument | null): string | undefined => {
-    if (!document || !document.vl_tot_documento) return undefined;
-
-    try {
-      const numValue = parseFloat(document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
-      return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      }).format(isNaN(numValue) ? 0 : numValue);
-    } catch (error) {
-      console.error('Erro ao formatar valor do documento:', error);
-      return 'R$ 0,00';
-    }
-  }, []);
 
   return (
     <ErrorBoundary level="page">
