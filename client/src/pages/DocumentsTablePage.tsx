@@ -770,44 +770,6 @@ const DocumentsTablePage: React.FC = () => {
 
       yPos = (pdf as any).lastAutoTable.finalY + 10;
 
-      // Alçada de Aprovação
-      if (yPos > 250) {
-        pdf.addPage();
-        yPos = 20;
-      }
-
-      pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(t?.documents?.approvalHierarchy || 'Alçada de Aprovação', 14, yPos);
-      yPos += 8;
-
-      const alcadaData = document.alcada.map((nivel, index) => [
-        (index + 1).toString(),
-        nivel.CNOME || nivel.aprovador_aprov,
-        translateStatus(nivel.situacao_aprov),
-        nivel.data_lib_aprov ? formatDate(nivel.data_lib_aprov) : '-',
-        nivel.observacao_aprov || '-'
-      ]);
-
-      autoTable(pdf, {
-        startY: yPos,
-        head: [[
-          '#',
-          t?.documents?.approver || 'Aprovador',
-          t?.documents?.status || 'Status',
-          t?.documents?.date || 'Data',
-          t?.documents?.comments || 'Observação'
-        ]],
-        body: alcadaData,
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [63, 81, 181], fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
-        columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          4: { cellWidth: 50 }
-        }
-      });
-
       // Rodapé
       const totalPages = pdf.internal.getNumberOfPages();
       for (let i = 1; i <= totalPages; i++) {
