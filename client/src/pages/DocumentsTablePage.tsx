@@ -835,7 +835,13 @@ const DocumentsTablePage: React.FC = () => {
       pdf.save(`documento_${document.numero.trim()}_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Erro ao gerar PDF do documento:', error);
-      alert('Erro ao gerar PDF do documento');
+      console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        type: typeof error,
+        error: error
+      });
+      alert(`Erro ao gerar PDF do documento: ${error instanceof Error ? error.message : String(error)}`);
     }
   }, [t, translateStatus, formatDocumentValue]);
 
