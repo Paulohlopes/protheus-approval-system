@@ -101,11 +101,45 @@ export const canUserApprove = (
     situacao: level.situacao_aprov
   })));
 
-  // Find user's position in the hierarchy
+  // Helper function to check if user matches identifier with flexible matching
+  const matchesUser = (identifier: string): boolean => {
+    if (!identifier) return false;
+
+    const id = identifier.toLowerCase();
+    const email = userEmailPart.toLowerCase();
+
+    // Direct match
+    if (id === email) return true;
+
+    // Match without dots (lais.oliveira -> laisoliveira)
+    const emailNoDots = email.replace(/\./g, '');
+    if (id === emailNoDots) return true;
+
+    // Match just the last part after dot (lais.oliveira -> oliveira)
+    if (email.includes('.')) {
+      const lastName = email.split('.').pop();
+      if (lastName && id === lastName) return true;
+    }
+
+    // Match first letter + last name (lais.oliveira -> loliveira)
+    if (email.includes('.')) {
+      const parts = email.split('.');
+      if (parts.length >= 2) {
+        const firstLetter = parts[0][0];
+        const lastName = parts.slice(1).join('');
+        const shortForm = firstLetter + lastName;
+        if (id === shortForm) return true;
+      }
+    }
+
+    return false;
+  };
+
+  // Find user's position in the hierarchy with flexible matching
   const userIndex = alcada.findIndex(level =>
-    level.CIDENTIFICADOR === userEmailPart ||
-    level.CNOME === userEmailPart ||
-    level.aprovador_aprov === userEmailPart
+    matchesUser(level.CIDENTIFICADOR) ||
+    matchesUser(level.CNOME) ||
+    matchesUser(level.aprovador_aprov)
   );
 
   console.log('[canUserApprove] User index in hierarchy:', userIndex);
