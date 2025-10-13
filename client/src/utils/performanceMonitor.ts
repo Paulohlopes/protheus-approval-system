@@ -2,6 +2,8 @@
  * Performance monitoring utilities
  */
 
+import React from 'react';
+
 interface PerformanceMetric {
   name: string;
   duration: number;
@@ -213,7 +215,7 @@ export function withPerformanceTracking<P extends object>(
       };
     });
 
-    return <WrappedComponent {...props} ref={ref} />;
+    return React.createElement(WrappedComponent, { ...props, ref } as any);
   });
 
   TrackedComponent.displayName = `withPerformanceTracking(${displayName})`;
