@@ -27,3 +27,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# PDF Templates (ignore actual PDFs but keep folder structure)
+public/pdfs/*.pdf
+!public/pdfs/README.md
+!public/pdfs/.gitkeep

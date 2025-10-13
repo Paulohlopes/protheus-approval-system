@@ -88,6 +88,7 @@ import ApiErrorAlert from '../components/ApiErrorAlert';
 import type { ProtheusDocument } from '../types/auth';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { PDFDocument } from 'pdf-lib';
 
 interface Column {
   id: string;
@@ -651,6 +652,52 @@ const DocumentsTablePage: React.FC = () => {
     }
   }, []);
 
+  // Helper para obter o caminho do PDF template por país
+  const getPdfTemplatePath = useCallback((country: string): string | null => {
+    const templates: Record<string, string | undefined> = {
+      BR: import.meta.env.VITE_BR_PDF_TEMPLATE,
+      CL: import.meta.env.VITE_CL_PDF_TEMPLATE,
+      AR: import.meta.env.VITE_AR_PDF_TEMPLATE,
+      PE: import.meta.env.VITE_PE_PDF_TEMPLATE,
+    };
+    return templates[country] || null;
+  }, []);
+
+  // Helper para mesclar PDFs
+  const mergePdfs = useCallback(async (generatedPdfBytes: Uint8Array, templatePath: string): Promise<Uint8Array> => {
+    try {
+      // Carregar o PDF gerado
+      const generatedPdf = await PDFDocument.load(generatedPdfBytes);
+
+      // Carregar o PDF template do servidor
+      const templateResponse = await fetch(templatePath);
+      if (!templateResponse.ok) {
+        console.warn(`Template PDF não encontrado: ${templatePath}`);
+        return generatedPdfBytes; // Retorna apenas o PDF gerado
+      }
+
+      const templateBytes = await templateResponse.arrayBuffer();
+      const templatePdf = await PDFDocument.load(templateBytes);
+
+      // Criar novo PDF para merge
+      const mergedPdf = await PDFDocument.create();
+
+      // Copiar páginas do PDF gerado
+      const generatedPages = await mergedPdf.copyPages(generatedPdf, generatedPdf.getPageIndices());
+      generatedPages.forEach(page => mergedPdf.addPage(page));
+
+      // Copiar páginas do PDF template
+      const templatePages = await mergedPdf.copyPages(templatePdf, templatePdf.getPageIndices());
+      templatePages.forEach(page => mergedPdf.addPage(page));
+
+      // Retornar o PDF mesclado
+      return await mergedPdf.save();
+    } catch (error) {
+      console.error('Erro ao mesclar PDFs:', error);
+      return generatedPdfBytes; // Em caso de erro, retorna apenas o PDF gerado
+    }
+  }, []);
+
   const handlePrintDocument = useCallback(async (document: ProtheusDocument) => {
     try {
       const pdf = new jsPDF();
@@ -784,7 +831,30 @@ const DocumentsTablePage: React.FC = () => {
         );
       }
 
-      pdf.save(`documento_${document.numero.trim()}_${new Date().toISOString().split('T')[0]}.pdf`);
+      // Obter bytes do PDF gerado
+      const pdfBytes = pdf.output('arraybuffer');
+      const pdfUint8Array = new Uint8Array(pdfBytes);
+
+      // Verificar se há template PDF para o país
+      const templatePath = getPdfTemplatePath(document._country || 'BR');
+
+      let finalPdfBytes: Uint8Array;
+      if (templatePath) {
+        console.log(`Mesclando com template do país ${document._country}: ${templatePath}`);
+        finalPdfBytes = await mergePdfs(pdfUint8Array, templatePath);
+      } else {
+        console.log(`Nenhum template encontrado para ${document._country}, usando apenas PDF gerado`);
+        finalPdfBytes = pdfUint8Array;
+      }
+
+      // Download do PDF final
+      const blob = new Blob([finalPdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = `documento_${document.numero.trim()}_${new Date().toISOString().split('T')[0]}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Erro ao gerar PDF do documento:', error);
       console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
@@ -795,7 +865,7 @@ const DocumentsTablePage: React.FC = () => {
       });
       alert(`Erro ao gerar PDF do documento: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [t, translateStatus, formatDocumentValue]);
+  }, [t, translateStatus, formatDocumentValue, getPdfTemplatePath, mergePdfs]);
 
   const handleLogout = useCallback(async () => {
     try {
