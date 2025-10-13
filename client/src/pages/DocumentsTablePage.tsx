@@ -86,18 +86,8 @@ import CountryFlag from '../components/CountryFlag';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ApiErrorAlert from '../components/ApiErrorAlert';
 import type { ProtheusDocument } from '../types/auth';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
-// Extend jsPDF type with autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: {
-      finalY: number;
-    };
-  }
-}
 
 interface Column {
   id: string;
@@ -631,7 +621,7 @@ const DocumentsTablePage: React.FC = () => {
         doc.comprador,
       ]);
 
-      doc.autoTable({
+      autoTable(doc, {
         head: [['País', t?.documents?.number || 'Número', t?.documents?.type || 'Tipo', t?.documents?.supplier || 'Fornecedor', t?.documents?.totalValue || 'Valor', t?.documents?.issueDate || 'Emissão', t?.documents?.buyer || 'Comprador']],
         body: tableData,
         startY: 45,
@@ -755,7 +745,7 @@ const DocumentsTablePage: React.FC = () => {
         `R$ ${item.total}`,
       ]);
 
-      pdf.autoTable({
+      autoTable(pdf, {
         startY: yPos,
         head: [[
           t?.table?.item || 'Item',
@@ -778,7 +768,7 @@ const DocumentsTablePage: React.FC = () => {
         }
       });
 
-      yPos = pdf.lastAutoTable.finalY + 10;
+      yPos = (pdf as any).lastAutoTable.finalY + 10;
 
       // Alçada de Aprovação
       if (yPos > 250) {
@@ -799,7 +789,7 @@ const DocumentsTablePage: React.FC = () => {
         nivel.observacao_aprov || '-'
       ]);
 
-      pdf.autoTable({
+      autoTable(pdf, {
         startY: yPos,
         head: [[
           '#',
