@@ -86,8 +86,8 @@ import CountryFlag from '../components/CountryFlag';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ApiErrorAlert from '../components/ApiErrorAlert';
 import type { ProtheusDocument } from '../types/auth';
-// Tipos para jspdf-autotable
-import type { jsPDF as jsPDFType } from 'jspdf';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Extend jsPDF type with autoTable
 declare module 'jspdf' {
@@ -605,13 +605,6 @@ const DocumentsTablePage: React.FC = () => {
 
   const handleExportPDF = async () => {
     try {
-      // Importação dinâmica para evitar problemas de build
-      const jsPDFModule = await import('jspdf');
-      const jsPDF = jsPDFModule.default;
-
-      // Importar jspdf-autotable que estende o protótipo do jsPDF
-      await import('jspdf-autotable');
-
       const doc = new jsPDF();
 
       doc.setFontSize(18);
@@ -670,13 +663,6 @@ const DocumentsTablePage: React.FC = () => {
 
   const handlePrintDocument = useCallback(async (document: ProtheusDocument) => {
     try {
-      // Importação dinâmica - jspdf-autotable 5.x
-      const jsPDFModule = await import('jspdf');
-      const jsPDF = jsPDFModule.default;
-
-      // Na versão 5.x, autoTable é exportado como named export
-      const autoTableModule = await import('jspdf-autotable');
-
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       let yPos = 20;
