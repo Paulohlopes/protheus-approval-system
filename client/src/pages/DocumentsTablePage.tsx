@@ -670,12 +670,12 @@ const DocumentsTablePage: React.FC = () => {
 
   const handlePrintDocument = useCallback(async (document: ProtheusDocument) => {
     try {
-      // Importação dinâmica para evitar problemas de build
+      // Importação dinâmica - jspdf-autotable 5.x
       const jsPDFModule = await import('jspdf');
       const jsPDF = jsPDFModule.default;
 
-      // Importar jspdf-autotable que estende o protótipo do jsPDF
-      await import('jspdf-autotable');
+      // Na versão 5.x, autoTable é exportado como named export
+      const autoTableModule = await import('jspdf-autotable');
 
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
