@@ -704,6 +704,76 @@ const DocumentsTablePage: React.FC = () => {
       const pageWidth = pdf.internal.pageSize.getWidth();
       let yPos = 20;
 
+      // Detectar se é país hispânico
+      const isSpanishCountry = ['CL', 'AR', 'PE'].includes(document._country || 'BR');
+
+      // Textos baseados no idioma
+      const texts = isSpanishCountry ? {
+        documentDetails: 'Detalles del Documento',
+        number: 'Número',
+        type: 'Tipo',
+        generalInfo: 'Información General',
+        country: 'País',
+        branch: 'Sucursal',
+        supplier: 'Proveedor',
+        totalValue: 'Valor Total',
+        issueDate: 'Fecha de Emisión',
+        buyer: 'Comprador',
+        paymentCondition: 'Condición de Pago',
+        documentItems: 'Ítems del Documento',
+        item: 'Ítem',
+        product: 'Producto',
+        description: 'Descripción',
+        quantity: 'Cant',
+        unit: 'UN',
+        price: 'Precio',
+        total: 'Total',
+        page: 'Página',
+        of: 'de',
+        generated: 'Generado en',
+        purchaseOrder: 'Orden de Compra',
+        purchaseRequest: 'Solicitud',
+        contract: 'Contrato',
+        countryNames: {
+          BR: 'Brasil',
+          AR: 'Argentina',
+          CL: 'Chile',
+          PE: 'Perú'
+        }
+      } : {
+        documentDetails: 'Detalhes do Documento',
+        number: 'Número',
+        type: 'Tipo',
+        generalInfo: 'Informações Gerais',
+        country: 'País',
+        branch: 'Filial',
+        supplier: 'Fornecedor',
+        totalValue: 'Valor Total',
+        issueDate: 'Emissão',
+        buyer: 'Comprador',
+        paymentCondition: 'Condição Pagamento',
+        documentItems: 'Itens do Documento',
+        item: 'Item',
+        product: 'Produto',
+        description: 'Descrição',
+        quantity: 'Qtd',
+        unit: 'UN',
+        price: 'Preço',
+        total: 'Total',
+        page: 'Página',
+        of: 'de',
+        generated: 'Gerado em',
+        purchaseOrder: 'Pedido de Compra',
+        purchaseRequest: 'Solicitação',
+        contract: 'Contrato',
+        countryNames: {
+          BR: 'Brasil',
+          AR: 'Argentina',
+          CL: 'Chile',
+          PE: 'Peru'
+        }
+      };
+
       // Helper para formatar data
       const formatDate = (dateStr: string) => {
         if (!dateStr || dateStr.length !== 8) return dateStr;
@@ -716,9 +786,9 @@ const DocumentsTablePage: React.FC = () => {
       // Helper para traduzir tipo
       const getTypeLabel = (type: string) => {
         switch (type) {
-          case 'IP': return t?.documentTypes?.IP || 'Pedido de Compra';
-          case 'SC': return t?.documentTypes?.SC || 'Solicitação';
-          case 'CP': return t?.documentTypes?.CP || 'Contrato';
+          case 'IP': return texts.purchaseOrder;
+          case 'SC': return texts.purchaseRequest;
+          case 'CP': return texts.contract;
           default: return type;
         }
       };
@@ -730,12 +800,12 @@ const DocumentsTablePage: React.FC = () => {
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(20);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(t?.documents?.documentDetails || 'Detalhes do Documento', 14, 15);
+      pdf.text(texts.documentDetails, 14, 15);
 
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${t?.documents?.number || 'Número'}: ${document.numero.trim()}`, 14, 25);
-      pdf.text(`${t?.documents?.type || 'Tipo'}: ${getTypeLabel(document.tipo)}`, 14, 32);
+      pdf.text(`${texts.number}: ${document.numero.trim()}`, 14, 25);
+      pdf.text(`${texts.type}: ${getTypeLabel(document.tipo)}`, 14, 32);
 
       yPos = 50;
 
@@ -743,27 +813,20 @@ const DocumentsTablePage: React.FC = () => {
       pdf.setTextColor(0, 0, 0);
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(t?.documents?.generalInfo || 'Informações Gerais', 14, yPos);
+      pdf.text(texts.generalInfo, 14, yPos);
       yPos += 8;
 
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
 
-      const countryNames: { [key: string]: string } = {
-        BR: 'Brasil',
-        AR: 'Argentina',
-        CL: 'Chile',
-        PE: 'Peru'
-      };
-
       const generalInfo = [
-        [`${t?.documents?.country || 'País'}:`, countryNames[document._country || 'BR']],
-        [`${t?.documents?.branch || 'Filial'}:`, document.filial],
-        [`${t?.documents?.supplier || 'Fornecedor'}:`, document.nome_fornecedor || 'N/A'],
-        [`${t?.documents?.totalValue || 'Valor Total'}:`, formatDocumentValue(document) || 'R$ 0,00'],
-        [`${t?.documents?.issueDate || 'Emissão'}:`, formatDate(document.Emissao)],
-        [`${t?.documents?.buyer || 'Comprador'}:`, document.comprador || '-'],
-        [`${t?.documents?.paymentCondition || 'Condição Pagamento'}:`, document.cond_pagamento || '-'],
+        [`${texts.country}:`, texts.countryNames[document._country || 'BR']],
+        [`${texts.branch}:`, document.filial],
+        [`${texts.supplier}:`, document.nome_fornecedor || 'N/A'],
+        [`${texts.totalValue}:`, formatDocumentValue(document) || 'R$ 0,00'],
+        [`${texts.issueDate}:`, formatDate(document.Emissao)],
+        [`${texts.buyer}:`, document.comprador || '-'],
+        [`${texts.paymentCondition}:`, document.cond_pagamento || '-'],
       ];
 
       generalInfo.forEach(([label, value]) => {
@@ -779,7 +842,7 @@ const DocumentsTablePage: React.FC = () => {
       // Itens do Documento
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`${t?.documents?.documentItems || 'Itens do Documento'} (${document.itens.length})`, 14, yPos);
+      pdf.text(`${texts.documentItems} (${document.itens.length})`, 14, yPos);
       yPos += 8;
 
       const itemsData = document.itens.map((item, index) => [
@@ -795,13 +858,13 @@ const DocumentsTablePage: React.FC = () => {
       autoTable(pdf, {
         startY: yPos,
         head: [[
-          t?.table?.item || 'Item',
-          t?.table?.product || 'Produto',
-          t?.table?.description || 'Descrição',
-          t?.table?.quantity || 'Qtd',
-          t?.table?.unit || 'UN',
-          t?.table?.price || 'Preço',
-          t?.table?.total || 'Total'
+          texts.item,
+          texts.product,
+          texts.description,
+          texts.quantity,
+          texts.unit,
+          texts.price,
+          texts.total
         ]],
         body: itemsData,
         styles: { fontSize: 8, cellPadding: 2 },
@@ -819,12 +882,16 @@ const DocumentsTablePage: React.FC = () => {
 
       // Rodapé
       const totalPages = pdf.internal.getNumberOfPages();
+      const currentDate = isSpanishCountry
+        ? new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
+        : new Date().toLocaleString('pt-BR');
+
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
         pdf.setFontSize(8);
         pdf.setTextColor(128, 128, 128);
         pdf.text(
-          `${t?.export?.page || 'Página'} ${i} ${t?.export?.of || 'de'} ${totalPages} - ${t?.export?.generated || 'Gerado em'}: ${new Date().toLocaleString('pt-BR')}`,
+          `${texts.page} ${i} ${texts.of} ${totalPages} - ${texts.generated}: ${currentDate}`,
           pageWidth / 2,
           pdf.internal.pageSize.getHeight() - 10,
           { align: 'center' }
