@@ -871,8 +871,8 @@ const DocumentsTablePage: React.FC = () => {
           texts.observation
         ]],
         body: itemsData,
-        styles: { fontSize: 7, cellPadding: 1.5 },
-        headStyles: { fillColor: [63, 81, 181], fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 2.5 },
+        headStyles: { fillColor: [63, 81, 181], fontStyle: 'bold', fontSize: 9 },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
           0: { cellWidth: 10 },
