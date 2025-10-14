@@ -806,8 +806,8 @@ const DocumentsTablePage: React.FC = () => {
 
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${texts.number}: ${document.numero.trim()}`, 14, 25);
-      pdf.text(`${texts.type}: ${getTypeLabel(document.tipo)}`, 14, 32);
+      pdf.text(`${texts.number}: ${(document.numero || '').toString().trim()}`, 14, 25);
+      pdf.text(`${texts.type}: ${getTypeLabel((document.tipo || '').toString().trim())}`, 14, 32);
 
       yPos = 50;
 
@@ -823,12 +823,12 @@ const DocumentsTablePage: React.FC = () => {
 
       const generalInfo = [
         [`${texts.country}:`, texts.countryNames[document._country || 'BR']],
-        [`${texts.branch}:`, document.filial],
-        [`${texts.supplier}:`, document.nome_fornecedor || 'N/A'],
+        [`${texts.branch}:`, (document.filial || '').toString().trim()],
+        [`${texts.supplier}:`, (document.nome_fornecedor || 'N/A').toString().trim()],
         [`${texts.totalValue}:`, formatDocumentValue(document) || 'R$ 0,00'],
-        [`${texts.issueDate}:`, formatDate(document.Emissao)],
-        [`${texts.buyer}:`, document.comprador || '-'],
-        [`${texts.paymentCondition}:`, document.cond_pagamento || '-'],
+        [`${texts.issueDate}:`, formatDate((document.Emissao || '').toString().trim())],
+        [`${texts.buyer}:`, (document.comprador || '-').toString().trim()],
+        [`${texts.paymentCondition}:`, (document.cond_pagamento || '-').toString().trim()],
       ];
 
       generalInfo.forEach(([label, value]) => {
@@ -848,14 +848,14 @@ const DocumentsTablePage: React.FC = () => {
       yPos += 8;
 
       const itemsData = document.itens.map((item, index) => [
-        item.item,
-        item.produto,
-        item.descr_produto.substring(0, 25) + (item.descr_produto.length > 25 ? '...' : ''),
-        item.quantidade.toString(),
-        item.unidade_medida,
-        `R$ ${item.preco}`,
-        `R$ ${item.total}`,
-        item.observacao || '-'
+        (item.item || '').toString().trim(),
+        (item.produto || '').toString().trim(),
+        (item.descr_produto || '').toString().trim(),
+        (item.quantidade || '').toString().trim(),
+        (item.unidade_medida || '').toString().trim(),
+        `R$ ${(item.preco || '').toString().trim()}`,
+        `R$ ${(item.total || '').toString().trim()}`,
+        (item.observacao || '-').toString().trim()
       ]);
 
       autoTable(pdf, {
