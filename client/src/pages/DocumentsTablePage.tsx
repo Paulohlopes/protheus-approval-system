@@ -872,27 +872,27 @@ const DocumentsTablePage: React.FC = () => {
         ]],
         body: itemsData,
         styles: {
-          fontSize: 9,
-          cellPadding: 2.5,
+          fontSize: 7,
+          cellPadding: 2,
           overflow: 'ellipsize',
           cellWidth: 'wrap'
         },
         headStyles: {
           fillColor: [63, 81, 181],
           fontStyle: 'bold',
-          fontSize: 9,
+          fontSize: 7,
           overflow: 'ellipsize'
         },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-          0: { cellWidth: 12, overflow: 'ellipsize' },
-          1: { cellWidth: 22, overflow: 'ellipsize' },
-          2: { cellWidth: 45, overflow: 'ellipsize' },
-          3: { halign: 'right', cellWidth: 15, overflow: 'ellipsize' },
-          4: { cellWidth: 12, overflow: 'ellipsize' },
-          5: { halign: 'right', cellWidth: 22, overflow: 'ellipsize' },
-          6: { halign: 'right', fontStyle: 'bold', cellWidth: 22, overflow: 'ellipsize' },
-          7: { cellWidth: 50, overflow: 'ellipsize' }
+          0: { cellWidth: 10, overflow: 'ellipsize' },
+          1: { cellWidth: 20, overflow: 'ellipsize' },
+          2: { cellWidth: 50, overflow: 'ellipsize' },
+          3: { halign: 'right', cellWidth: 12, overflow: 'ellipsize' },
+          4: { cellWidth: 10, overflow: 'ellipsize' },
+          5: { halign: 'right', cellWidth: 20, overflow: 'ellipsize' },
+          6: { halign: 'right', fontStyle: 'bold', cellWidth: 20, overflow: 'ellipsize' },
+          7: { cellWidth: 58, overflow: 'linebreak', cellPadding: 2 }
         },
         margin: { left: 5, right: 5 }
       });
