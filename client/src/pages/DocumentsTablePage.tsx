@@ -728,6 +728,7 @@ const DocumentsTablePage: React.FC = () => {
         unit: 'UN',
         price: 'Precio',
         total: 'Total',
+        observation: 'Observación',
         page: 'Página',
         of: 'de',
         generated: 'Generado en',
@@ -760,6 +761,7 @@ const DocumentsTablePage: React.FC = () => {
         unit: 'UN',
         price: 'Preço',
         total: 'Total',
+        observation: 'Observação',
         page: 'Página',
         of: 'de',
         generated: 'Gerado em',
@@ -848,11 +850,12 @@ const DocumentsTablePage: React.FC = () => {
       const itemsData = document.itens.map((item, index) => [
         item.item,
         item.produto,
-        item.descr_produto.substring(0, 30) + (item.descr_produto.length > 30 ? '...' : ''),
+        item.descr_produto.substring(0, 25) + (item.descr_produto.length > 25 ? '...' : ''),
         item.quantidade.toString(),
         item.unidade_medida,
         `R$ ${item.preco}`,
         `R$ ${item.total}`,
+        item.observacao || '-'
       ]);
 
       autoTable(pdf, {
@@ -864,17 +867,22 @@ const DocumentsTablePage: React.FC = () => {
           texts.quantity,
           texts.unit,
           texts.price,
-          texts.total
+          texts.total,
+          texts.observation
         ]],
         body: itemsData,
-        styles: { fontSize: 8, cellPadding: 2 },
+        styles: { fontSize: 7, cellPadding: 1.5 },
         headStyles: { fillColor: [63, 81, 181], fontStyle: 'bold' },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-          2: { cellWidth: 40 },
-          3: { halign: 'right' },
-          5: { halign: 'right' },
-          6: { halign: 'right', fontStyle: 'bold' }
+          0: { cellWidth: 10 },
+          1: { cellWidth: 18 },
+          2: { cellWidth: 35 },
+          3: { halign: 'right', cellWidth: 12 },
+          4: { cellWidth: 10 },
+          5: { halign: 'right', cellWidth: 18 },
+          6: { halign: 'right', fontStyle: 'bold', cellWidth: 18 },
+          7: { cellWidth: 40 }
         }
       });
 
