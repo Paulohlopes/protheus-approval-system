@@ -847,52 +847,60 @@ const DocumentsTablePage: React.FC = () => {
       pdf.text(`${texts.documentItems} (${document.itens.length})`, 14, yPos);
       yPos += 8;
 
-      const itemsData = document.itens.map((item, index) => [
-        (item.item || '').toString().trim(),
-        (item.produto || '').toString().trim(),
-        (item.descr_produto || '').toString().trim(),
-        (item.quantidade || '').toString().trim(),
-        (item.unidade_medida || '').toString().trim(),
-        `R$ ${(item.preco || '').toString().trim()}`,
-        `R$ ${(item.total || '').toString().trim()}`,
-        (item.observacao || '-').toString().trim()
-      ]);
+      const itemsData = document.itens.map((item, index) => {
+        const produto = (item.produto || '').toString().trim();
+        const descricao = (item.descr_produto || '').toString().trim();
+        const produtoDescr = `${produto}\n${descricao}`;
+
+        const qtd = (item.quantidade || '').toString().trim();
+        const un = (item.unidade_medida || '').toString().trim();
+        const qtdUn = `${qtd} ${un}`;
+
+        const preco = `R$ ${(item.preco || '').toString().trim()}`;
+        const total = `R$ ${(item.total || '').toString().trim()}`;
+        const precoTotal = `${preco}\n${total}`;
+
+        return [
+          (item.item || '').toString().trim(),
+          produtoDescr,
+          qtdUn,
+          precoTotal,
+          (item.observacao || '-').toString().trim()
+        ];
+      });
 
       autoTable(pdf, {
         startY: yPos,
         head: [[
           texts.item,
-          texts.product,
-          texts.description,
-          texts.quantity,
-          texts.unit,
-          texts.price,
-          texts.total,
+          `${texts.product}\n${texts.description}`,
+          `${texts.quantity}`,
+          `${texts.price}\n${texts.total}`,
           texts.observation
         ]],
         body: itemsData,
         styles: {
-          fontSize: 7,
-          cellPadding: 2,
+          fontSize: 8,
+          cellPadding: 3,
           overflow: 'ellipsize',
-          cellWidth: 'wrap'
+          cellWidth: 'wrap',
+          minCellHeight: 10
         },
         headStyles: {
           fillColor: [63, 81, 181],
           fontStyle: 'bold',
-          fontSize: 7,
-          overflow: 'ellipsize'
+          fontSize: 8,
+          overflow: 'linebreak',
+          valign: 'middle',
+          halign: 'center'
         },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-          0: { cellWidth: 10, overflow: 'ellipsize' },
-          1: { cellWidth: 20, overflow: 'ellipsize' },
-          2: { cellWidth: 50, overflow: 'ellipsize' },
-          3: { halign: 'right', cellWidth: 12, overflow: 'ellipsize' },
-          4: { cellWidth: 10, overflow: 'ellipsize' },
-          5: { halign: 'right', cellWidth: 20, overflow: 'ellipsize' },
-          6: { halign: 'right', fontStyle: 'bold', cellWidth: 20, overflow: 'ellipsize' },
-          7: { cellWidth: 58, overflow: 'linebreak', cellPadding: 2 }
+          0: { cellWidth: 12, overflow: 'ellipsize', halign: 'center' },
+          1: { cellWidth: 70, overflow: 'linebreak', valign: 'top' },
+          2: { halign: 'center', cellWidth: 20, overflow: 'ellipsize', valign: 'middle' },
+          3: { halign: 'right', cellWidth: 30, overflow: 'linebreak', fontStyle: 'bold', valign: 'middle' },
+          4: { cellWidth: 68, overflow: 'linebreak', cellPadding: 3, valign: 'top' }
         },
         margin: { left: 5, right: 5 }
       });
