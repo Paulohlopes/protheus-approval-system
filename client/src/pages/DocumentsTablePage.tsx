@@ -797,19 +797,20 @@ const DocumentsTablePage: React.FC = () => {
 
       // Cabeçalho
       pdf.setFillColor(63, 81, 181);
-      pdf.rect(0, 0, pageWidth, 40, 'F');
+      pdf.rect(0, 0, pageWidth, 45, 'F');
 
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(20);
       pdf.setFont('helvetica', 'bold');
       pdf.text(texts.documentDetails, 14, 15);
 
-      pdf.setFontSize(12);
+      pdf.setFontSize(11);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`${texts.number}: ${(document.numero || '').toString().trim()}`, 14, 25);
-      pdf.text(`${texts.type}: ${getTypeLabel((document.tipo || '').toString().trim())}`, 14, 32);
+      pdf.text(`${texts.number}: ${(document.numero || '').toString().trim()}`, 14, 26);
+      pdf.text(`${texts.type}: ${getTypeLabel((document.tipo || '').toString().trim())}`, 14, 34);
+      pdf.text(`${texts.branch}: ${(document.filial || '').toString().trim()}`, 14, 42);
 
-      yPos = 50;
+      yPos = 55;
 
       // Informações Gerais
       pdf.setTextColor(0, 0, 0);
@@ -823,7 +824,6 @@ const DocumentsTablePage: React.FC = () => {
 
       const generalInfo = [
         [`${texts.country}:`, texts.countryNames[document._country || 'BR']],
-        [`${texts.branch}:`, (document.filial || '').toString().trim()],
         [`${texts.supplier}:`, (document.nome_fornecedor || 'N/A').toString().trim()],
         [`${texts.totalValue}:`, formatDocumentValue(document) || 'R$ 0,00'],
         [`${texts.issueDate}:`, formatDate((document.Emissao || '').toString().trim())],
