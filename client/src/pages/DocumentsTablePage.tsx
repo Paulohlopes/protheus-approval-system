@@ -873,7 +873,7 @@ const DocumentsTablePage: React.FC = () => {
         body: itemsData,
         styles: {
           fontSize: 7,
-          cellPadding: 2,
+          cellPadding: 1.5,
           overflow: 'ellipsize',
           cellWidth: 'wrap',
           lineColor: [200, 200, 200],
@@ -888,16 +888,17 @@ const DocumentsTablePage: React.FC = () => {
         },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-          0: { cellWidth: 10, overflow: 'ellipsize', halign: 'center', fontSize: 6 },
-          1: { cellWidth: 25, overflow: 'ellipsize', fontSize: 6 },
-          2: { cellWidth: 80, overflow: 'ellipsize', fontSize: 6.5 },
-          3: { halign: 'right', cellWidth: 15, overflow: 'ellipsize', fontSize: 6 },
-          4: { cellWidth: 10, overflow: 'ellipsize', halign: 'center', fontSize: 6 },
-          5: { halign: 'right', cellWidth: 45, overflow: 'ellipsize' },
-          6: { halign: 'right', fontStyle: 'bold', cellWidth: 50, overflow: 'ellipsize' },
-          7: { cellWidth: 100, overflow: 'linebreak', cellPadding: 2 }
+          0: { cellWidth: 15, overflow: 'ellipsize', halign: 'center', fontSize: 6.5 },
+          1: { cellWidth: 35, overflow: 'ellipsize', fontSize: 6.5 },
+          2: { cellWidth: 110, overflow: 'ellipsize', fontSize: 6.5 },
+          3: { halign: 'right', cellWidth: 20, overflow: 'ellipsize', fontSize: 6.5 },
+          4: { cellWidth: 15, overflow: 'ellipsize', halign: 'center', fontSize: 6.5 },
+          5: { halign: 'right', cellWidth: 60, overflow: 'ellipsize' },
+          6: { halign: 'right', fontStyle: 'bold', cellWidth: 65, overflow: 'ellipsize' },
+          7: { cellWidth: 130, overflow: 'linebreak', cellPadding: 1.5 }
         },
-        margin: { left: 5, right: 5 }
+        margin: { left: 14, right: 14 },
+        tableWidth: 'auto'
       });
 
       yPos = (pdf as any).lastAutoTable.finalY + 10;
