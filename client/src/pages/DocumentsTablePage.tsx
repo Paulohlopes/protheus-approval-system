@@ -873,32 +873,36 @@ const DocumentsTablePage: React.FC = () => {
         body: itemsData,
         styles: {
           fontSize: 7,
-          cellPadding: 1.5,
-          overflow: 'ellipsize',
+          cellPadding: 2,
+          overflow: 'linebreak',
           cellWidth: 'wrap',
-          lineColor: [200, 200, 200],
-          lineWidth: 0.1
+          lineColor: [220, 220, 220],
+          lineWidth: 0.5,
+          valign: 'middle'
         },
         headStyles: {
           fillColor: [63, 81, 181],
           fontStyle: 'bold',
-          fontSize: 7,
-          overflow: 'ellipsize',
-          valign: 'middle'
+          fontSize: 8,
+          textColor: [255, 255, 255],
+          halign: 'center',
+          valign: 'middle',
+          cellPadding: 3
         },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
         columnStyles: {
-          0: { cellWidth: 15, overflow: 'ellipsize', halign: 'center', fontSize: 6.5 },
-          1: { cellWidth: 35, overflow: 'ellipsize', fontSize: 6.5 },
-          2: { cellWidth: 110, overflow: 'ellipsize', fontSize: 6.5 },
-          3: { halign: 'right', cellWidth: 20, overflow: 'ellipsize', fontSize: 6.5 },
-          4: { cellWidth: 15, overflow: 'ellipsize', halign: 'center', fontSize: 6.5 },
-          5: { halign: 'right', cellWidth: 60, overflow: 'ellipsize' },
-          6: { halign: 'right', fontStyle: 'bold', cellWidth: 65, overflow: 'ellipsize' },
-          7: { cellWidth: 130, overflow: 'linebreak', cellPadding: 1.5 }
+          0: { halign: 'center', minCellWidth: 8 },
+          1: { minCellWidth: 20 },
+          2: { minCellWidth: 40 },
+          3: { halign: 'right', minCellWidth: 12 },
+          4: { halign: 'center', minCellWidth: 8 },
+          5: { halign: 'right', minCellWidth: 25 },
+          6: { halign: 'right', fontStyle: 'bold', minCellWidth: 25 },
+          7: { minCellWidth: 35 }
         },
         margin: { left: 14, right: 14 },
-        tableWidth: 'auto'
+        tableWidth: 'auto',
+        theme: 'grid'
       });
 
       yPos = (pdf as any).lastAutoTable.finalY + 10;
