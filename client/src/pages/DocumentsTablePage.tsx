@@ -700,7 +700,7 @@ const DocumentsTablePage: React.FC = () => {
 
   const handlePrintDocument = useCallback(async (document: ProtheusDocument) => {
     try {
-      const pdf = new jsPDF();
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       let yPos = 20;
 
@@ -872,29 +872,29 @@ const DocumentsTablePage: React.FC = () => {
         ]],
         body: itemsData,
         styles: {
-          fontSize: 8,
-          cellPadding: 2,
+          fontSize: 9,
+          cellPadding: 3,
           overflow: 'ellipsize',
           cellWidth: 'wrap'
         },
         headStyles: {
           fillColor: [63, 81, 181],
           fontStyle: 'bold',
-          fontSize: 8,
+          fontSize: 9,
           overflow: 'ellipsize'
         },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-          0: { cellWidth: 10, overflow: 'ellipsize', halign: 'center' },
-          1: { cellWidth: 22, overflow: 'ellipsize' },
-          2: { cellWidth: 48, overflow: 'ellipsize' },
-          3: { halign: 'right', cellWidth: 12, overflow: 'ellipsize' },
-          4: { cellWidth: 8, overflow: 'ellipsize', halign: 'center' },
-          5: { halign: 'right', cellWidth: 24, overflow: 'ellipsize' },
-          6: { halign: 'right', fontStyle: 'bold', cellWidth: 24, overflow: 'ellipsize' },
-          7: { cellWidth: 52, overflow: 'linebreak', cellPadding: 2 }
+          0: { cellWidth: 30, overflow: 'ellipsize', halign: 'center' },
+          1: { cellWidth: 80, overflow: 'ellipsize' },
+          2: { cellWidth: 200, overflow: 'ellipsize' },
+          3: { halign: 'right', cellWidth: 50, overflow: 'ellipsize' },
+          4: { cellWidth: 35, overflow: 'ellipsize', halign: 'center' },
+          5: { halign: 'right', cellWidth: 80, overflow: 'ellipsize' },
+          6: { halign: 'right', fontStyle: 'bold', cellWidth: 80, overflow: 'ellipsize' },
+          7: { cellWidth: 165, overflow: 'linebreak', cellPadding: 3 }
         },
-        margin: { left: 5, right: 5 }
+        margin: { left: 10, right: 10 }
       });
 
       yPos = (pdf as any).lastAutoTable.finalY + 10;
