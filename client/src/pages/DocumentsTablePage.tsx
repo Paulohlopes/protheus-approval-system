@@ -700,7 +700,7 @@ const DocumentsTablePage: React.FC = () => {
 
   const handlePrintDocument = useCallback(async (document: ProtheusDocument) => {
     try {
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       let yPos = 20;
 
@@ -872,29 +872,32 @@ const DocumentsTablePage: React.FC = () => {
         ]],
         body: itemsData,
         styles: {
-          fontSize: 9,
-          cellPadding: 3,
+          fontSize: 6.5,
+          cellPadding: 1.5,
           overflow: 'ellipsize',
-          cellWidth: 'wrap'
+          cellWidth: 'wrap',
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1
         },
         headStyles: {
           fillColor: [63, 81, 181],
           fontStyle: 'bold',
-          fontSize: 9,
-          overflow: 'ellipsize'
+          fontSize: 7,
+          overflow: 'ellipsize',
+          valign: 'middle'
         },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: {
-          0: { cellWidth: 30, overflow: 'ellipsize', halign: 'center' },
-          1: { cellWidth: 80, overflow: 'ellipsize' },
-          2: { cellWidth: 200, overflow: 'ellipsize' },
-          3: { halign: 'right', cellWidth: 50, overflow: 'ellipsize' },
-          4: { cellWidth: 35, overflow: 'ellipsize', halign: 'center' },
-          5: { halign: 'right', cellWidth: 80, overflow: 'ellipsize' },
-          6: { halign: 'right', fontStyle: 'bold', cellWidth: 80, overflow: 'ellipsize' },
-          7: { cellWidth: 165, overflow: 'linebreak', cellPadding: 3 }
+          0: { cellWidth: 12, overflow: 'ellipsize', halign: 'center' },
+          1: { cellWidth: 30, overflow: 'ellipsize' },
+          2: { cellWidth: 90, overflow: 'ellipsize' },
+          3: { halign: 'right', cellWidth: 18, overflow: 'ellipsize' },
+          4: { cellWidth: 12, overflow: 'ellipsize', halign: 'center' },
+          5: { halign: 'right', cellWidth: 40, overflow: 'ellipsize' },
+          6: { halign: 'right', fontStyle: 'bold', cellWidth: 40, overflow: 'ellipsize' },
+          7: { cellWidth: 90, overflow: 'linebreak', cellPadding: 1.5, fontSize: 6 }
         },
-        margin: { left: 10, right: 10 }
+        margin: { left: 7, right: 7 }
       });
 
       yPos = (pdf as any).lastAutoTable.finalY + 10;
