@@ -292,9 +292,26 @@ export const en = {
     connectionError: 'Connection error with server. Please check network connectivity.',
     timeoutError: 'Request timeout. The server may be overloaded.',
     connectionReset: 'Connection reset by server. Please try again.',
+    networkErrorServerUnavailable: 'Network error - Server unavailable',
+    unknownError: 'Unknown error',
 
     // Success messages
     documentApprovedSuccess: 'Document approved successfully!',
     documentRejectedSuccess: 'Document rejected successfully!',
+  },
+  apiErrors: {
+    errorConnectingCountries: 'Error connecting to {{count}} {{countryWord}}',
+    warningCountriesUnavailable: 'Warning: {{count}} {{countryWord}} {{verbPhrase}} unavailable',
+    country: 'country',
+    countries: 'countries',
+    isNot: 'is',
+    areNot: 'are',
+    documentsDisplayedFrom: 'Displaying documents from:',
+    noCountryAvailable: 'No country available at the moment',
+    tip: 'Tip:',
+    documentsDisplayingNormally: 'Documents from available countries are being displayed normally.',
+    checkCredentials: 'Check access credentials.',
+    checkNetworkConnection: 'Check your network connection.',
+    contactSupport: 'Contact technical support if the problem persists.',
   },
 };

@@ -292,9 +292,26 @@ export const ptBR = {
     connectionError: 'Erro de conexão com o servidor. Verifique a conectividade de rede.',
     timeoutError: 'Timeout na requisição. O servidor pode estar sobrecarregado.',
     connectionReset: 'Conexão resetada pelo servidor. Tente novamente.',
+    networkErrorServerUnavailable: 'Erro de rede - Servidor não acessível',
+    unknownError: 'Erro desconhecido',
 
     // Success messages
     documentApprovedSuccess: 'Documento aprovado com sucesso!',
     documentRejectedSuccess: 'Documento rejeitado com sucesso!',
+  },
+  apiErrors: {
+    errorConnectingCountries: 'Erro ao conectar com {{count}} {{countryWord}}',
+    warningCountriesUnavailable: 'Aviso: {{count}} {{countryWord}} {{verbPhrase}} disponível{{plural}}',
+    country: 'país',
+    countries: 'países',
+    isNot: 'não está',
+    areNot: 'não estão',
+    documentsDisplayedFrom: 'Documentos sendo exibidos de:',
+    noCountryAvailable: 'Nenhum país disponível no momento',
+    tip: 'Dica:',
+    documentsDisplayingNormally: 'Os documentos dos países disponíveis estão sendo exibidos normalmente.',
+    checkCredentials: 'Verifique as credenciais de acesso.',
+    checkNetworkConnection: 'Verifique sua conexão de rede.',
+    contactSupport: 'Entre em contato com o suporte técnico se o problema persistir.',
   },
 };

@@ -115,22 +115,22 @@ export const documentService = {
 
             if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
               errorType = 'network';
-              errorMessage = 'Tempo limite de conexão excedido';
+              errorMessage = getErrorMessage('timeoutError');
             } else if (error.code === 'ERR_NETWORK' || !error.response) {
               errorType = 'network';
-              errorMessage = 'Erro de rede - Servidor não acessível';
+              errorMessage = getErrorMessage('networkErrorServerUnavailable');
             } else if (statusCode === 401 || statusCode === 403) {
               errorType = 'auth';
-              errorMessage = statusCode === 401 ? 'Não autorizado - Credenciais inválidas' : 'Acesso negado - Sem permissão';
+              errorMessage = statusCode === 401 ? getErrorMessage('sessionExpired') : getErrorMessage('noPermissionDocuments');
             } else if (statusCode && statusCode >= 500) {
               errorType = 'server';
-              errorMessage = `Erro interno do servidor (${statusCode})`;
+              errorMessage = `${getErrorMessage('errorFetchingDocuments')} (${statusCode})`;
             } else if (statusCode && statusCode >= 400) {
               errorType = 'server';
-              errorMessage = `Erro na requisição (${statusCode})`;
+              errorMessage = `${getErrorMessage('errorFetchingDocuments')} (${statusCode})`;
             }
           } else {
-            errorMessage = error.message || 'Erro desconhecido';
+            errorMessage = error.message || getErrorMessage('unknownError');
           }
 
           return {

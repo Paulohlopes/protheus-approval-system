@@ -292,9 +292,26 @@ export const es = {
     connectionError: 'Error de conexión con el servidor. Verifique la conectividad de red.',
     timeoutError: 'Tiempo de espera agotado. El servidor puede estar sobrecargado.',
     connectionReset: 'Conexión restablecida por el servidor. Inténtelo de nuevo.',
+    networkErrorServerUnavailable: 'Error de red - Servidor no accesible',
+    unknownError: 'Error desconocido',
 
     // Success messages
     documentApprovedSuccess: '¡Documento aprobado con éxito!',
     documentRejectedSuccess: '¡Documento rechazado con éxito!',
+  },
+  apiErrors: {
+    errorConnectingCountries: 'Error al conectar con {{count}} {{countryWord}}',
+    warningCountriesUnavailable: 'Aviso: {{count}} {{countryWord}} {{verbPhrase}} disponible{{plural}}',
+    country: 'país',
+    countries: 'países',
+    isNot: 'no está',
+    areNot: 'no están',
+    documentsDisplayedFrom: 'Documentos mostrados de:',
+    noCountryAvailable: 'Ningún país disponible en este momento',
+    tip: 'Consejo:',
+    documentsDisplayingNormally: 'Los documentos de los países disponibles se muestran normalmente.',
+    checkCredentials: 'Verifique las credenciales de acceso.',
+    checkNetworkConnection: 'Verifique su conexión de red.',
+    contactSupport: 'Contacte al soporte técnico si el problema persiste.',
   },
 };

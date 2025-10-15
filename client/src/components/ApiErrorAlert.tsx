@@ -23,6 +23,7 @@ import {
   HelpOutline,
 } from '@mui/icons-material';
 import CountryFlag from './CountryFlag';
+import { useLanguage } from '../contexts/LanguageContext';
 import type { ApiError } from '../types/auth';
 
 interface ApiErrorAlertProps {
@@ -37,6 +38,7 @@ const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
   onClose,
 }) => {
   const [open, setOpen] = React.useState(true);
+  const { t, formatMessage } = useLanguage();
 
   if (!errors || errors.length === 0) {
     return null;
@@ -92,10 +94,24 @@ const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
     const errorCount = errors.length;
     const severity = getSeverity();
 
+    const countryWord = errorCount === 1 ? t.apiErrors.country : t.apiErrors.countries;
+
     if (severity === 'error') {
-      return `Erro ao conectar com ${errorCount} ${errorCount === 1 ? 'país' : 'países'}`;
+      return formatMessage(t.apiErrors.errorConnectingCountries, {
+        count: errorCount,
+        countryWord: countryWord
+      });
     }
-    return `Aviso: ${errorCount} ${errorCount === 1 ? 'país não está' : 'países não estão'} disponível${errorCount === 1 ? '' : 'is'}`;
+
+    const verbPhrase = errorCount === 1 ? t.apiErrors.isNot : t.apiErrors.areNot;
+    const plural = errorCount === 1 ? '' : 'is';
+
+    return formatMessage(t.apiErrors.warningCountriesUnavailable, {
+      count: errorCount,
+      countryWord: countryWord,
+      verbPhrase: verbPhrase,
+      plural: plural
+    });
   };
 
   return (
@@ -119,7 +135,7 @@ const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
           <Typography variant="body2" sx={{ mb: 2, opacity: 0.95 }}>
             {successfulCountries && successfulCountries.length > 0 ? (
               <>
-                Documentos sendo exibidos de: {' '}
+                {t.apiErrors.documentsDisplayedFrom} {' '}
                 <Stack direction="row" spacing={0.5} sx={{ display: 'inline-flex', verticalAlign: 'middle' }}>
                   {successfulCountries.map((country) => (
                     <Chip
@@ -141,7 +157,7 @@ const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
                 </Stack>
               </>
             ) : (
-              'Nenhum país disponível no momento'
+              t.apiErrors.noCountryAvailable
             )}
           </Typography>
 
@@ -203,10 +219,10 @@ const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
           </List>
 
           <Typography variant="caption" sx={{ display: 'block', mt: 1.5, opacity: 0.85 }}>
-            <strong>Dica:</strong> Os documentos dos países disponíveis estão sendo exibidos normalmente.
-            {errors.some(e => e.type === 'auth') && ' Verifique as credenciais de acesso.'}
-            {errors.some(e => e.type === 'network') && ' Verifique sua conexão de rede.'}
-            {errors.some(e => e.type === 'server') && ' Entre em contato com o suporte técnico se o problema persistir.'}
+            <strong>{t.apiErrors.tip}</strong> {t.apiErrors.documentsDisplayingNormally}
+            {errors.some(e => e.type === 'auth') && ` ${t.apiErrors.checkCredentials}`}
+            {errors.some(e => e.type === 'network') && ` ${t.apiErrors.checkNetworkConnection}`}
+            {errors.some(e => e.type === 'server') && ` ${t.apiErrors.contactSupport}`}
           </Typography>
         </Box>
       </Alert>
