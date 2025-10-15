@@ -1,8 +1,9 @@
 import api from './api';
 import { config, logger } from '../config/environment';
 import { protheusLoginSchema } from '../schemas/loginSchema';
-import type { 
-  ProtheusLoginCredentials, 
+import { getErrorMessage } from '../utils/translationHelpers';
+import type {
+  ProtheusLoginCredentials,
   ProtheusAuthResponse,
   ProtheusUser
 } from '../types/auth';
@@ -20,7 +21,7 @@ export const authService = {
         console.log('authService.loginProtheus - Validated credentials:', validatedCredentials);
       } catch (validationError) {
         console.error('authService.loginProtheus - Validation error:', validationError);
-        throw new Error('E-mail inválido');
+        throw new Error(getErrorMessage('invalidEmail'));
       }
       
       logger.info('Tentando autenticação com e-mail...');
@@ -60,12 +61,12 @@ export const authService = {
     } catch (error: any) {
       console.error('authService.loginProtheus - Error caught:', error);
       logger.error('Erro na autenticação Protheus:', error);
-      
+
       // Re-throw the error with a clear message
       if (error.message) {
         throw error;
       } else {
-        throw new Error('Erro ao realizar login.');
+        throw new Error(getErrorMessage('loginError'));
       }
     }
   },

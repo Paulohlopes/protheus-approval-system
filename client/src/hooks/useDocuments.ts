@@ -3,12 +3,13 @@ import { toast } from 'react-toastify';
 import { documentService } from '../services/documentService';
 import { useDocumentStore } from '../stores/documentStore';
 import { useAuthStore } from '../stores/authStore';
-import type { 
-  ProtheusDocument, 
-  DocumentFilters, 
-  PaginationParams, 
+import { useLanguage } from '../contexts/LanguageContext';
+import type {
+  ProtheusDocument,
+  DocumentFilters,
+  PaginationParams,
   ApprovalAction,
-  ProtheusApiResponse 
+  ProtheusApiResponse
 } from '../types/auth';
 
 // Query keys
@@ -21,16 +22,17 @@ export const QUERY_KEYS = {
 // Hook for fetching documents
 export const useDocuments = (filters?: DocumentFilters, pagination?: PaginationParams) => {
   const { user } = useAuthStore();
-  
+  const { t } = useLanguage();
+
   // Serializar filtros para evitar problemas de referência
   const filtersKey = JSON.stringify(filters || {});
   const paginationKey = JSON.stringify(pagination || {});
-  
+
   return useQuery<ProtheusApiResponse>({
     queryKey: [...QUERY_KEYS.documents, filtersKey, paginationKey, user?.email],
     queryFn: () => {
       if (!user?.email) {
-        throw new Error('Usuário não autenticado');
+        throw new Error(t.errors.userNotAuthenticated);
       }
       console.log('useDocuments.queryFn - Executing with filters:', filters);
       return documentService.getDocuments(user.email, filters, pagination);
@@ -44,12 +46,13 @@ export const useDocuments = (filters?: DocumentFilters, pagination?: PaginationP
 // Hook for fetching single document
 export const useDocument = (documentNumber: string) => {
   const { user } = useAuthStore();
-  
+  const { t } = useLanguage();
+
   return useQuery({
     queryKey: QUERY_KEYS.document(documentNumber),
     queryFn: () => {
       if (!user?.email) {
-        throw new Error('Usuário não autenticado');
+        throw new Error(t.errors.userNotAuthenticated);
       }
       return documentService.getDocument(documentNumber, user.email);
     },
@@ -70,6 +73,7 @@ export const useDashboardStats = () => {
 export const useApproveDocument = () => {
   const queryClient = useQueryClient();
   const { updateDocumentStatus } = useDocumentStore();
+  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: (action: ApprovalAction) => documentService.approveDocument(action),
@@ -81,12 +85,12 @@ export const useApproveDocument = () => {
       updateDocumentStatus(action.documentId, 'approved');
 
       // Show optimistic success message
-      toast.success('Documento aprovado com sucesso!');
+      toast.success(t.errors.documentApprovedSuccess);
     },
     onError: (error, action) => {
       // Revert optimistic update
       updateDocumentStatus(action.documentId, 'pending');
-      toast.error(error.message || 'Erro ao aprovar documento');
+      toast.error(error.message || t.errors.errorApprovingDocument);
     },
     onSettled: () => {
       // Always refetch after error or success
@@ -100,6 +104,7 @@ export const useApproveDocument = () => {
 export const useRejectDocument = () => {
   const queryClient = useQueryClient();
   const { updateDocumentStatus } = useDocumentStore();
+  const { t } = useLanguage();
 
   return useMutation({
     mutationFn: (action: ApprovalAction) => documentService.rejectDocument(action),
@@ -111,12 +116,12 @@ export const useRejectDocument = () => {
       updateDocumentStatus(action.documentId, 'rejected');
 
       // Show optimistic success message
-      toast.success('Documento rejeitado com sucesso!');
+      toast.success(t.errors.documentRejectedSuccess);
     },
     onError: (error, action) => {
       // Revert optimistic update
       updateDocumentStatus(action.documentId, 'pending');
-      toast.error(error.message || 'Erro ao rejeitar documento');
+      toast.error(error.message || t.errors.errorRejectingDocument);
     },
     onSettled: () => {
       // Always refetch after error or success

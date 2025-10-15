@@ -1,4 +1,5 @@
-import type { TranslationKeys } from '../locales';
+import type { TranslationKeys, Language } from '../locales';
+import { translations, defaultLanguage } from '../locales';
 
 /**
  * Safely get nested translation value with fallback
@@ -167,4 +168,28 @@ export const useSafeTranslation = (translations: TranslationKeys | undefined) =>
   };
 
   return { t, hasT, formatT };
+};
+
+/**
+ * Get current translations (for use in services without React context)
+ * This function reads the language preference from localStorage
+ */
+export const getCurrentTranslations = (): TranslationKeys => {
+  try {
+    const savedLanguage = localStorage.getItem('preferredLanguage') as Language;
+    if (savedLanguage && translations[savedLanguage]) {
+      return translations[savedLanguage];
+    }
+  } catch (error) {
+    console.warn('Failed to access localStorage for language preference:', error);
+  }
+  return translations[defaultLanguage];
+};
+
+/**
+ * Get a specific translation message (for use in services)
+ */
+export const getErrorMessage = (key: keyof TranslationKeys['errors']): string => {
+  const t = getCurrentTranslations();
+  return t.errors[key] || key;
 };

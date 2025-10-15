@@ -258,4 +258,43 @@ export const es = {
     totalDocuments: 'Total de documentos',
     exporting: 'Exportando...',
   },
+  errors: {
+    // Authentication errors
+    userNotAuthenticated: 'Usuario no autenticado',
+    invalidEmail: 'Correo electrónico inválido',
+    loginError: 'Error al iniciar sesión.',
+    sessionExpired: 'Sesión expirada. Inicie sesión nuevamente.',
+
+    // Permission errors
+    noPermissionDocuments: 'Sin permiso para acceder a documentos.',
+    noPermissionDocument: 'Sin permiso para acceder a este documento.',
+    noPermissionPurchaseRequests: 'Sin permiso para acceder a solicitudes de compra.',
+    noPermissionPurchaseOrders: 'Sin permiso para acceder a órdenes de compra.',
+
+    // Document errors
+    documentNotFound: 'Documento no encontrado.',
+    documentNotFoundApproval: 'Documento no encontrado para aprobación',
+    documentNotFoundRejection: 'Documento no encontrado para rechazo',
+    approverNotFound: 'Aprobador no encontrado en la jerarquía del documento',
+
+    // Operation errors
+    errorFetchingDocuments: 'Error al buscar documentos.',
+    errorFetchingDocument: 'Error al buscar documento.',
+    errorApprovingDocument: 'Error al aprobar documento',
+    errorApprovingDocumentFull: 'Error al aprobar documento.',
+    errorRejectingDocument: 'Error al rechazar documento',
+    errorRejectingDocumentFull: 'Error al rechazar documento.',
+    errorLoadingPurchaseRequests: 'Error al cargar solicitudes de compra.',
+    errorLoadingPurchaseOrders: 'Error al cargar órdenes de compra.',
+    errorFetchingDashboardStats: 'Error al obtener estadísticas del panel.',
+
+    // Network errors
+    connectionError: 'Error de conexión con el servidor. Verifique la conectividad de red.',
+    timeoutError: 'Tiempo de espera agotado. El servidor puede estar sobrecargado.',
+    connectionReset: 'Conexión restablecida por el servidor. Inténtelo de nuevo.',
+
+    // Success messages
+    documentApprovedSuccess: '¡Documento aprobado con éxito!',
+    documentRejectedSuccess: '¡Documento rechazado con éxito!',
+  },
 };

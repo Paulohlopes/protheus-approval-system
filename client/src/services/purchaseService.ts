@@ -2,6 +2,7 @@ import api from './api';
 import ProtheusQueryBuilder, { type WhereCondition, type QueryOptions } from '../utils/queryBuilder';
 import { purchaseRequestFiltersSchema, purchaseOrderFiltersSchema, ValidationUtils } from '../schemas/validation';
 import { config } from '../config/environment';
+import { getErrorMessage } from '../utils/translationHelpers';
 import type {
   PurchaseRequest,
   PurchaseRequestsResponse,
@@ -82,15 +83,15 @@ export const purchaseService = {
       
     } catch (error: any) {
       console.error('Erro ao buscar solicitações de compra:', error);
-      
+
       if (error.response?.status === 401) {
-        throw new Error('Sessão expirada. Faça login novamente.');
+        throw new Error(getErrorMessage('sessionExpired'));
       } else if (error.response?.status === 403) {
-        throw new Error('Sem permissão para acessar solicitações de compra.');
+        throw new Error(getErrorMessage('noPermissionPurchaseRequests'));
       } else if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       } else {
-        throw new Error('Erro ao carregar solicitações de compra.');
+        throw new Error(getErrorMessage('errorLoadingPurchaseRequests'));
       }
     }
   },
@@ -202,15 +203,15 @@ export const purchaseService = {
       
     } catch (error: any) {
       console.error('Erro ao buscar pedidos de compra:', error);
-      
+
       if (error.response?.status === 401) {
-        throw new Error('Sessão expirada. Faça login novamente.');
+        throw new Error(getErrorMessage('sessionExpired'));
       } else if (error.response?.status === 403) {
-        throw new Error('Sem permissão para acessar pedidos de compra.');
+        throw new Error(getErrorMessage('noPermissionPurchaseOrders'));
       } else if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       } else {
-        throw new Error('Erro ao carregar pedidos de compra.');
+        throw new Error(getErrorMessage('errorLoadingPurchaseOrders'));
       }
     }
   },

@@ -258,4 +258,43 @@ export const ptBR = {
     totalDocuments: 'Total de documentos',
     exporting: 'Exportando...',
   },
+  errors: {
+    // Authentication errors
+    userNotAuthenticated: 'Usuário não autenticado',
+    invalidEmail: 'E-mail inválido',
+    loginError: 'Erro ao realizar login.',
+    sessionExpired: 'Sessão expirada. Faça login novamente.',
+
+    // Permission errors
+    noPermissionDocuments: 'Sem permissão para acessar documentos.',
+    noPermissionDocument: 'Sem permissão para acessar este documento.',
+    noPermissionPurchaseRequests: 'Sem permissão para acessar solicitações de compra.',
+    noPermissionPurchaseOrders: 'Sem permissão para acessar pedidos de compra.',
+
+    // Document errors
+    documentNotFound: 'Documento não encontrado.',
+    documentNotFoundApproval: 'Documento não encontrado para aprovação',
+    documentNotFoundRejection: 'Documento não encontrado para rejeição',
+    approverNotFound: 'Aprovador não encontrado na alçada do documento',
+
+    // Operation errors
+    errorFetchingDocuments: 'Erro ao buscar documentos.',
+    errorFetchingDocument: 'Erro ao buscar documento.',
+    errorApprovingDocument: 'Erro ao aprovar documento',
+    errorApprovingDocumentFull: 'Erro ao aprovar documento.',
+    errorRejectingDocument: 'Erro ao rejeitar documento',
+    errorRejectingDocumentFull: 'Erro ao rejeitar documento.',
+    errorLoadingPurchaseRequests: 'Erro ao carregar solicitações de compra.',
+    errorLoadingPurchaseOrders: 'Erro ao carregar pedidos de compra.',
+    errorFetchingDashboardStats: 'Erro ao buscar estatísticas do dashboard.',
+
+    // Network errors
+    connectionError: 'Erro de conexão com o servidor. Verifique a conectividade de rede.',
+    timeoutError: 'Timeout na requisição. O servidor pode estar sobrecarregado.',
+    connectionReset: 'Conexão resetada pelo servidor. Tente novamente.',
+
+    // Success messages
+    documentApprovedSuccess: 'Documento aprovado com sucesso!',
+    documentRejectedSuccess: 'Documento rejeitado com sucesso!',
+  },
 };

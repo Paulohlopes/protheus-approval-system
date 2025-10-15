@@ -258,4 +258,43 @@ export const en = {
     totalDocuments: 'Total documents',
     exporting: 'Exporting...',
   },
+  errors: {
+    // Authentication errors
+    userNotAuthenticated: 'User not authenticated',
+    invalidEmail: 'Invalid email',
+    loginError: 'Error logging in.',
+    sessionExpired: 'Session expired. Please log in again.',
+
+    // Permission errors
+    noPermissionDocuments: 'No permission to access documents.',
+    noPermissionDocument: 'No permission to access this document.',
+    noPermissionPurchaseRequests: 'No permission to access purchase requests.',
+    noPermissionPurchaseOrders: 'No permission to access purchase orders.',
+
+    // Document errors
+    documentNotFound: 'Document not found.',
+    documentNotFoundApproval: 'Document not found for approval',
+    documentNotFoundRejection: 'Document not found for rejection',
+    approverNotFound: 'Approver not found in document hierarchy',
+
+    // Operation errors
+    errorFetchingDocuments: 'Error fetching documents.',
+    errorFetchingDocument: 'Error fetching document.',
+    errorApprovingDocument: 'Error approving document',
+    errorApprovingDocumentFull: 'Error approving document.',
+    errorRejectingDocument: 'Error rejecting document',
+    errorRejectingDocumentFull: 'Error rejecting document.',
+    errorLoadingPurchaseRequests: 'Error loading purchase requests.',
+    errorLoadingPurchaseOrders: 'Error loading purchase orders.',
+    errorFetchingDashboardStats: 'Error fetching dashboard statistics.',
+
+    // Network errors
+    connectionError: 'Connection error with server. Please check network connectivity.',
+    timeoutError: 'Request timeout. The server may be overloaded.',
+    connectionReset: 'Connection reset by server. Please try again.',
+
+    // Success messages
+    documentApprovedSuccess: 'Document approved successfully!',
+    documentRejectedSuccess: 'Document rejected successfully!',
+  },
 };

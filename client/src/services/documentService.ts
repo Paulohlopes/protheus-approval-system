@@ -2,6 +2,7 @@ import api from './api';
 import axios from 'axios';
 import { config } from '../config/environment';
 import { getAllApiConfigs, getApiConfigFor, type Country } from '../config/api-endpoints';
+import { getErrorMessage } from '../utils/translationHelpers';
 
 // Criar interceptor para debug de headers
 const debugAxios = axios.create();
@@ -182,16 +183,16 @@ export const documentService = {
 
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          throw new Error('Sessão expirada. Faça login novamente.');
+          throw new Error(getErrorMessage('sessionExpired'));
         } else if (error.response?.status === 403) {
-          throw new Error('Sem permissão para acessar documentos.');
+          throw new Error(getErrorMessage('noPermissionDocuments'));
         } else if (error.response?.data?.message) {
           throw new Error(error.response.data.message);
         } else {
-          throw new Error('Erro ao buscar documentos.');
+          throw new Error(getErrorMessage('errorFetchingDocuments'));
         }
       } else {
-        throw new Error('Erro ao buscar documentos.');
+        throw new Error(getErrorMessage('errorFetchingDocuments'));
       }
     }
   },
@@ -204,29 +205,29 @@ export const documentService = {
       // Get all documents and find the specific one
       const response = await this.getDocuments(userEmail);
       const document = response.documentos.find(doc => doc.numero.trim() === numero.trim());
-      
+
       if (!document) {
-        throw new Error('Documento não encontrado.');
+        throw new Error(getErrorMessage('documentNotFound'));
       }
       
       return document;
     } catch (error: any) {
       console.error('Error fetching document:', error);
-      
-      if (error.message === 'Documento não encontrado.') {
+
+      if (error.message === getErrorMessage('documentNotFound')) {
         throw error;
       } else if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
-          throw new Error('Sessão expirada. Faça login novamente.');
+          throw new Error(getErrorMessage('sessionExpired'));
         } else if (error.response?.status === 403) {
-          throw new Error('Sem permissão para acessar este documento.');
+          throw new Error(getErrorMessage('noPermissionDocument'));
         } else if (error.response?.data?.message) {
           throw new Error(error.response.data.message);
         } else {
-          throw new Error('Erro ao buscar documento.');
+          throw new Error(getErrorMessage('errorFetchingDocument'));
         }
       } else {
-        throw new Error('Erro ao buscar documento.');
+        throw new Error(getErrorMessage('errorFetchingDocument'));
       }
     }
   },
@@ -237,14 +238,14 @@ export const documentService = {
   ): Promise<{ success: boolean; message: string }> {
     try {
       console.log('Approving document:', action.documentId);
-      
+
       if (!action.document) {
-        throw new Error('Documento não encontrado para aprovação');
+        throw new Error(getErrorMessage('documentNotFoundApproval'));
       }
 
       // Encontrar o aprovador atual da alçada
       const userEmail = action.approverId; // Assumindo que o approverId é o email do usuário
-      const currentApprover = action.document.alcada.find(nivel => 
+      const currentApprover = action.document.alcada.find(nivel =>
         nivel.CIDENTIFICADOR === userEmail?.split('@')[0] ||
         nivel.CNOME === userEmail?.split('@')[0]
       );
@@ -252,7 +253,7 @@ export const documentService = {
       if (!currentApprover) {
         console.log('Available approvers in alcada:', action.document.alcada);
         console.log('Looking for user:', userEmail, 'split:', userEmail?.split('@')[0]);
-        throw new Error('Aprovador não encontrado na alçada do documento');
+        throw new Error(getErrorMessage('approverNotFound'));
       }
 
       const requestBody = {
@@ -336,15 +337,15 @@ export const documentService = {
       };
     } catch (error: any) {
       console.error('Error approving document:', error);
-      
+
       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-        throw new Error('Erro de conexão com o servidor. Verifique a conectividade de rede.');
+        throw new Error(getErrorMessage('connectionError'));
       } else if (error.name === 'TimeoutError') {
-        throw new Error('Timeout na requisição. O servidor pode estar sobrecarregado.');
+        throw new Error(getErrorMessage('timeoutError'));
       } else if (error.message?.includes('CONNECTION_RESET')) {
-        throw new Error('Conexão resetada pelo servidor. Tente novamente.');
+        throw new Error(getErrorMessage('connectionReset'));
       } else {
-        throw new Error(error.message || 'Erro ao aprovar documento.');
+        throw new Error(error.message || getErrorMessage('errorApprovingDocumentFull'));
       }
     }
   },
@@ -355,14 +356,14 @@ export const documentService = {
   ): Promise<{ success: boolean; message: string }> {
     try {
       console.log('Rejecting document:', action.documentId);
-      
+
       if (!action.document) {
-        throw new Error('Documento não encontrado para rejeição');
+        throw new Error(getErrorMessage('documentNotFoundRejection'));
       }
 
       // Encontrar o aprovador atual da alçada
       const userEmail = action.approverId; // Assumindo que o approverId é o email do usuário
-      const currentApprover = action.document.alcada.find(nivel => 
+      const currentApprover = action.document.alcada.find(nivel =>
         nivel.CIDENTIFICADOR === userEmail?.split('@')[0] ||
         nivel.CNOME === userEmail?.split('@')[0]
       );
@@ -370,7 +371,7 @@ export const documentService = {
       if (!currentApprover) {
         console.log('Available approvers in alcada:', action.document.alcada);
         console.log('Looking for user:', userEmail, 'split:', userEmail?.split('@')[0]);
-        throw new Error('Aprovador não encontrado na alçada do documento');
+        throw new Error(getErrorMessage('approverNotFound'));
       }
 
       const requestBody = {
@@ -451,15 +452,15 @@ export const documentService = {
       };
     } catch (error: any) {
       console.error('Error rejecting document:', error);
-      
+
       if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-        throw new Error('Erro de conexão com o servidor. Verifique a conectividade de rede.');
+        throw new Error(getErrorMessage('connectionError'));
       } else if (error.name === 'TimeoutError') {
-        throw new Error('Timeout na requisição. O servidor pode estar sobrecarregado.');
+        throw new Error(getErrorMessage('timeoutError'));
       } else if (error.message?.includes('CONNECTION_RESET')) {
-        throw new Error('Conexão resetada pelo servidor. Tente novamente.');
+        throw new Error(getErrorMessage('connectionReset'));
       } else {
-        throw new Error(error.message || 'Erro ao rejeitar documento.');
+        throw new Error(error.message || getErrorMessage('errorRejectingDocumentFull'));
       }
     }
   },
@@ -479,7 +480,7 @@ export const documentService = {
       };
     } catch (error: any) {
       console.error('Error fetching dashboard stats:', error);
-      throw new Error('Erro ao buscar estatísticas do dashboard.');
+      throw new Error(getErrorMessage('errorFetchingDashboardStats'));
     }
   }
 };
