@@ -378,6 +378,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         sx={{
           flexGrow: 1,
           width: { sm: open ? `calc(100% - ${drawerWidth}px)` : '100%' },
+          ml: { sm: open ? `${drawerWidth}px` : 0 },
           minHeight: '100vh',
           bgcolor: 'grey.50',
           transition: theme.transitions.create(['width', 'margin'], {
