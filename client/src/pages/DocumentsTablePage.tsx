@@ -956,7 +956,12 @@ const DocumentsTablePage: React.FC = () => {
 
   return (
     <ErrorBoundary level="page">
-      <Box sx={{ width: '100%', p: 3 }}>
+      <Box sx={{
+        width: '100%',
+        height: '100%',
+        overflow: 'auto',
+        p: 3
+      }}>
         {/* API Error Alert */}
         {documentsResponse?.hasErrors && (
           <ApiErrorAlert
@@ -1005,7 +1010,11 @@ const DocumentsTablePage: React.FC = () => {
 
           </Box>
         </Box>
-        <Paper sx={{ width: '100%', mb: 2 }}>
+        <Paper sx={{
+          width: '100%',
+          mb: 2,
+          overflow: 'hidden'
+        }}>
           {/* Toolbar */}
           <Toolbar
             sx={{
@@ -1159,8 +1168,12 @@ const DocumentsTablePage: React.FC = () => {
           </Toolbar>
 
           {/* Table */}
-          <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)' }}>
-            <Table stickyHeader size="small">
+          <TableContainer sx={{
+            maxHeight: 'calc(100vh - 300px)',
+            width: '100%',
+            overflowX: 'auto'
+          }}>
+            <Table stickyHeader size="small" sx={{ width: '100%', tableLayout: 'auto' }}>
               <TableHead>
                 <TableRow>
                   <TableCell padding="checkbox">
