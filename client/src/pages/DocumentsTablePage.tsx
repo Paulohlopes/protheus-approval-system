@@ -173,11 +173,29 @@ const DocumentsTablePage: React.FC = () => {
     {
       id: 'filial',
       label: t?.documents?.branch || 'Filial',
-      minWidth: 80,
+      minWidth: 120,
       sortable: true,
       filterable: true,
       visible: true,
       group: 'basic',
+      format: (value: string) => (
+        <Chip
+          icon={<Business fontSize="small" />}
+          label={value}
+          size="small"
+          sx={{
+            bgcolor: 'primary.50',
+            color: 'primary.main',
+            fontWeight: 600,
+            border: '1px solid',
+            borderColor: 'primary.200',
+            minWidth: 90,
+            '& .MuiChip-icon': {
+              color: 'primary.main',
+            },
+          }}
+        />
+      ),
     },
     {
       id: 'numero',
@@ -1375,7 +1393,15 @@ const DocumentsTablePage: React.FC = () => {
             <Table stickyHeader size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell padding="checkbox">
+                  <TableCell
+                    padding="checkbox"
+                    sx={{
+                      position: 'sticky',
+                      left: 0,
+                      zIndex: 1000,
+                      bgcolor: 'background.paper',
+                    }}
+                  >
                     <Checkbox
                       color="primary"
                       indeterminate={
@@ -1391,7 +1417,15 @@ const DocumentsTablePage: React.FC = () => {
                       onChange={handleSelectAllClick}
                     />
                   </TableCell>
-                  <TableCell width={50} />
+                  <TableCell
+                    width={50}
+                    sx={{
+                      position: 'sticky',
+                      left: 58,
+                      zIndex: 1000,
+                      bgcolor: 'background.paper',
+                    }}
+                  />
                   {columns
                     .filter(column => visibleColumns.includes(column.id) && column.id !== 'select')
                     .map(column => (
@@ -1400,12 +1434,29 @@ const DocumentsTablePage: React.FC = () => {
                         align={column.align}
                         style={{ minWidth: column.minWidth }}
                         sortDirection={orderBy === column.id ? order : false}
-                        sx={column.id === 'filial' ? {
+                        sx={column.id === '_country' ? {
                           position: 'sticky',
-                          left: 180,
+                          left: 108,
                           zIndex: 999,
                           bgcolor: 'background.paper',
-                          boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                        } : column.id === 'filial' ? {
+                          position: 'sticky',
+                          left: 238,
+                          zIndex: 999,
+                          bgcolor: 'grey.50',
+                          borderRight: '2px solid',
+                          borderColor: 'primary.100',
+                          boxShadow: '3px 0 8px rgba(0,0,0,0.12)',
+                          fontWeight: 700,
+                          '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            width: '1px',
+                            background: 'linear-gradient(to bottom, transparent, rgba(63, 81, 181, 0.3), transparent)',
+                          }
                         } : {}}
                       >
                         {column.sortable ? (
@@ -1448,14 +1499,29 @@ const DocumentsTablePage: React.FC = () => {
                             tabIndex={-1}
                             selected={isItemSelected}
                           >
-                            <TableCell padding="checkbox">
+                            <TableCell
+                              padding="checkbox"
+                              sx={{
+                                position: 'sticky',
+                                left: 0,
+                                zIndex: 999,
+                                bgcolor: 'background.paper',
+                              }}
+                            >
                               <Checkbox
                                 color="primary"
                                 checked={isItemSelected}
                                 onChange={() => handleClick(document.numero.trim())}
                               />
                             </TableCell>
-                            <TableCell>
+                            <TableCell
+                              sx={{
+                                position: 'sticky',
+                                left: 58,
+                                zIndex: 999,
+                                bgcolor: 'background.paper',
+                              }}
+                            >
                               <IconButton
                                 size="small"
                                 onClick={() => handleToggleRow(document.numero.trim())}
@@ -1516,12 +1582,28 @@ const DocumentsTablePage: React.FC = () => {
                                   <TableCell
                                     key={column.id}
                                     align={column.align}
-                                    sx={column.id === 'filial' ? {
+                                    sx={column.id === '_country' ? {
                                       position: 'sticky',
-                                      left: 180,
+                                      left: 108,
                                       zIndex: 998,
                                       bgcolor: 'background.paper',
-                                      boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                                    } : column.id === 'filial' ? {
+                                      position: 'sticky',
+                                      left: 238,
+                                      zIndex: 998,
+                                      bgcolor: 'background.paper',
+                                      borderRight: '2px solid',
+                                      borderColor: 'primary.100',
+                                      boxShadow: '3px 0 8px rgba(0,0,0,0.12)',
+                                      '&::after': {
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        width: '1px',
+                                        background: 'linear-gradient(to bottom, transparent, rgba(63, 81, 181, 0.3), transparent)',
+                                      }
                                     } : {}}
                                   >
                                     {column.format
