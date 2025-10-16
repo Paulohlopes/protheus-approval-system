@@ -138,17 +138,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </IconButton>
 
           <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box sx={{
-                display: { xs: 'none', md: 'block' },
-                filter: 'brightness(0) invert(1)', // Makes the logo white
-              }}>
-                <CompanyLogo variant="compact" size="small" />
-              </Box>
-              <Typography variant="h6" noWrap component="div" fontWeight={700}>
-                {t?.header?.title || 'Sistema Protheus'}
-              </Typography>
-            </Box>
+            <Typography variant="h6" noWrap component="div" fontWeight={700}>
+              {t?.header?.title || 'AprovaFácil'}
+            </Typography>
           </Stack>
 
           <Stack direction="row" spacing={2} alignItems="center">
