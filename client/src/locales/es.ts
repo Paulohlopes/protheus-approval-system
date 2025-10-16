@@ -40,8 +40,16 @@ export const es = {
     unselectAll: 'Deseleccionar todos',
   },
   header: {
-    title: 'Sistema Protheus - Tabla Avanzada',
+    title: 'Sistema Protheus',
     subtitle: 'Visualización completa de documentos',
+  },
+  menu: {
+    approvals: 'Aprobaciones',
+    documentApprovals: 'Aprobaciones de Documentos',
+    cardView: 'Vista de Tarjetas',
+    dashboard: 'Panel',
+    analytics: 'Análisis',
+    settings: 'Configuración',
   },
   documents: {
     title: 'Documentos para Aprobación',

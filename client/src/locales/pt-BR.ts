@@ -40,8 +40,16 @@ export const ptBR = {
     unselectAll: 'Desmarcar todos',
   },
   header: {
-    title: 'Sistema Protheus - Tabela Avançada',
+    title: 'Sistema Protheus',
     subtitle: 'Visualização completa de documentos',
+  },
+  menu: {
+    approvals: 'Aprovações',
+    documentApprovals: 'Aprovações de Documentos',
+    cardView: 'Visão em Cards',
+    dashboard: 'Dashboard',
+    analytics: 'Análises',
+    settings: 'Configurações',
   },
   documents: {
     title: 'Documentos para Aprovação',

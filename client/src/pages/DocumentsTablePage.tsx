@@ -29,7 +29,6 @@ import {
   Divider,
   alpha,
   useTheme,
-  Avatar,
   LinearProgress,
   Badge,
   Select,
@@ -39,8 +38,6 @@ import {
   ListItemText,
   Fade,
   Container,
-  AppBar,
-  Toolbar as MuiToolbar,
   Card,
   CardContent,
 } from '@mui/material';
@@ -67,20 +64,16 @@ import {
   Warning,
   Check,
   Clear,
-  Logout,
   Notifications,
   Language,
   Assignment,
-  Analytics,
   Print,
 } from '@mui/icons-material';
 import { useDocuments } from '../hooks/useDocuments';
 import { useDocumentActions } from '../hooks/useDocumentActions';
 import { useAuthStore } from '../stores/authStore';
-import { useNavigate } from 'react-router-dom';
 import { getCurrentApprovalStatus, getDocumentStatus, canUserApprove } from '../utils/documentHelpers';
 import ConfirmationDialog from '../components/ConfirmationDialog';
-import LanguageSelector from '../components/LanguageSelector';
 import { useLanguage } from '../contexts/LanguageContext';
 import CountryFlag from '../components/CountryFlag';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -104,8 +97,7 @@ interface Column {
 
 
 const DocumentsTablePage: React.FC = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const theme = useTheme();
   const { t, formatMessage } = useLanguage();
 
@@ -961,214 +953,11 @@ const DocumentsTablePage: React.FC = () => {
     }
   }, [t, translateStatus, formatDocumentValue, getPdfTemplatePath, mergePdfs]);
 
-  const handleLogout = useCallback(async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  }, [logout, navigate]);
-
   const isSelected = useCallback((documentNumber: string) => selected.indexOf(documentNumber) !== -1, [selected]);
 
   return (
     <ErrorBoundary level="page">
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'grey.50' }}>
-      {/* Enhanced Modern Header */}
-      <AppBar
-        position="static"
-        elevation={0}
-        sx={{
-          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-          backdropFilter: 'blur(20px)',
-          borderBottom: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: `linear-gradient(45deg, ${alpha(theme.palette.secondary.main, 0.1)} 0%, transparent 100%)`,
-            pointerEvents: 'none',
-          }
-        }}
-      >
-        <MuiToolbar
-          sx={{
-            minHeight: 84,
-            px: { xs: 2, sm: 3 },
-            position: 'relative',
-            zIndex: 1,
-          }}
-        >
-          {/* Enhanced Brand Section */}
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
-            <Box
-              sx={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 56,
-                height: 56,
-                borderRadius: '16px',
-                background: `linear-gradient(135deg, ${alpha(theme.palette.common.white, 0.2)} 0%, ${alpha(theme.palette.common.white, 0.05)} 100%)`,
-                backdropFilter: 'blur(10px)',
-                border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.3)}`,
-                }
-              }}
-            >
-              <Analytics sx={{
-                fontSize: 28,
-                color: theme.palette.common.white,
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-              }} />
-            </Box>
-            <Box>
-              <Typography
-                variant="h5"
-                fontWeight={700}
-                sx={{
-                  background: `linear-gradient(135deg, ${theme.palette.common.white} 0%, ${alpha(theme.palette.common.white, 0.8)} 100%)`,
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  color: 'transparent',
-                  textShadow: `0 2px 4px ${alpha(theme.palette.common.black, 0.3)}`,
-                  letterSpacing: '-0.5px',
-                }}
-              >
-                {t?.header?.title || 'Sistema Protheus - Tabela Avançada'}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: alpha(theme.palette.common.white, 0.85),
-                  fontWeight: 500,
-                  letterSpacing: '0.5px',
-                }}
-              >
-                {t?.header?.subtitle || 'Visualização completa de documentos'}
-              </Typography>
-            </Box>
-
-          </Stack>
-
-          <Stack direction="row" spacing={2} alignItems="center">
-            {/* Language Selector with Enhanced Styling */}
-            <Box
-              sx={{
-                '& .MuiSelect-select': {
-                  color: theme.palette.common.white,
-                },
-                '& .MuiSvgIcon-root': {
-                  color: alpha(theme.palette.common.white, 0.7),
-                },
-              }}
-            >
-              <LanguageSelector />
-            </Box>
-
-            <Divider
-              orientation="vertical"
-              flexItem
-              sx={{
-                bgcolor: alpha(theme.palette.common.white, 0.2),
-                mx: 2,
-                height: '40px',
-                alignSelf: 'center',
-              }}
-            />
-
-            {/* Enhanced User Profile Section */}
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              p: 1.5,
-              borderRadius: '16px',
-              background: alpha(theme.palette.common.white, 0.1),
-              backdropFilter: 'blur(10px)',
-              border: `1px solid ${alpha(theme.palette.common.white, 0.15)}`,
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                background: alpha(theme.palette.common.white, 0.15),
-                transform: 'translateY(-1px)',
-              }
-            }}>
-              <Avatar
-                sx={{
-                  width: 40,
-                  height: 40,
-                  mr: 2,
-                  background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
-                  border: `2px solid ${alpha(theme.palette.common.white, 0.3)}`,
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  boxShadow: `0 4px 12px ${alpha(theme.palette.common.black, 0.2)}`,
-                }}
-              >
-                {user?.email?.charAt(0).toUpperCase()}
-              </Avatar>
-              <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                <Typography
-                  variant="body2"
-                  fontWeight={600}
-                  sx={{
-                    color: theme.palette.common.white,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {user?.email?.split('@')[0]}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: alpha(theme.palette.common.white, 0.75),
-                    fontSize: '0.75rem',
-                    fontWeight: 500,
-                  }}
-                >
-                  {t?.documentPage?.approver || 'Aprovador'}
-                </Typography>
-              </Box>
-            </Box>
-
-            {/* Enhanced Logout Button */}
-            <Button
-              color="inherit"
-              onClick={handleLogout}
-              startIcon={<Logout />}
-              variant="outlined"
-              sx={{
-                borderColor: alpha(theme.palette.common.white, 0.3),
-                color: theme.palette.common.white,
-                borderRadius: '12px',
-                px: 2.5,
-                py: 1,
-                fontWeight: 600,
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {
-                  borderColor: alpha(theme.palette.common.white, 0.5),
-                  bgcolor: alpha(theme.palette.common.white, 0.1),
-                  transform: 'translateY(-1px)',
-                  boxShadow: `0 6px 20px ${alpha(theme.palette.common.black, 0.2)}`,
-                }
-              }}
-            >
-              {t?.common?.logout || 'Sair'}
-            </Button>
-          </Stack>
-        </MuiToolbar>
-      </AppBar>
-
-      {/* Main Content */}
-      <Container maxWidth={false} sx={{ py: 4, flexGrow: 1 }}>
+      <Container maxWidth={false} sx={{ py: 3 }}>
         {/* API Error Alert */}
         {documentsResponse?.hasErrors && (
           <ApiErrorAlert
@@ -1886,7 +1675,6 @@ const DocumentsTablePage: React.FC = () => {
         documentValue="Operação em massa"
         loading={isProcessing}
       />
-    </Box>
     </ErrorBoundary>
   );
 };

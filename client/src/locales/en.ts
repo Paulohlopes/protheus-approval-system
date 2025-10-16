@@ -40,8 +40,16 @@ export const en = {
     unselectAll: 'Unselect all',
   },
   header: {
-    title: 'Protheus System - Advanced Table',
+    title: 'Protheus System',
     subtitle: 'Complete document view',
+  },
+  menu: {
+    approvals: 'Approvals',
+    documentApprovals: 'Document Approvals',
+    cardView: 'Card View',
+    dashboard: 'Dashboard',
+    analytics: 'Analytics',
+    settings: 'Settings',
   },
   documents: {
     title: 'Documents for Approval',
