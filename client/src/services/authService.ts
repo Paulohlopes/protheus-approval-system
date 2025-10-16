@@ -44,6 +44,13 @@ export const authService = {
       console.log('authService.loginProtheus - Token Response Status:', tokenResponse.status);
       console.log('authService.loginProtheus - Token Response Data:', JSON.stringify(tokenResponse.data, null, 2));
 
+      // Check for password change requirement (Status 202 with message)
+      if (tokenResponse.status === 202 && typeof tokenResponse.data === 'string') {
+        if (tokenResponse.data.includes('troca de senha') || tokenResponse.data.includes('change password')) {
+          throw new Error('Troca de senha necessária - Entre em contato com o administrador do sistema para redefinir sua senha');
+        }
+      }
+
       if (!tokenResponse.data || !tokenResponse.data.access_token) {
         console.error('authService.loginProtheus - Token not found in response. Full response:', tokenResponse.data);
         throw new Error('Falha na autenticação - Token não recebido');
