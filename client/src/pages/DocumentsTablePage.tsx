@@ -171,6 +171,15 @@ const DocumentsTablePage: React.FC = () => {
       },
     },
     {
+      id: 'filial',
+      label: t?.documents?.branch || 'Filial',
+      minWidth: 80,
+      sortable: true,
+      filterable: true,
+      visible: true,
+      group: 'basic',
+    },
+    {
       id: 'numero',
       label: t?.documents?.number || 'Número',
       minWidth: 120,
@@ -340,15 +349,6 @@ const DocumentsTablePage: React.FC = () => {
       filterable: true,
       visible: false,
       group: 'financial',
-    },
-    {
-      id: 'filial',
-      label: t?.documents?.branch || 'Filial',
-      minWidth: 80,
-      sortable: true,
-      filterable: true,
-      visible: false,
-      group: 'basic',
     },
     {
       id: 'aprovadores',
@@ -1400,6 +1400,13 @@ const DocumentsTablePage: React.FC = () => {
                         align={column.align}
                         style={{ minWidth: column.minWidth }}
                         sortDirection={orderBy === column.id ? order : false}
+                        sx={column.id === 'filial' ? {
+                          position: 'sticky',
+                          left: 180,
+                          zIndex: 999,
+                          bgcolor: 'background.paper',
+                          boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                        } : {}}
                       >
                         {column.sortable ? (
                           <TableSortLabel
@@ -1506,7 +1513,17 @@ const DocumentsTablePage: React.FC = () => {
                                   : (document as any)[column.id];
 
                                 return (
-                                  <TableCell key={column.id} align={column.align}>
+                                  <TableCell
+                                    key={column.id}
+                                    align={column.align}
+                                    sx={column.id === 'filial' ? {
+                                      position: 'sticky',
+                                      left: 180,
+                                      zIndex: 998,
+                                      bgcolor: 'background.paper',
+                                      boxShadow: '2px 0 4px rgba(0,0,0,0.1)',
+                                    } : {}}
+                                  >
                                     {column.format
                                       ? column.format(value, { ...document, userEmail: user?.email })
                                       : value}
