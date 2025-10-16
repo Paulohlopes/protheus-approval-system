@@ -15,7 +15,6 @@ import {
   IconButton,
 } from '@mui/material';
 import {
-  Business,
   Person,
   Lock,
   Visibility,
@@ -23,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import { protheusLoginSchema, type ProtheusLoginFormData } from '../schemas/loginSchema';
 import { useLanguage } from '../contexts/LanguageContext';
+import CompanyLogo from './CompanyLogo';
 
 interface LoginFormProps {
   onSubmit: (data: ProtheusLoginFormData) => Promise<void>;
@@ -91,19 +91,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
         >
           {/* Logo e Título */}
           <Stack spacing={2} alignItems="center" mb={4}>
-            <Box
-              sx={{
-                width: 56,
-                height: 56,
-                borderRadius: 2,
-                bgcolor: 'primary.main',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Business sx={{ fontSize: 32, color: 'white' }} />
-            </Box>
+            <CompanyLogo variant="full" size="large" />
 
             <Box textAlign="center">
               <Typography variant="h5" fontWeight={600} gutterBottom>

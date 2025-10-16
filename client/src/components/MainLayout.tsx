@@ -24,7 +24,6 @@ import {
   ChevronLeft,
   Assignment,
   Dashboard,
-  Analytics,
   Settings,
   Logout,
   ExpandLess,
@@ -37,6 +36,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSelector from './LanguageSelector';
+import CompanyLogo from './CompanyLogo';
 
 const drawerWidth = 280;
 
@@ -137,9 +137,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           </IconButton>
 
           <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" noWrap component="div" fontWeight={700}>
-              {t?.header?.title || 'Sistema Protheus'}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{
+                display: { xs: 'none', md: 'block' },
+                filter: 'brightness(0) invert(1)', // Makes the logo white
+              }}>
+                <CompanyLogo variant="compact" size="small" />
+              </Box>
+              <Typography variant="h6" noWrap component="div" fontWeight={700}>
+                {t?.header?.title || 'Sistema Protheus'}
+              </Typography>
+            </Box>
           </Stack>
 
           <Stack direction="row" spacing={2} alignItems="center">
@@ -216,26 +224,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             alignItems: 'center',
             justifyContent: 'center',
             px: 2,
+            py: 2,
             background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: '12px',
-                background: alpha(theme.palette.common.white, 0.2),
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Analytics sx={{ color: 'white', fontSize: 24 }} />
-            </Box>
-            <Typography variant="h6" sx={{ color: 'white', fontWeight: 700 }}>
-              Protheus
-            </Typography>
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            filter: 'brightness(0) invert(1)', // Makes the logo white
+          }}>
+            <CompanyLogo variant="full" size="medium" />
           </Box>
         </Toolbar>
 
