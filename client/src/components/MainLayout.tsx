@@ -18,6 +18,9 @@ import {
   useTheme,
   Button,
   Collapse,
+  Menu,
+  MenuItem,
+  Chip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -32,6 +35,11 @@ import {
   TableChart,
   ViewList,
   Analytics,
+  Person,
+  Email,
+  Business,
+  Work,
+  Group,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
@@ -48,6 +56,7 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [open, setOpen] = useState(true);
   const [approvalMenuOpen, setApprovalMenuOpen] = useState(true);
+  const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
@@ -157,13 +166,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               }}
             />
 
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              p: 1,
-              borderRadius: '12px',
-              background: alpha(theme.palette.common.white, 0.1),
-            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                p: 1,
+                borderRadius: '12px',
+                background: alpha(theme.palette.common.white, 0.1),
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  background: alpha(theme.palette.common.white, 0.15),
+                  transform: 'translateY(-1px)',
+                },
+              }}
+              onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
+            >
               <Avatar
                 sx={{
                   width: 36,
@@ -173,11 +191,18 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   fontSize: '1rem',
                 }}
               >
-                {user?.email?.charAt(0).toUpperCase()}
+                {(user?.name || user?.displayName || user?.email)?.charAt(0).toUpperCase()}
               </Avatar>
-              <Typography variant="body2" sx={{ color: 'white', display: { xs: 'none', sm: 'block' } }}>
-                {user?.email?.split('@')[0]}
-              </Typography>
+              <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                <Typography variant="body2" sx={{ color: 'white', fontWeight: 600, lineHeight: 1.2 }}>
+                  {user?.name || user?.displayName || user?.username || user?.email?.split('@')[0]}
+                </Typography>
+                {user?.role && (
+                  <Typography variant="caption" sx={{ color: alpha(theme.palette.common.white, 0.7), fontSize: '0.7rem' }}>
+                    {user.role}
+                  </Typography>
+                )}
+              </Box>
             </Box>
 
             <Button
@@ -396,6 +421,163 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <Toolbar />
         {children}
       </Box>
+
+      {/* Profile Menu */}
+      <Menu
+        anchorEl={profileMenuAnchor}
+        open={Boolean(profileMenuAnchor)}
+        onClose={() => setProfileMenuAnchor(null)}
+        PaperProps={{
+          sx: {
+            mt: 1.5,
+            minWidth: 320,
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+          },
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        {/* Profile Header */}
+        <Box sx={{ px: 2, py: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar
+              sx={{
+                width: 56,
+                height: 56,
+                background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
+                fontSize: '1.5rem',
+              }}
+            >
+              {(user?.name || user?.displayName || user?.email)?.charAt(0).toUpperCase()}
+            </Avatar>
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="subtitle1" fontWeight={600}>
+                {user?.name || user?.displayName || user?.username}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {user?.email}
+              </Typography>
+            </Box>
+          </Stack>
+        </Box>
+
+        {/* User Details */}
+        <Box sx={{ px: 2, py: 2 }}>
+          <Stack spacing={1.5}>
+            {user?.username && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Person fontSize="small" color="action" />
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Usuário
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {user.username}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {user?.role && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Work fontSize="small" color="action" />
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Cargo
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {user.role}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {user?.department && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Business fontSize="small" color="action" />
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Departamento
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {user.department}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            {user?.groups && user.groups.length > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                <Group fontSize="small" color="action" sx={{ mt: 0.5 }} />
+                <Box sx={{ flexGrow: 1 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                    Grupos
+                  </Typography>
+                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                    {user.groups.slice(0, 3).map((group, index) => (
+                      <Chip
+                        key={index}
+                        label={group.display || group.value}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 24, fontSize: '0.75rem' }}
+                      />
+                    ))}
+                    {user.groups.length > 3 && (
+                      <Chip
+                        label={`+${user.groups.length - 3}`}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 24, fontSize: '0.75rem' }}
+                      />
+                    )}
+                  </Stack>
+                </Box>
+              </Box>
+            )}
+          </Stack>
+        </Box>
+
+        <Divider />
+
+        {/* Menu Actions */}
+        <MenuItem
+          disabled
+          sx={{
+            py: 1.5,
+            px: 2,
+            '&:hover': {
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
+            },
+          }}
+        >
+          <ListItemIcon>
+            <Settings fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Configurações" />
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setProfileMenuAnchor(null);
+            handleLogout();
+          }}
+          sx={{
+            py: 1.5,
+            px: 2,
+            color: theme.palette.error.main,
+            '&:hover': {
+              bgcolor: alpha(theme.palette.error.main, 0.08),
+            },
+          }}
+        >
+          <ListItemIcon>
+            <Logout fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText primary={t?.common?.logout || 'Sair'} />
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };
