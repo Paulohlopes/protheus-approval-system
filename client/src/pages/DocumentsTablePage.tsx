@@ -960,7 +960,10 @@ const DocumentsTablePage: React.FC = () => {
         width: '100%',
         height: '100%',
         overflow: 'auto',
-        p: 3
+        pt: 3,  // Top padding only
+        pr: 3,  // Right padding
+        pb: 3,  // Bottom padding
+        pl: 2   // Minimal left padding to reduce gap
       }}>
         {/* API Error Alert */}
         {documentsResponse?.hasErrors && (
