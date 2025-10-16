@@ -40,7 +40,7 @@ export const ptBR = {
     unselectAll: 'Desmarcar todos',
   },
   header: {
-    title: 'Sistema Protheus',
+    title: 'AprovaFácil',
     subtitle: 'Visualização completa de documentos',
   },
   menu: {
@@ -130,7 +130,7 @@ export const ptBR = {
     unexpectedError: 'Erro inesperado',
   },
   login: {
-    title: 'Sistema Protheus',
+    title: 'AprovaFácil',
     subtitle: 'Aprovação de Documentos',
     usernameLabel: 'Usuário',
     usernamePlaceholder: 'seu.usuario',

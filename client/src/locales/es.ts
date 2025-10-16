@@ -40,7 +40,7 @@ export const es = {
     unselectAll: 'Deseleccionar todos',
   },
   header: {
-    title: 'Sistema Protheus',
+    title: 'AprovaFácil',
     subtitle: 'Visualización completa de documentos',
   },
   menu: {
@@ -130,7 +130,7 @@ export const es = {
     unexpectedError: 'Error inesperado',
   },
   login: {
-    title: 'Sistema Protheus',
+    title: 'AprovaFácil',
     subtitle: 'Aprobación de Documentos',
     usernameLabel: 'Usuario',
     usernamePlaceholder: 'tu.usuario',
