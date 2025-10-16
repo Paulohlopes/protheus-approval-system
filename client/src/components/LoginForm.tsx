@@ -89,19 +89,10 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
             backgroundColor: 'background.paper',
           }}
         >
-          {/* Logo e Título */}
-          <Stack spacing={2} alignItems="center" mb={4}>
+          {/* Logo */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
             <CompanyLogo variant="full" size="large" />
-
-            <Box textAlign="center">
-              <Typography variant="h5" fontWeight={600} gutterBottom>
-                {t?.login?.title || 'Sistema Protheus'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t?.login?.subtitle || 'Aprovação de Documentos'}
-              </Typography>
-            </Box>
-          </Stack>
+          </Box>
 
           {/* Mensagem de erro */}
           {error && (
