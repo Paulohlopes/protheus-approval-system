@@ -132,12 +132,16 @@ export const es = {
   login: {
     title: 'Sistema Protheus',
     subtitle: 'Aprobación de Documentos',
-    emailLabel: 'Correo electrónico',
-    emailPlaceholder: 'tu@correo.com',
+    usernameLabel: 'Usuario',
+    usernamePlaceholder: 'tu.usuario',
+    passwordLabel: 'Contraseña',
+    passwordPlaceholder: '••••••••',
     loginButton: 'Iniciar sesión',
     loggingIn: 'Iniciando sesión...',
     invalidEmail: 'Correo electrónico inválido',
     emailRequired: 'Correo electrónico es obligatorio',
+    usernameRequired: 'Usuario es obligatorio',
+    passwordRequired: 'Contraseña es obligatoria',
   },
   errorBoundary: {
     criticalTitle: '¡Ups! Algo salió mal',

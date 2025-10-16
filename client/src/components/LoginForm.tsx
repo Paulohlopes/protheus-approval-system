@@ -12,12 +12,14 @@ import {
   Container,
   Stack,
   InputAdornment,
-  Fade,
+  IconButton,
 } from '@mui/material';
 import {
   Business,
-  Email,
-  CheckCircle,
+  Person,
+  Lock,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import { protheusLoginSchema, type ProtheusLoginFormData } from '../schemas/loginSchema';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -29,7 +31,8 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, error }) => {
-  const [emailValid, setEmailValid] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [formValid, setFormValid] = useState(false);
   const { t } = useLanguage();
 
   const {
@@ -41,16 +44,17 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
     resolver: zodResolver(protheusLoginSchema),
     mode: 'onChange',
     defaultValues: {
-      email: '',
+      username: '',
+      password: '',
     },
   });
 
-  const emailValue = watch('email');
+  const usernameValue = watch('username');
+  const passwordValue = watch('password');
 
   useEffect(() => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setEmailValid(emailRegex.test(emailValue || ''));
-  }, [emailValue]);
+    setFormValid(!!usernameValue && !!passwordValue && !errors.username && !errors.password);
+  }, [usernameValue, passwordValue, errors]);
 
   const handleFormSubmit = async (data: ProtheusLoginFormData) => {
     try {
@@ -122,30 +126,59 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
           <Box component="form" onSubmit={handleSubmit(handleFormSubmit)}>
             <Stack spacing={3}>
               <Controller
-                name="email"
+                name="username"
                 control={control}
                 render={({ field }) => (
                   <TextField
                     {...field}
                     fullWidth
-                    label={t?.login?.emailLabel || 'E-mail'}
-                    type="email"
-                    autoComplete="email"
+                    label={t?.login?.usernameLabel || 'Usuário'}
+                    type="text"
+                    autoComplete="username"
                     autoFocus
-                    placeholder={t?.login?.emailPlaceholder || 'seu@email.com'}
-                    error={!!errors.email}
-                    helperText={errors.email?.message}
+                    placeholder={t?.login?.usernamePlaceholder || 'seu.usuario'}
+                    error={!!errors.username}
+                    helperText={errors.username?.message}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Email color="action" />
+                          <Person color="action" />
                         </InputAdornment>
                       ),
-                      endAdornment: emailValid && (
+                    }}
+                  />
+                )}
+              />
+
+              <Controller
+                name="password"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label={t?.login?.passwordLabel || 'Senha'}
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder={t?.login?.passwordPlaceholder || '••••••••'}
+                    error={!!errors.password}
+                    helperText={errors.password?.message}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Lock color="action" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
                         <InputAdornment position="end">
-                          <Fade in={emailValid}>
-                            <CheckCircle color="success" sx={{ fontSize: 20 }} />
-                          </Fade>
+                          <IconButton
+                            aria-label="toggle password visibility"
+                            onClick={() => setShowPassword(!showPassword)}
+                            edge="end"
+                            size="small"
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
                         </InputAdornment>
                       ),
                     }}
@@ -158,7 +191,7 @@ const LoginForm: React.FC<LoginFormProps> = React.memo(({ onSubmit, loading, err
                 fullWidth
                 variant="contained"
                 size="large"
-                disabled={loading || !emailValid}
+                disabled={loading || !formValid}
                 sx={{
                   py: 1.5,
                   textTransform: 'none',

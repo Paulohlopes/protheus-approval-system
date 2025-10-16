@@ -1,4 +1,4 @@
-import api from './api';
+import axios from 'axios';
 import { config, logger } from '../config/environment';
 import { protheusLoginSchema } from '../schemas/loginSchema';
 import { getErrorMessage } from '../utils/translationHelpers';
@@ -8,59 +8,129 @@ import type {
   ProtheusUser
 } from '../types/auth';
 
+// Brasil Protheus base URL
+const BR_BASE_URL = 'http://brsvawssaa06069:8029';
+
 export const authService = {
-  // Login com e-mail apenas (sem senha)
+  // Login com username e password usando OAuth2
   async loginProtheus(credentials: ProtheusLoginCredentials): Promise<ProtheusAuthResponse> {
     try {
-      console.log('authService.loginProtheus - Received credentials:', credentials);
-      
-      // Validate input data - use the schema directly without ValidationUtils
+      console.log('authService.loginProtheus - Starting login with credentials');
+
+      // Validate input data
       let validatedCredentials;
       try {
         validatedCredentials = protheusLoginSchema.parse(credentials);
-        console.log('authService.loginProtheus - Validated credentials:', validatedCredentials);
+        console.log('authService.loginProtheus - Credentials validated');
       } catch (validationError) {
         console.error('authService.loginProtheus - Validation error:', validationError);
-        throw new Error(getErrorMessage('invalidEmail'));
+        throw new Error('Usuário ou senha inválidos');
       }
-      
-      logger.info('Tentando autenticação com e-mail...');
-      
-      // Como não há senha, vamos criar um token baseado no e-mail
-      // Este é um token simplificado para identificação do usuário
-      const emailToken = btoa(validatedCredentials.email);
-      
-      // Simular autenticação bem sucedida
-      // Em produção, você pode validar o e-mail contra uma lista de usuários autorizados
-      logger.info('Login realizado com sucesso para:', validatedCredentials.email);
-      
-      // Extrair nome do usuário do e-mail
-      const userName = validatedCredentials.email.split('@')[0]
-        .split('.')
-        .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(' ');
-      
-      const response = {
-        access_token: emailToken,
-        refresh_token: emailToken,
-        token_type: 'Bearer',
-        expires_in: config.security.sessionTimeout / 1000, // Convert to seconds
-        user: {
-          id: validatedCredentials.email,
-          username: validatedCredentials.email.split('@')[0],
-          name: userName,
-          email: validatedCredentials.email,
-          groups: [],
-          permissions: []
-        }
+
+      logger.info('Tentando autenticação OAuth2...');
+
+      // Step 1: Get OAuth2 token
+      console.log('authService.loginProtheus - Step 1: Getting OAuth2 token');
+      const tokenUrl = `${BR_BASE_URL}/rest/api/oauth2/v1/token?grant_type=password&username=${encodeURIComponent(validatedCredentials.username)}&password=${encodeURIComponent(validatedCredentials.password)}`;
+
+      const tokenResponse = await axios.post(tokenUrl, null, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        timeout: 30000,
+      });
+
+      if (!tokenResponse.data || !tokenResponse.data.access_token) {
+        throw new Error('Falha na autenticação - Token não recebido');
+      }
+
+      const { access_token, refresh_token, expires_in, hasMFA } = tokenResponse.data;
+      console.log('authService.loginProtheus - Token received successfully');
+
+      // Step 2: Get User ID
+      console.log('authService.loginProtheus - Step 2: Getting User ID');
+      const userIdResponse = await axios.get(`${BR_BASE_URL}/rest/users/GetUserId`, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Accept': 'application/json',
+        },
+        timeout: 30000,
+      });
+
+      if (!userIdResponse.data || !userIdResponse.data.userID) {
+        throw new Error('Falha ao obter ID do usuário');
+      }
+
+      const userId = userIdResponse.data.userID;
+      console.log('authService.loginProtheus - User ID received:', userId);
+
+      // Step 3: Get User Details
+      console.log('authService.loginProtheus - Step 3: Getting User Details');
+      const userDetailsResponse = await axios.get(`${BR_BASE_URL}/rest/users/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Accept': 'application/json',
+        },
+        timeout: 30000,
+      });
+
+      if (!userDetailsResponse.data) {
+        throw new Error('Falha ao obter detalhes do usuário');
+      }
+
+      const userData = userDetailsResponse.data;
+      console.log('authService.loginProtheus - User details received');
+
+      // Extract email from emails array
+      const emailObj = userData.emails?.find((e: any) => e.primary) || userData.emails?.[0];
+      const userEmail = emailObj?.value || userData.externalId || '';
+
+      // Build user object
+      const user: ProtheusUser = {
+        id: userData.id || userId,
+        username: userData.userName || validatedCredentials.username,
+        name: userData.displayName || userData.name?.formatted || '',
+        email: userEmail,
+        givenName: userData.name?.givenName,
+        familyName: userData.name?.familyName,
+        displayName: userData.displayName,
+        role: userData.title,
+        department: userData.department,
+        isActive: userData.active,
+        groups: userData.groups || [],
+        permissions: userData.roles?.map((r: any) => r.display) || [],
       };
-      
-      console.log('authService.loginProtheus - Returning response:', response);
+
+      const response: ProtheusAuthResponse = {
+        access_token,
+        refresh_token,
+        token_type: 'Bearer',
+        expires_in: expires_in || 3600,
+        hasMFA,
+        user,
+      };
+
+      logger.info('Login realizado com sucesso para:', user.username);
+      console.log('authService.loginProtheus - Login successful');
       return response;
 
     } catch (error: any) {
-      console.error('authService.loginProtheus - Error caught:', error);
+      console.error('authService.loginProtheus - Error:', error);
       logger.error('Erro na autenticação Protheus:', error);
+
+      // Handle different error types
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          throw new Error('Usuário ou senha inválidos');
+        } else if (error.response?.status === 403) {
+          throw new Error('Acesso negado');
+        } else if (error.code === 'ECONNABORTED') {
+          throw new Error('Tempo esgotado - Servidor não respondeu');
+        } else if (error.code === 'ERR_NETWORK') {
+          throw new Error('Erro de rede - Verifique sua conexão');
+        }
+      }
 
       // Re-throw the error with a clear message
       if (error.message) {

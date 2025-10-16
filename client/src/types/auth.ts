@@ -1,5 +1,6 @@
 export interface ProtheusLoginCredentials {
-  email: string;
+  username: string;
+  password: string;
   company?: string;
   branch?: string;
 }
@@ -10,6 +11,7 @@ export interface ProtheusAuthResponse {
   token_type: string;
   expires_in?: number;
   scope?: string;
+  hasMFA?: boolean;
   user?: ProtheusUser;
 }
 
@@ -25,6 +27,13 @@ export interface ProtheusUser {
   isActive?: boolean;
   lastLogin?: string;
   permissions?: string[];
+  groups?: Array<{
+    value: string;
+    display: string;
+  }>;
+  displayName?: string;
+  givenName?: string;
+  familyName?: string;
 }
 
 export interface DocumentItem {

@@ -132,12 +132,16 @@ export const en = {
   login: {
     title: 'Protheus System',
     subtitle: 'Document Approval',
-    emailLabel: 'Email',
-    emailPlaceholder: 'your@email.com',
+    usernameLabel: 'Username',
+    usernamePlaceholder: 'your.username',
+    passwordLabel: 'Password',
+    passwordPlaceholder: '••••••••',
     loginButton: 'Login',
     loggingIn: 'Logging in...',
     invalidEmail: 'Invalid email',
     emailRequired: 'Email is required',
+    usernameRequired: 'Username is required',
+    passwordRequired: 'Password is required',
   },
   errorBoundary: {
     criticalTitle: 'Oops! Something went wrong',

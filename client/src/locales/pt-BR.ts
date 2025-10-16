@@ -132,12 +132,16 @@ export const ptBR = {
   login: {
     title: 'Sistema Protheus',
     subtitle: 'Aprovação de Documentos',
-    emailLabel: 'E-mail',
-    emailPlaceholder: 'seu@email.com',
+    usernameLabel: 'Usuário',
+    usernamePlaceholder: 'seu.usuario',
+    passwordLabel: 'Senha',
+    passwordPlaceholder: '••••••••',
     loginButton: 'Entrar',
     loggingIn: 'Entrando...',
     invalidEmail: 'E-mail inválido',
     emailRequired: 'E-mail é obrigatório',
+    usernameRequired: 'Usuário é obrigatório',
+    passwordRequired: 'Senha é obrigatória',
   },
   errorBoundary: {
     criticalTitle: 'Oops! Algo deu errado',
