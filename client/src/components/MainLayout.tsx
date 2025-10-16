@@ -377,14 +377,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         component="main"
         sx={{
           flexGrow: 1,
-          width: { sm: open ? `calc(100% - ${drawerWidth}px)` : '100%' },
-          ml: { sm: open ? `${drawerWidth}px` : 0 },
           minHeight: '100vh',
           bgcolor: 'grey.50',
-          transition: theme.transitions.create(['width', 'margin'], {
+          transition: theme.transitions.create(['margin'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
+          ml: { sm: open ? `${drawerWidth}px` : 0 },
         }}
       >
         <Toolbar />
