@@ -37,7 +37,6 @@ import {
   OutlinedInput,
   ListItemText,
   Fade,
-  Container,
   Card,
   CardContent,
 } from '@mui/material';
@@ -957,7 +956,7 @@ const DocumentsTablePage: React.FC = () => {
 
   return (
     <ErrorBoundary level="page">
-      <Container maxWidth={false} sx={{ py: 3 }}>
+      <Box sx={{ width: '100%', p: 3 }}>
         {/* API Error Alert */}
         {documentsResponse?.hasErrors && (
           <ApiErrorAlert
@@ -1653,7 +1652,7 @@ const DocumentsTablePage: React.FC = () => {
             </FormGroup>
           </Box>
         </Menu>
-      </Container>
+      </Box>
 
       {/* Dialogs */}
       <ConfirmationDialog
