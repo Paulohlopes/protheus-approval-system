@@ -31,6 +31,7 @@ import {
   CheckCircle,
   TableChart,
   ViewList,
+  Analytics,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
