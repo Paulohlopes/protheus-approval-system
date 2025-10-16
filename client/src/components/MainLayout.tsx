@@ -201,13 +201,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         anchor="left"
         open={open}
         sx={{
-          width: drawerWidth,
+          width: open ? drawerWidth : 0,
           flexShrink: 0,
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.leavingScreen,
+          }),
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
             background: `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
             borderRight: `1px solid ${theme.palette.divider}`,
+            transition: theme.transitions.create('transform', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.leavingScreen,
+            }),
           },
         }}
       >
@@ -379,11 +387,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           flexGrow: 1,
           minHeight: '100vh',
           bgcolor: 'grey.50',
-          transition: theme.transitions.create(['margin'], {
+          transition: theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          ml: { sm: open ? `${drawerWidth}px` : 0 },
+          width: `calc(100% - ${open ? drawerWidth : 0}px)`,
         }}
       >
         <Toolbar />
