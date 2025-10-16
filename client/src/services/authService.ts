@@ -41,7 +41,11 @@ export const authService = {
         timeout: 30000,
       });
 
+      console.log('authService.loginProtheus - Token Response Status:', tokenResponse.status);
+      console.log('authService.loginProtheus - Token Response Data:', JSON.stringify(tokenResponse.data, null, 2));
+
       if (!tokenResponse.data || !tokenResponse.data.access_token) {
+        console.error('authService.loginProtheus - Token not found in response. Full response:', tokenResponse.data);
         throw new Error('Falha na autenticação - Token não recebido');
       }
 
