@@ -41,6 +41,8 @@ export const useDocumentActions = () => {
   const [showBulkActions, setShowBulkActions] = useState(false);
 
   const handleApprove = (document: ProtheusDocument) => {
+    console.log('handleApprove - Received document:', document);
+    console.log('handleApprove - document.numero:', document?.numero);
     setConfirmDialog({
       open: true,
       action: 'approve',
@@ -49,6 +51,8 @@ export const useDocumentActions = () => {
   };
 
   const handleReject = (document: ProtheusDocument) => {
+    console.log('handleReject - Received document:', document);
+    console.log('handleReject - document.numero:', document?.numero);
     setConfirmDialog({
       open: true,
       action: 'reject',
@@ -57,12 +61,18 @@ export const useDocumentActions = () => {
   };
 
   const handleConfirmAction = (comments?: string) => {
-    if (!confirmDialog.document || !user) return;
+    console.log('handleConfirmAction - confirmDialog.document:', confirmDialog.document);
+
+    if (!confirmDialog.document || !user) {
+      console.log('handleConfirmAction - Early return: document or user missing');
+      return;
+    }
 
     const document = confirmDialog.document;
     const action = confirmDialog.action;
 
     // Debug log to see what we're receiving
+    console.log('handleConfirmAction - document:', document);
     console.log('handleConfirmAction - document.numero:', document.numero, 'type:', typeof document.numero);
 
     // Defensive check: ensure document.numero exists
