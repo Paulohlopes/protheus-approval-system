@@ -204,7 +204,7 @@ export const documentService = {
       
       // Get all documents and find the specific one
       const response = await this.getDocuments(userEmail);
-      const document = response.documentos.find(doc => doc.numero.trim() === numero.trim());
+      const document = response.documentos.find(doc => String(doc.numero).trim() === numero.trim());
 
       if (!document) {
         throw new Error(getErrorMessage('documentNotFound'));
@@ -258,7 +258,7 @@ export const documentService = {
 
       const requestBody = {
         TIPO: action.document.tipo,
-        DOCUMENTO: action.document.numero.trim(),
+        DOCUMENTO: String(action.document.numero).trim(),
         APROVADOR: currentApprover.aprovador_aprov,
         STATUS: 'APROVACAO',
         OBSERVACAO: action.comments || ''
@@ -294,6 +294,8 @@ export const documentService = {
         currentApprover: currentApprover,
         userEmail: userEmail
       });
+
+      console.log('📤 REQUEST BODY:', JSON.stringify(requestBody, null, 2));
 
       try {
         const response = await debugAxios.post(apiUrl, requestBody, {
@@ -376,7 +378,7 @@ export const documentService = {
 
       const requestBody = {
         TIPO: action.document.tipo,
-        DOCUMENTO: action.document.numero.trim(),
+        DOCUMENTO: String(action.document.numero).trim(),
         APROVADOR: currentApprover.aprovador_aprov,
         STATUS: 'REJEICAO',
         OBSERVACAO: action.comments || 'Rejeitado pelo aprovador'
