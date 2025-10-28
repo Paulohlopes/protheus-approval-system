@@ -266,7 +266,9 @@ export const documentService = {
 
       // Voltar ao formato original sem quebra de linha
       const requestId = Math.random().toString(36).substring(7);
-      const tenantId = `01,${action.document.filial}`;
+      // Extract only the filial code, removing description after " - "
+      const filialCode = action.document.filial.split(' - ')[0].trim();
+      const tenantId = `01,${filialCode}`;
       console.log(`🚀 APROVAÇÃO [${requestId}] - TenantId:`, JSON.stringify(tenantId));
       console.log(`🚀 APROVAÇÃO [${requestId}] - Documento: ${action.document.numero}`);
 
@@ -386,7 +388,9 @@ export const documentService = {
 
       // Voltar ao formato original sem quebra de linha
       const requestId = Math.random().toString(36).substring(7);
-      const tenantId = `01,${action.document.filial}`;
+      // Extract only the filial code, removing description after " - "
+      const filialCode = action.document.filial.split(' - ')[0].trim();
+      const tenantId = `01,${filialCode}`;
       console.log(`🚀 REJEIÇÃO [${requestId}] - TenantId:`, JSON.stringify(tenantId));
 
       // Get the country-specific configuration if document has country metadata
