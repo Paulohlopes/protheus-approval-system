@@ -61,8 +61,17 @@ export const useDocumentActions = () => {
 
     const document = confirmDialog.document;
     const action = confirmDialog.action;
+
+    // Defensive check: ensure document.numero exists and is a string
+    if (!document.numero || typeof document.numero !== 'string') {
+      console.error('Erro: Número do documento inválido ou ausente', document);
+      return;
+    }
+
+    const documentId = document.numero.trim();
+
     const mutationOptions = {
-      documentId: document.numero.trim(),
+      documentId,
       action,
       approverId: user.email || user.id,
       comments: comments || (action === 'reject' ? 'Rejeitado pelo aprovador' : ''),
@@ -70,13 +79,13 @@ export const useDocumentActions = () => {
     };
 
     const mutation = action === 'approve' ? approveDocument : rejectDocument;
-    
+
     mutation.mutate(mutationOptions, {
       onSuccess: () => {
-        console.log(`Documento ${document.numero.trim()} ${action === 'approve' ? 'aprovado' : 'rejeitado'} com sucesso`);
+        console.log(`Documento ${documentId} ${action === 'approve' ? 'aprovado' : 'rejeitado'} com sucesso`);
       },
       onError: () => {
-        console.error(`Erro ao ${action === 'approve' ? 'aprovar' : 'rejeitar'} documento ${document.numero.trim()}`);
+        console.error(`Erro ao ${action === 'approve' ? 'aprovar' : 'rejeitar'} documento ${documentId}`);
       }
     });
 
@@ -101,7 +110,10 @@ export const useDocumentActions = () => {
     if (selectedDocuments.size === pendingDocs.length) {
       setSelectedDocuments(new Set());
     } else {
-      setSelectedDocuments(new Set(pendingDocs.map(doc => doc.numero.trim())));
+      setSelectedDocuments(new Set(pendingDocs
+        .filter(doc => doc.numero && typeof doc.numero === 'string')
+        .map(doc => doc.numero.trim())
+      ));
     }
   };
 
@@ -148,7 +160,9 @@ export const useDocumentActions = () => {
       }
 
       const documentNumber = documentsToProcess[processedCount];
-      const document = documents.find(doc => doc.numero.trim() === documentNumber);
+      const document = documents.find(doc =>
+        doc.numero && typeof doc.numero === 'string' && doc.numero.trim() === documentNumber
+      );
 
       if (!document || !user) {
         processedCount++;
