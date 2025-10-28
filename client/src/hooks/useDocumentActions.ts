@@ -41,8 +41,6 @@ export const useDocumentActions = () => {
   const [showBulkActions, setShowBulkActions] = useState(false);
 
   const handleApprove = (document: ProtheusDocument) => {
-    console.log('handleApprove - Received document:', document);
-    console.log('handleApprove - document.numero:', document?.numero);
     setConfirmDialog({
       open: true,
       action: 'approve',
@@ -51,8 +49,6 @@ export const useDocumentActions = () => {
   };
 
   const handleReject = (document: ProtheusDocument) => {
-    console.log('handleReject - Received document:', document);
-    console.log('handleReject - document.numero:', document?.numero);
     setConfirmDialog({
       open: true,
       action: 'reject',
@@ -61,23 +57,14 @@ export const useDocumentActions = () => {
   };
 
   const handleConfirmAction = (comments?: string) => {
-    console.log('handleConfirmAction - confirmDialog.document:', confirmDialog.document);
-
-    if (!confirmDialog.document || !user) {
-      console.log('handleConfirmAction - Early return: document or user missing');
-      return;
-    }
+    if (!confirmDialog.document || !user) return;
 
     const document = confirmDialog.document;
     const action = confirmDialog.action;
 
-    // Debug log to see what we're receiving
-    console.log('handleConfirmAction - document:', document);
-    console.log('handleConfirmAction - document.numero:', document.numero, 'type:', typeof document.numero);
-
     // Defensive check: ensure document.numero exists
     if (document.numero === null || document.numero === undefined) {
-      console.error('Erro: Número do documento inválido ou ausente', document.numero);
+      console.error('Erro: Número do documento inválido ou ausente');
       return;
     }
 
@@ -85,11 +72,9 @@ export const useDocumentActions = () => {
     const documentId = String(document.numero).trim();
 
     if (!documentId) {
-      console.error('Erro: Número do documento vazio após conversão', document.numero);
+      console.error('Erro: Número do documento vazio após conversão');
       return;
     }
-
-    console.log('handleConfirmAction - documentId after conversion:', documentId);
 
     const mutationOptions = {
       documentId,

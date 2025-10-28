@@ -1273,7 +1273,7 @@ const DocumentsTablePage: React.FC = () => {
                                               <IconButton
                                                 size="small"
                                                 color="success"
-                                                onClick={() => handleApprove(document.numero.trim())}
+                                                onClick={() => handleApprove(document)}
                                               >
                                                 <CheckCircle fontSize="small" />
                                               </IconButton>
@@ -1282,7 +1282,7 @@ const DocumentsTablePage: React.FC = () => {
                                               <IconButton
                                                 size="small"
                                                 color="error"
-                                                onClick={() => handleReject(document.numero.trim())}
+                                                onClick={() => handleReject(document)}
                                               >
                                                 <Cancel fontSize="small" />
                                               </IconButton>
