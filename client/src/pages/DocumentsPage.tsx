@@ -679,7 +679,7 @@ const DocumentsPage: React.FC = () => {
         onClose={handleCloseDialog}
         onConfirm={handleConfirmAction}
         action={confirmDialog.action}
-        documentNumber={confirmDialog.document?.numero.trim()}
+        documentNumber={confirmDialog.document ? String(confirmDialog.document.numero).trim() : undefined}
         documentValue={formatDocumentValue(confirmDialog.document)}
         loading={isProcessing}
       />

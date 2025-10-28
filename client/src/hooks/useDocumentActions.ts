@@ -62,9 +62,12 @@ export const useDocumentActions = () => {
     const document = confirmDialog.document;
     const action = confirmDialog.action;
 
+    // Debug log to see what we're receiving
+    console.log('handleConfirmAction - document.numero:', document.numero, 'type:', typeof document.numero);
+
     // Defensive check: ensure document.numero exists
     if (document.numero === null || document.numero === undefined) {
-      console.error('Erro: Número do documento inválido ou ausente', document);
+      console.error('Erro: Número do documento inválido ou ausente', document.numero);
       return;
     }
 
@@ -72,9 +75,11 @@ export const useDocumentActions = () => {
     const documentId = String(document.numero).trim();
 
     if (!documentId) {
-      console.error('Erro: Número do documento vazio após conversão', document);
+      console.error('Erro: Número do documento vazio após conversão', document.numero);
       return;
     }
+
+    console.log('handleConfirmAction - documentId after conversion:', documentId);
 
     const mutationOptions = {
       documentId,
