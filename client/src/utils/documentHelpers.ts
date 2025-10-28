@@ -1,5 +1,16 @@
 import type { ProtheusDocument, DocumentApprovalLevel } from '../types/auth';
 
+/**
+ * Safely gets the document number as a string
+ * Handles both string and number types from the API
+ */
+export const getDocumentNumber = (document: ProtheusDocument | { numero?: string | number }): string => {
+  if (!document || document.numero === null || document.numero === undefined) {
+    return '';
+  }
+  return String(document.numero).trim();
+};
+
 export const getTypeColor = (type: ProtheusDocument['tipo']) => {
   switch (type) {
     case 'IP':

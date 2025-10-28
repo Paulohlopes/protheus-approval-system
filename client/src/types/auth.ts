@@ -77,7 +77,7 @@ export interface DocumentApprovalLevel {
 
 export interface ProtheusDocument {
   filial: string;
-  numero: string;
+  numero: string | number; // Can be string or number from API
   tipo: 'IP' | 'SC' | 'CP';
   Emissao: string;
   itens: DocumentItem[];

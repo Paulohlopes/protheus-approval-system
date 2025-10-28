@@ -62,13 +62,19 @@ export const useDocumentActions = () => {
     const document = confirmDialog.document;
     const action = confirmDialog.action;
 
-    // Defensive check: ensure document.numero exists and is a string
-    if (!document.numero || typeof document.numero !== 'string') {
+    // Defensive check: ensure document.numero exists
+    if (document.numero === null || document.numero === undefined) {
       console.error('Erro: Número do documento inválido ou ausente', document);
       return;
     }
 
-    const documentId = document.numero.trim();
+    // Convert to string and trim (handles both string and number types)
+    const documentId = String(document.numero).trim();
+
+    if (!documentId) {
+      console.error('Erro: Número do documento vazio após conversão', document);
+      return;
+    }
 
     const mutationOptions = {
       documentId,
@@ -111,8 +117,9 @@ export const useDocumentActions = () => {
       setSelectedDocuments(new Set());
     } else {
       setSelectedDocuments(new Set(pendingDocs
-        .filter(doc => doc.numero && typeof doc.numero === 'string')
-        .map(doc => doc.numero.trim())
+        .filter(doc => doc.numero !== null && doc.numero !== undefined)
+        .map(doc => String(doc.numero).trim())
+        .filter(numero => numero.length > 0)
       ));
     }
   };
@@ -161,7 +168,8 @@ export const useDocumentActions = () => {
 
       const documentNumber = documentsToProcess[processedCount];
       const document = documents.find(doc =>
-        doc.numero && typeof doc.numero === 'string' && doc.numero.trim() === documentNumber
+        doc.numero !== null && doc.numero !== undefined &&
+        String(doc.numero).trim() === documentNumber
       );
 
       if (!document || !user) {
@@ -231,12 +239,20 @@ export const useDocumentActions = () => {
   };
 };
 
+// Helper function to safely get document number
+export const getDocumentNumber = (document: ProtheusDocument | { numero?: string | number }): string => {
+  if (!document || document.numero === null || document.numero === undefined) {
+    return '';
+  }
+  return String(document.numero).trim();
+};
+
 // Helper function to get current approval status
 export const getCurrentApprovalStatus = (
   alcada: DocumentApprovalLevel[],
   userEmail?: string
 ): DocumentApprovalLevel => {
-  const currentLevel = alcada.find(level => 
+  const currentLevel = alcada.find(level =>
     level.CIDENTIFICADOR === userEmail?.split('@')[0] ||
     level.CNOME === userEmail?.split('@')[0]
   );
@@ -246,7 +262,7 @@ export const getCurrentApprovalStatus = (
 // Helper function to format document value
 export const formatDocumentValue = (document: ProtheusDocument | null): string | undefined => {
   if (!document) return undefined;
-  
+
   const numValue = parseFloat(document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',

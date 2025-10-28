@@ -33,7 +33,7 @@ import {
 } from '@mui/icons-material';
 import type { ProtheusDocument, DocumentApprovalLevel } from '../../types/auth';
 import { formatCurrency, formatDate } from '../../utils/formatters';
-import { getTypeColor, getTypeLabel, getStatusColor } from '../../utils/documentHelpers';
+import { getTypeColor, getTypeLabel, getStatusColor, getDocumentNumber } from '../../utils/documentHelpers';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface DocumentCardProps {
@@ -85,7 +85,7 @@ const DocumentCard: React.FC<DocumentCardProps> = memo(({
             <Grid item xs="auto">
               <Checkbox
                 checked={isSelected || false}
-                onChange={(e) => onSelectChange?.(document.numero.trim(), e.target.checked)}
+                onChange={(e) => onSelectChange?.(getDocumentNumber(document), e.target.checked)}
                 color="primary"
                 size="small"
               />
@@ -119,7 +119,7 @@ const DocumentCard: React.FC<DocumentCardProps> = memo(({
 
           <Grid item xs={12} sm={5}>
             <Typography variant="h6" fontWeight={600} gutterBottom>
-              {document.numero.trim()}
+              {getDocumentNumber(document)}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Business sx={{ fontSize: 16 }} />
@@ -327,7 +327,7 @@ const DocumentDetails: React.FC<DocumentDetailsProps> = ({
             onClick={onApprove}
             disabled={loading}
             size="large"
-            aria-label={`Aprovar documento ${document.numero.trim()} no valor de ${formatCurrency(document.vl_tot_documento)}`}
+            aria-label={`Aprovar documento ${getDocumentNumber(document)} no valor de ${formatCurrency(document.vl_tot_documento)}`}
           >
             Aprovar Documento
           </Button>
@@ -338,7 +338,7 @@ const DocumentDetails: React.FC<DocumentDetailsProps> = ({
             onClick={onReject}
             disabled={loading}
             size="large"
-            aria-label={`Rejeitar documento ${document.numero.trim()} no valor de ${formatCurrency(document.vl_tot_documento)}`}
+            aria-label={`Rejeitar documento ${getDocumentNumber(document)} no valor de ${formatCurrency(document.vl_tot_documento)}`}
           >
             Rejeitar Documento
           </Button>
