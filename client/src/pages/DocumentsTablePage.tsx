@@ -352,15 +352,6 @@ const DocumentsTablePage: React.FC = () => {
       group: 'financial',
     },
     {
-      id: 'filial',
-      label: t?.documents?.branch || 'Filial',
-      minWidth: 80,
-      sortable: true,
-      filterable: true,
-      visible: false,
-      group: 'basic',
-    },
-    {
       id: 'aprovadores',
       label: t?.documents?.approvers || 'Aprovadores',
       minWidth: 200,

@@ -328,38 +328,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 {user?.name || user?.displayName || user?.username || user?.email?.split('@')[0]}
               </Typography>
             </Box>
+            <Box onClick={(e) => e.stopPropagation()}>
+              <LanguageSelector />
+            </Box>
           </Box>
         </Box>
 
         <Divider />
 
-        {/* Language and Logout */}
+        {/* Logout */}
         <List sx={{ px: 2, py: 1.5 }}>
-          <ListItem disablePadding sx={{ mb: 0.5 }}>
-            <Box sx={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              py: 0.5,
-              px: 1,
-              borderRadius: '8px',
-              transition: 'background 0.2s',
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.03),
-              },
-            }}>
-              <ListItemIcon sx={{ minWidth: 32 }}>
-                <Language sx={{ fontSize: '1.2rem', color: 'text.secondary' }} />
-              </ListItemIcon>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'text.secondary', fontWeight: 400 }}>
-                  {t?.menu?.language || 'Idioma'}
-                </Typography>
-              </Box>
-              <LanguageSelector />
-            </Box>
-          </ListItem>
-
           <ListItem disablePadding>
             <ListItemButton
               onClick={handleLogout}
