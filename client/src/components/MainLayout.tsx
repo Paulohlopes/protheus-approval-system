@@ -373,32 +373,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
         <Divider />
 
-        {/* Settings and Language */}
+        {/* Language and Logout */}
         <List sx={{ px: 2, py: 1.5 }}>
           <ListItem disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              disabled
-              sx={{
-                borderRadius: '8px',
-                py: 0.75,
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.primary.main, 0.04),
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <Settings />
-              </ListItemIcon>
-              <ListItemText
-                primary={t?.menu?.settings || 'Configurações'}
-                primaryTypographyProps={{
-                  fontSize: '0.9rem',
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-
-          <ListItem disablePadding>
             <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', py: 0.75, px: 1 }}>
               <ListItemIcon sx={{ minWidth: 36 }}>
                 <Language />
@@ -410,6 +387,31 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </Box>
               <LanguageSelector />
             </Box>
+          </ListItem>
+
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={handleLogout}
+              sx={{
+                borderRadius: '8px',
+                py: 0.75,
+                color: 'error.main',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.error.main, 0.04),
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 36, color: 'error.main' }}>
+                <Logout />
+              </ListItemIcon>
+              <ListItemText
+                primary={t?.common?.logout || 'Sair'}
+                primaryTypographyProps={{
+                  fontSize: '0.9rem',
+                  fontWeight: 500,
+                }}
+              />
+            </ListItemButton>
           </ListItem>
         </List>
       </Drawer>
@@ -570,45 +572,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             )}
           </Stack>
         </Box>
-
-        <Divider />
-
-        {/* Menu Actions */}
-        <MenuItem
-          disabled
-          sx={{
-            py: 1.5,
-            px: 2,
-            '&:hover': {
-              bgcolor: alpha(theme.palette.primary.main, 0.08),
-            },
-          }}
-        >
-          <ListItemIcon>
-            <Settings fontSize="small" />
-          </ListItemIcon>
-          <ListItemText primary="Configurações" />
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => {
-            setProfileMenuAnchor(null);
-            handleLogout();
-          }}
-          sx={{
-            py: 1.5,
-            px: 2,
-            color: theme.palette.error.main,
-            '&:hover': {
-              bgcolor: alpha(theme.palette.error.main, 0.08),
-            },
-          }}
-        >
-          <ListItemIcon>
-            <Logout fontSize="small" color="error" />
-          </ListItemIcon>
-          <ListItemText primary={t?.common?.logout || 'Sair'} />
-        </MenuItem>
       </Menu>
     </Box>
   );
