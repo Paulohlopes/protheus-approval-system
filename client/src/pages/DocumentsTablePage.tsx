@@ -36,6 +36,9 @@ import {
   InputLabel,
   OutlinedInput,
   ListItemText,
+  ListItemIcon,
+  ToggleButtonGroup,
+  ToggleButton,
   Fade,
   Card,
   CardContent,
@@ -405,6 +408,7 @@ const DocumentsTablePage: React.FC = () => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [filterMenuAnchor, setFilterMenuAnchor] = useState<null | HTMLElement>(null);
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(null);
+  const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
   const [groupBy, setGroupBy] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
@@ -1066,64 +1070,52 @@ const DocumentsTablePage: React.FC = () => {
                   sx={{ width: 250 }}
                 />
 
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                  <InputLabel>País</InputLabel>
-                  <Select
-                    multiple
-                    value={selectedCountries}
-                    onChange={(e) => setSelectedCountries(typeof e.target.value === 'string' ? e.target.value.split(',') : e.target.value)}
-                    input={<OutlinedInput label="País" />}
-                    renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {selected.map((value) => (
-                          <Chip
-                            key={value}
-                            label={value}
-                            size="small"
-                            icon={<CountryFlag country={value} size={16} />}
-                          />
-                        ))}
-                      </Box>
-                    )}
-                  >
-                    <MenuItem value="BR">
-                      <Checkbox checked={selectedCountries.indexOf('BR') > -1} />
-                      <ListItemText primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CountryFlag country="BR" size={20} />
-                          <span>Brasil</span>
-                        </Box>
-                      } />
-                    </MenuItem>
-                    <MenuItem value="AR">
-                      <Checkbox checked={selectedCountries.indexOf('AR') > -1} />
-                      <ListItemText primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CountryFlag country="AR" size={20} />
-                          <span>Argentina</span>
-                        </Box>
-                      } />
-                    </MenuItem>
-                    <MenuItem value="CL">
-                      <Checkbox checked={selectedCountries.indexOf('CL') > -1} />
-                      <ListItemText primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CountryFlag country="CL" size={20} />
-                          <span>Chile</span>
-                        </Box>
-                      } />
-                    </MenuItem>
-                    <MenuItem value="PE">
-                      <Checkbox checked={selectedCountries.indexOf('PE') > -1} />
-                      <ListItemText primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CountryFlag country="PE" size={20} />
-                          <span>Peru</span>
-                        </Box>
-                      } />
-                    </MenuItem>
-                  </Select>
-                </FormControl>
+                <ToggleButtonGroup
+                  value={selectedCountries}
+                  onChange={(_, newCountries) => setSelectedCountries(newCountries)}
+                  aria-label="Filtro de países"
+                  size="small"
+                  sx={{
+                    '& .MuiToggleButton-root': {
+                      py: 0.5,
+                      px: 1.5,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      '&.Mui-selected': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        borderColor: 'primary.main',
+                        '&:hover': {
+                          bgcolor: alpha(theme.palette.primary.main, 0.15),
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <ToggleButton value="BR" aria-label="Brasil">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <CountryFlag country="BR" size={18} />
+                      <Typography variant="caption" sx={{ fontWeight: 500 }}>BR</Typography>
+                    </Box>
+                  </ToggleButton>
+                  <ToggleButton value="AR" aria-label="Argentina">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <CountryFlag country="AR" size={18} />
+                      <Typography variant="caption" sx={{ fontWeight: 500 }}>AR</Typography>
+                    </Box>
+                  </ToggleButton>
+                  <ToggleButton value="CL" aria-label="Chile">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <CountryFlag country="CL" size={18} />
+                      <Typography variant="caption" sx={{ fontWeight: 500 }}>CL</Typography>
+                    </Box>
+                  </ToggleButton>
+                  <ToggleButton value="PE" aria-label="Peru">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <CountryFlag country="PE" size={18} />
+                      <Typography variant="caption" sx={{ fontWeight: 500 }}>PE</Typography>
+                    </Box>
+                  </ToggleButton>
+                </ToggleButtonGroup>
 
                 <Tooltip title={t?.common?.filter || 'Filtros'}>
                   <IconButton
@@ -1145,30 +1137,21 @@ const DocumentsTablePage: React.FC = () => {
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title={t?.common?.exportExcel || 'Exportar Excel'}>
-                  <IconButton
-                    onClick={handleExportExcel}
-                    aria-label="Exportar documentos para Excel"
-                  >
-                    <TableChart />
-                  </IconButton>
-                </Tooltip>
-
-                <Tooltip title={t?.common?.exportPdf || 'Exportar PDF'}>
-                  <IconButton
-                    onClick={handleExportPDF}
-                    aria-label="Exportar documentos para PDF"
-                  >
-                    <PictureAsPdf />
-                  </IconButton>
-                </Tooltip>
-
                 <Tooltip title={t?.common?.refresh || 'Atualizar'}>
                   <IconButton
                     onClick={() => refetch()}
                     aria-label="Atualizar lista de documentos"
                   >
                     <Refresh />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Mais opções">
+                  <IconButton
+                    onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
+                    aria-label="Abrir menu de mais opções"
+                  >
+                    <MoreVert />
                   </IconButton>
                 </Tooltip>
               </Stack>
@@ -1678,6 +1661,48 @@ const DocumentsTablePage: React.FC = () => {
                 ))}
             </FormGroup>
           </Box>
+        </Menu>
+
+        {/* Menu Overflow - Mais Opções */}
+        <Menu
+          anchorEl={moreMenuAnchor}
+          open={Boolean(moreMenuAnchor)}
+          onClose={() => setMoreMenuAnchor(null)}
+          PaperProps={{
+            sx: {
+              mt: 1,
+              minWidth: 200,
+            },
+          }}
+        >
+          <MenuItem
+            onClick={() => {
+              handleExportExcel();
+              setMoreMenuAnchor(null);
+            }}
+          >
+            <ListItemIcon>
+              <TableChart fontSize="small" color="primary" />
+            </ListItemIcon>
+            <ListItemText
+              primary={t?.common?.exportExcel || 'Exportar Excel'}
+              primaryTypographyProps={{ fontSize: '0.875rem' }}
+            />
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              handleExportPDF();
+              setMoreMenuAnchor(null);
+            }}
+          >
+            <ListItemIcon>
+              <PictureAsPdf fontSize="small" color="error" />
+            </ListItemIcon>
+            <ListItemText
+              primary={t?.common?.exportPdf || 'Exportar PDF'}
+              primaryTypographyProps={{ fontSize: '0.875rem' }}
+            />
+          </MenuItem>
         </Menu>
       </Box>
 
