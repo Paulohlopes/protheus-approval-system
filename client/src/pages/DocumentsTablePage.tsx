@@ -272,12 +272,13 @@ const DocumentsTablePage: React.FC = () => {
           );
         }
         const numValue = parseFloat(value.replace(/\./g, '').replace(',', '.'));
+        const formatted = new Intl.NumberFormat('pt-BR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(isNaN(numValue) ? 0 : numValue);
         return (
           <Typography variant="body2" fontWeight={600} color="primary">
-            {new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(isNaN(numValue) ? 0 : numValue)}
+            $ {formatted}
           </Typography>
         );
       },
