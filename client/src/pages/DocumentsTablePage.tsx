@@ -145,16 +145,18 @@ const DocumentsTablePage: React.FC = () => {
         const country = countryData[value || 'BR'];
         return (
           <Chip
-            icon={<CountryFlag country={value || 'BR'} size={18} />}
+            icon={<CountryFlag country={value || 'BR'} size={14} />}
             label={value || 'BR'}
             size="small"
+            variant="outlined"
             sx={{
-              bgcolor: country.color,
-              color: 'white',
-              fontWeight: 600,
-              minWidth: 70,
+              borderColor: alpha(country.color, 0.3),
+              color: country.color,
+              fontWeight: 500,
+              minWidth: 65,
+              bgcolor: alpha(country.color, 0.05),
               '& .MuiChip-icon': {
-                marginLeft: '8px',
+                marginLeft: '6px',
               },
             }}
           />
