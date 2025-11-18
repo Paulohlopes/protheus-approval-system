@@ -970,7 +970,8 @@ const DocumentsTablePage: React.FC = () => {
         width: '100%',
         height: '100vh',
         overflow: 'hidden',
-        p: 2
+        p: 2.5,
+        bgcolor: 'background.default'
       }}>
         {/* API Error Alert */}
         {documentsResponse?.hasErrors && (
@@ -979,11 +980,31 @@ const DocumentsTablePage: React.FC = () => {
             successfulCountries={documentsResponse.successfulCountries}
           />
         )}
+
+        {/* Page Title */}
+        <Box sx={{ mb: 2, px: 0.5 }}>
+          <Typography
+            variant="h6"
+            component="h1"
+            sx={{
+              color: 'text.primary',
+              fontWeight: 500,
+              fontSize: '1.1rem',
+              letterSpacing: '-0.2px',
+            }}
+          >
+            {t?.documents?.title || 'Documentos para Aprovação'}
+          </Typography>
+        </Box>
+
         <Paper sx={{
           width: '100%',
           mb: 2,
           overflow: 'hidden',
-          boxShadow: 1
+          boxShadow: 'none',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 2
         }}>
           {/* Toolbar */}
           <Toolbar
@@ -991,8 +1012,11 @@ const DocumentsTablePage: React.FC = () => {
               pl: { sm: 2 },
               pr: { xs: 1, sm: 1 },
               minHeight: '56px !important',
+              bgcolor: alpha(theme.palette.primary.main, 0.02),
+              borderBottom: '1px solid',
+              borderColor: 'divider',
               ...(selected.length > 0 && {
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                bgcolor: alpha(theme.palette.primary.main, 0.08),
               }),
             }}
           >
@@ -1136,9 +1160,10 @@ const DocumentsTablePage: React.FC = () => {
 
           {/* Table */}
           <TableContainer sx={{
-            maxHeight: 'calc(100vh - 180px)',
+            maxHeight: 'calc(100vh - 220px)',
             width: '100%',
-            overflowX: 'auto'
+            overflowX: 'auto',
+            bgcolor: 'background.paper'
           }}>
             <Table stickyHeader size="small" sx={{ width: '100%', tableLayout: 'auto' }}>
               <TableHead>
