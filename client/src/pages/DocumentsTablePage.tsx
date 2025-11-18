@@ -879,29 +879,29 @@ const DocumentsTablePage: React.FC = () => {
           cellWidth: 'wrap',
           lineColor: [220, 220, 220],
           lineWidth: 0.5,
-          valign: 'middle'
+          valign: 'top'
         },
         headStyles: {
           fillColor: [63, 81, 181],
           fontStyle: 'bold',
-          fontSize: 8,
+          fontSize: 7,
           textColor: [255, 255, 255],
           halign: 'center',
           valign: 'middle',
-          cellPadding: 3
+          cellPadding: 2
         },
         alternateRowStyles: { fillColor: [248, 248, 248] },
         columnStyles: {
-          0: { halign: 'center', minCellWidth: 8 },
-          1: { minCellWidth: 20 },
-          2: { minCellWidth: 40 },
-          3: { halign: 'right', minCellWidth: 12 },
-          4: { halign: 'center', minCellWidth: 8 },
-          5: { halign: 'right', minCellWidth: 25 },
-          6: { halign: 'right', fontStyle: 'bold', minCellWidth: 25 },
-          7: { minCellWidth: 35 }
+          0: { halign: 'center', cellWidth: 10 },
+          1: { cellWidth: 18 },
+          2: { cellWidth: 40 },
+          3: { halign: 'right', cellWidth: 12 },
+          4: { halign: 'center', cellWidth: 10 },
+          5: { halign: 'right', cellWidth: 20 },
+          6: { halign: 'right', fontStyle: 'bold', cellWidth: 20 },
+          7: { cellWidth: 'auto', overflow: 'linebreak' }
         },
-        margin: { left: 14, right: 14 },
+        margin: { left: 10, right: 10 },
         tableWidth: 'auto',
         theme: 'grid'
       });
