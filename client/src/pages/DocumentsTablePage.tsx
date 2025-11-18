@@ -78,6 +78,7 @@ import CountryFlag from '../components/CountryFlag';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ApiErrorAlert from '../components/ApiErrorAlert';
 import type { ProtheusDocument } from '../types/auth';
+import { formatCurrency } from '../utils/formatters';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PDFDocument } from 'pdf-lib';
