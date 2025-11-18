@@ -284,8 +284,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         <Box sx={{ px: 2, py: 2 }}>
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
               p: 1.25,
               borderRadius: '8px',
               background: 'transparent',
@@ -299,36 +297,45 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             }}
             onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
           >
-            <Avatar
-              sx={{
-                width: 32,
-                height: 32,
-                mr: 1.25,
-                background: alpha(theme.palette.primary.main, 0.1),
-                color: 'primary.main',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-              }}
-            >
-              {(user?.name || user?.displayName || user?.email)?.charAt(0).toUpperCase()}
-            </Avatar>
-            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-              <Typography
-                variant="body2"
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Avatar
                 sx={{
-                  color: 'text.primary',
-                  fontWeight: 500,
-                  lineHeight: 1.3,
+                  width: 32,
+                  height: 32,
+                  mr: 1.25,
+                  background: alpha(theme.palette.primary.main, 0.1),
+                  color: 'primary.main',
                   fontSize: '0.875rem',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  fontWeight: 600,
                 }}
               >
-                {user?.name || user?.displayName || user?.username || user?.email?.split('@')[0]}
-              </Typography>
+                {(user?.name || user?.displayName || user?.email)?.charAt(0).toUpperCase()}
+              </Avatar>
+              <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: 500,
+                    lineHeight: 1.3,
+                    fontSize: '0.875rem',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {user?.name || user?.displayName || user?.username || user?.email?.split('@')[0]}
+                </Typography>
+              </Box>
             </Box>
-            <Box onClick={(e) => e.stopPropagation()}>
+            <Box
+              onClick={(e) => e.stopPropagation()}
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                mt: 0.5
+              }}
+            >
               <LanguageSelector />
             </Box>
           </Box>
