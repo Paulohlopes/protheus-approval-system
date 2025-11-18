@@ -26,7 +26,6 @@ import {
   Menu as MenuIcon,
   ChevronLeft,
   Assignment,
-  Dashboard,
   Settings,
   Logout,
   ExpandLess,
@@ -34,13 +33,14 @@ import {
   CheckCircle,
   TableChart,
   ViewList,
-  Analytics,
   Person,
   Email,
   Business,
   Work,
   Group,
   Language,
+  ShoppingCart,
+  AccountTree,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
@@ -90,23 +90,23 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           title: t?.menu?.cardView || 'Visão em Cards',
           icon: <ViewList />,
           path: '/documents-cards',
-          disabled: true, // Exemplo para futura implementação
+          disabled: true,
         },
       ],
     },
     {
-      id: 'dashboard',
-      title: t?.menu?.dashboard || 'Dashboard',
-      icon: <Dashboard />,
-      path: '/dashboard',
-      disabled: true, // Exemplo para futura implementação
+      id: 'purchase-center',
+      title: t?.menu?.purchaseCenter || 'Central de Compras',
+      icon: <ShoppingCart />,
+      path: '/purchase-center',
+      disabled: true,
     },
     {
-      id: 'analytics',
-      title: t?.menu?.analytics || 'Análises',
-      icon: <Analytics />,
-      path: '/analytics',
-      disabled: true, // Exemplo para futura implementação
+      id: 'registration-flow',
+      title: t?.menu?.registrationFlow || 'Fluxo de Cadastros',
+      icon: <AccountTree />,
+      path: '/registration-flow',
+      disabled: true,
     },
   ];
 
