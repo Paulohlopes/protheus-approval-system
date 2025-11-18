@@ -123,6 +123,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       {/* AppBar */}
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
           width: { sm: open ? `calc(100% - ${drawerWidth}px)` : '100%' },
           ml: { sm: open ? `${drawerWidth}px` : 0 },
@@ -130,38 +131,51 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-          backdropFilter: 'blur(20px)',
-          borderBottom: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
+          background: theme.palette.background.paper,
+          backdropFilter: 'blur(8px)',
+          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: '56px !important', py: 1 }}>
           <IconButton
-            color="inherit"
             aria-label="toggle drawer"
             onClick={handleDrawerToggle}
             edge="start"
-            sx={{ mr: 2 }}
+            size="small"
+            sx={{
+              mr: 2,
+              color: 'text.secondary',
+              '&:hover': {
+                bgcolor: alpha(theme.palette.primary.main, 0.04),
+              },
+            }}
           >
             {open ? <ChevronLeft /> : <MenuIcon />}
           </IconButton>
 
           <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" noWrap component="div" fontWeight={700}>
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              fontWeight={600}
+              fontSize="1.1rem"
+              color="text.primary"
+            >
               {t?.header?.title || 'AprovaFácil'}
             </Typography>
           </Stack>
 
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <LanguageSelector />
 
             <Divider
               orientation="vertical"
               flexItem
               sx={{
-                bgcolor: alpha(theme.palette.common.white, 0.2),
-                mx: 1,
-                height: '40px',
+                bgcolor: alpha(theme.palette.divider, 0.3),
+                mx: 0.5,
+                height: '32px',
                 alignSelf: 'center',
               }}
             />
@@ -170,35 +184,37 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                p: 1,
-                borderRadius: '12px',
-                background: alpha(theme.palette.common.white, 0.1),
+                px: 1.5,
+                py: 0.75,
+                borderRadius: '8px',
+                background: alpha(theme.palette.primary.main, 0.04),
                 cursor: 'pointer',
                 transition: 'all 0.2s',
+                border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
                 '&:hover': {
-                  background: alpha(theme.palette.common.white, 0.15),
-                  transform: 'translateY(-1px)',
+                  background: alpha(theme.palette.primary.main, 0.08),
+                  borderColor: alpha(theme.palette.divider, 0.5),
                 },
               }}
               onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
             >
               <Avatar
                 sx={{
-                  width: 36,
-                  height: 36,
+                  width: 32,
+                  height: 32,
                   mr: 1,
-                  background: `linear-gradient(135deg, ${theme.palette.secondary.main} 0%, ${theme.palette.secondary.dark} 100%)`,
-                  fontSize: '1rem',
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                  fontSize: '0.9rem',
                 }}
               >
                 {(user?.name || user?.displayName || user?.email)?.charAt(0).toUpperCase()}
               </Avatar>
               <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                <Typography variant="body2" sx={{ color: 'white', fontWeight: 600, lineHeight: 1.2 }}>
+                <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500, lineHeight: 1.2, fontSize: '0.875rem' }}>
                   {user?.name || user?.displayName || user?.username || user?.email?.split('@')[0]}
                 </Typography>
                 {user?.role && (
-                  <Typography variant="caption" sx={{ color: alpha(theme.palette.common.white, 0.7), fontSize: '0.7rem' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
                     {user.role}
                   </Typography>
                 )}
@@ -206,12 +222,21 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             </Box>
 
             <Button
-              color="inherit"
               onClick={handleLogout}
-              startIcon={<Logout />}
+              startIcon={<Logout fontSize="small" />}
+              size="small"
               sx={{
-                borderRadius: '12px',
-                px: 2,
+                borderRadius: '8px',
+                px: 1.5,
+                py: 0.75,
+                color: 'text.secondary',
+                textTransform: 'none',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                '&:hover': {
+                  bgcolor: alpha(theme.palette.error.main, 0.04),
+                  color: 'error.main',
+                },
               }}
             >
               {t?.common?.logout || 'Sair'}
