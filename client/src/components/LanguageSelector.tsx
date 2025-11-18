@@ -37,23 +37,23 @@ const LanguageSelector: React.FC = React.memo(() => {
 
   return (
     <>
-      <Tooltip title="Language / Idioma">
+      <Tooltip title="Idioma / Language">
         <IconButton
           onClick={handleClick}
-          size="large"
+          size="small"
           sx={{
-            color: 'inherit',
-            bgcolor: 'rgba(255,255,255,0.1)',
+            color: 'text.secondary',
+            px: 1,
             '&:hover': {
-              bgcolor: 'rgba(255,255,255,0.2)',
+              bgcolor: 'action.hover',
             },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
             {currentLanguage?.countryCode && (
-              <CountryFlag country={currentLanguage.countryCode} size={24} />
+              <CountryFlag country={currentLanguage.countryCode} size={18} />
             )}
-            <LanguageIcon fontSize="small" />
+            <LanguageIcon fontSize="small" sx={{ fontSize: '1.1rem' }} />
           </Box>
         </IconButton>
       </Tooltip>
@@ -69,19 +69,40 @@ const LanguageSelector: React.FC = React.memo(() => {
           vertical: 'top',
           horizontal: 'right',
         }}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            minWidth: 180,
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+          },
+        }}
       >
         {languages.map((lang) => (
           <MenuItem
             key={lang.code}
             onClick={() => handleLanguageChange(lang.code)}
             selected={language === lang.code}
+            sx={{
+              py: 1,
+              px: 2,
+              borderRadius: 1,
+              mx: 0.5,
+              my: 0.25,
+            }}
           >
-            <ListItemIcon>
-              <CountryFlag country={lang.countryCode} size={24} />
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <CountryFlag country={lang.countryCode} size={20} />
             </ListItemIcon>
-            <ListItemText primary={lang.name} />
+            <ListItemText
+              primary={lang.name}
+              primaryTypographyProps={{
+                fontSize: '0.875rem',
+                fontWeight: language === lang.code ? 500 : 400,
+              }}
+            />
             {language === lang.code && (
-              <Check fontSize="small" sx={{ ml: 1, color: 'primary.main' }} />
+              <Check fontSize="small" sx={{ ml: 1, color: 'primary.main', fontSize: '1rem' }} />
             )}
           </MenuItem>
         ))}

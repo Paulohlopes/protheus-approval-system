@@ -136,7 +136,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
         }}
       >
-        <Toolbar sx={{ minHeight: '56px !important', py: 1 }}>
+        <Toolbar sx={{ minHeight: '56px !important', py: 1, px: 3 }}>
           <IconButton
             aria-label="toggle drawer"
             onClick={handleDrawerToggle}
@@ -144,6 +144,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             size="small"
             sx={{
               mr: 2,
+              ml: -1,
               color: 'text.secondary',
               '&:hover': {
                 bgcolor: alpha(theme.palette.primary.main, 0.04),
@@ -159,33 +160,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               noWrap
               component="div"
               fontWeight={600}
-              fontSize="1.1rem"
+              fontSize="1.05rem"
               color="text.primary"
             >
               {t?.header?.title || 'AprovaFácil'}
             </Typography>
           </Stack>
 
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mr: -1 }}>
             <LanguageSelector />
-
-            <Divider
-              orientation="vertical"
-              flexItem
-              sx={{
-                bgcolor: alpha(theme.palette.divider, 0.3),
-                mx: 0.5,
-                height: '32px',
-                alignSelf: 'center',
-              }}
-            />
 
             <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
                 px: 1.5,
-                py: 0.75,
+                py: 0.5,
                 borderRadius: '8px',
                 background: alpha(theme.palette.primary.main, 0.04),
                 cursor: 'pointer',
@@ -220,27 +210,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 )}
               </Box>
             </Box>
-
-            <Button
-              onClick={handleLogout}
-              startIcon={<Logout fontSize="small" />}
-              size="small"
-              sx={{
-                borderRadius: '8px',
-                px: 1.5,
-                py: 0.75,
-                color: 'text.secondary',
-                textTransform: 'none',
-                fontWeight: 500,
-                fontSize: '0.875rem',
-                '&:hover': {
-                  bgcolor: alpha(theme.palette.error.main, 0.04),
-                  color: 'error.main',
-                },
-              }}
-            >
-              {t?.common?.logout || 'Sair'}
-            </Button>
           </Stack>
         </Toolbar>
       </AppBar>
