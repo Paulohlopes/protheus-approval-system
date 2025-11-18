@@ -55,7 +55,6 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
-  const [open, setOpen] = useState(true);
   const [approvalMenuOpen, setApprovalMenuOpen] = useState(true);
   const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
@@ -63,10 +62,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const { user, logout } = useAuthStore();
   const theme = useTheme();
   const { t } = useLanguage();
-
-  const handleDrawerToggle = () => {
-    setOpen(!open);
-  };
 
   const handleLogout = async () => {
     try {
@@ -123,25 +118,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       {/* Drawer */}
       <Drawer
-        variant="persistent"
+        variant="permanent"
         anchor="left"
-        open={open}
         sx={{
-          width: open ? drawerWidth : 0,
+          width: drawerWidth,
           flexShrink: 0,
-          transition: theme.transitions.create('width', {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
             background: theme.palette.background.paper,
             borderRight: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-            transition: theme.transitions.create('transform', {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
-            }),
           },
         }}
       >
@@ -149,7 +135,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'center',
             px: 2,
             py: 1.5,
             minHeight: '56px',
@@ -161,22 +147,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             display: 'flex',
             alignItems: 'center',
             opacity: 0.85,
-            flexGrow: 1,
           }}>
             <CompanyLogo variant="full" size="small" />
           </Box>
-          <IconButton
-            onClick={handleDrawerToggle}
-            size="small"
-            sx={{
-              color: 'text.secondary',
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.08),
-              },
-            }}
-          >
-            <ChevronLeft fontSize="small" />
-          </IconButton>
         </Box>
 
         <Divider />
@@ -363,12 +336,23 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         {/* Language and Logout */}
         <List sx={{ px: 2, py: 1.5 }}>
           <ListItem disablePadding sx={{ mb: 0.5 }}>
-            <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', py: 0.75, px: 1 }}>
-              <ListItemIcon sx={{ minWidth: 36 }}>
-                <Language />
+            <Box sx={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              py: 0.5,
+              px: 1,
+              borderRadius: '8px',
+              transition: 'background 0.2s',
+              '&:hover': {
+                bgcolor: alpha(theme.palette.primary.main, 0.03),
+              },
+            }}>
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <Language sx={{ fontSize: '1.2rem', color: 'text.secondary' }} />
               </ListItemIcon>
               <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="body2" sx={{ fontSize: '0.9rem', color: 'text.primary' }}>
+                <Typography variant="body2" sx={{ fontSize: '0.875rem', color: 'text.secondary', fontWeight: 400 }}>
                   {t?.menu?.language || 'Idioma'}
                 </Typography>
               </Box>
@@ -388,13 +372,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 36, color: 'error.main' }}>
-                <Logout />
+              <ListItemIcon sx={{ minWidth: 32, color: 'error.main' }}>
+                <Logout sx={{ fontSize: '1.2rem' }} />
               </ListItemIcon>
               <ListItemText
                 primary={t?.common?.logout || 'Sair'}
                 primaryTypographyProps={{
-                  fontSize: '0.9rem',
+                  fontSize: '0.875rem',
                   fontWeight: 500,
                 }}
               />
@@ -410,36 +394,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           flexGrow: 1,
           minHeight: '100vh',
           bgcolor: 'grey.50',
-          transition: theme.transitions.create(['margin', 'width'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-          width: `calc(100% - ${open ? drawerWidth : 0}px)`,
-          ml: open ? 0 : `-${drawerWidth}px`,
-          position: 'relative',
+          width: `calc(100% - ${drawerWidth}px)`,
         }}
       >
-        {/* Floating Menu Button - Only visible when drawer is closed */}
-        {!open && (
-          <IconButton
-            onClick={handleDrawerToggle}
-            sx={{
-              position: 'fixed',
-              top: 16,
-              left: 16,
-              zIndex: theme.zIndex.drawer - 1,
-              bgcolor: 'background.paper',
-              boxShadow: 2,
-              border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-              '&:hover': {
-                bgcolor: 'background.paper',
-                boxShadow: 4,
-              },
-            }}
-          >
-            <MenuIcon />
-          </IconButton>
-        )}
         {children}
       </Box>
 
