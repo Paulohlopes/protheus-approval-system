@@ -968,12 +968,9 @@ const DocumentsTablePage: React.FC = () => {
     <ErrorBoundary level="page">
       <Box sx={{
         width: '100%',
-        height: '100%',
-        overflow: 'auto',
-        pt: 2,  // Top padding
-        pr: 2,  // Right padding
-        pb: 2,  // Bottom padding
-        pl: 2   // Left padding
+        height: '100vh',
+        overflow: 'hidden',
+        p: 2
       }}>
         {/* API Error Alert */}
         {documentsResponse?.hasErrors && (
@@ -982,42 +979,6 @@ const DocumentsTablePage: React.FC = () => {
             successfulCountries={documentsResponse.successfulCountries}
           />
         )}
-        {/* Enhanced Table Header */}
-        <Box sx={{ mb: 2 }}>
-          <Box sx={{
-            display: 'flex',
-            flexDirection: { xs: 'column', md: 'row' },
-            justifyContent: 'space-between',
-            alignItems: { xs: 'flex-start', md: 'center' },
-            mb: 2,
-          }}>
-            <Box>
-              <Typography
-                variant="h5"
-                component="h1"
-                fontWeight={600}
-                sx={{
-                  color: 'text.primary',
-                  letterSpacing: '-0.3px',
-                  mb: 0.5,
-                }}
-              >
-                {t?.documents?.title || 'Documentos para Aprovação'}
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  fontWeight: 400,
-                  fontSize: '0.875rem',
-                }}
-              >
-                {t?.documentPage?.advancedView || 'Visualização avançada com controles completos de filtragem e ordenação.'}
-              </Typography>
-            </Box>
-
-          </Box>
-        </Box>
         <Paper sx={{
           width: '100%',
           mb: 2,
@@ -1035,13 +996,9 @@ const DocumentsTablePage: React.FC = () => {
               }),
             }}
           >
-            {selected.length > 0 ? (
+            {selected.length > 0 && (
               <Typography sx={{ flex: '1 1 100%' }} color="inherit" variant="body2" fontWeight={600} component="div">
                 {formatMessage(t?.documentPage?.selectedDocuments || '{{count}} selecionado(s)', { count: selected.length })}
-              </Typography>
-            ) : (
-              <Typography sx={{ flex: '1 1 100%' }} variant="subtitle1" fontWeight={600} id="tableTitle" component="div">
-                {t?.documents?.title || 'Documentos para Aprovação'}
               </Typography>
             )}
 
@@ -1179,7 +1136,7 @@ const DocumentsTablePage: React.FC = () => {
 
           {/* Table */}
           <TableContainer sx={{
-            maxHeight: 'calc(100vh - 300px)',
+            maxHeight: 'calc(100vh - 180px)',
             width: '100%',
             overflowX: 'auto'
           }}>
