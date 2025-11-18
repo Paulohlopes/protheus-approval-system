@@ -164,6 +164,20 @@ const DocumentsTablePage: React.FC = () => {
       },
     },
     {
+      id: 'filial',
+      label: t?.documents?.branch || 'Filial',
+      minWidth: 60,
+      sortable: true,
+      filterable: true,
+      visible: true,
+      group: 'basic',
+      format: (value: string) => (
+        <Typography variant="body2" fontSize="0.8rem">
+          {value ? value.trim() : '-'}
+        </Typography>
+      ),
+    },
+    {
       id: 'numero',
       label: t?.documents?.number || 'Número',
       minWidth: 100,
@@ -172,7 +186,7 @@ const DocumentsTablePage: React.FC = () => {
       visible: true,
       group: 'basic',
       format: (value: string) => (
-        <Typography variant="body2" fontWeight={600}>
+        <Typography variant="body2" fontWeight={600} fontSize="0.8rem">
           {value.trim()}
         </Typography>
       ),
@@ -201,6 +215,7 @@ const DocumentsTablePage: React.FC = () => {
             size="small"
             color={info.color as any}
             variant="outlined"
+            sx={{ fontSize: '0.75rem' }}
           />
         );
       },
@@ -233,6 +248,7 @@ const DocumentsTablePage: React.FC = () => {
             color={info.color as any}
             icon={info.icon as any}
             variant={documentStatus === 'Pendente' ? 'filled' : 'outlined'}
+            sx={{ fontSize: '0.75rem' }}
           />
         );
       },
@@ -246,9 +262,9 @@ const DocumentsTablePage: React.FC = () => {
       visible: true,
       group: 'basic',
       format: (value: string) => (
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Business fontSize="small" color="action" />
-          <Typography variant="body2">
+        <Stack direction="row" alignItems="center" spacing={0.5}>
+          <Business sx={{ fontSize: '1rem' }} color="action" />
+          <Typography variant="body2" fontSize="0.8rem">
             {value ? String(value).trim() : 'N/A'}
           </Typography>
         </Stack>
@@ -266,7 +282,7 @@ const DocumentsTablePage: React.FC = () => {
       format: (value: string) => {
         if (!value || typeof value !== 'string') {
           return (
-            <Typography variant="body2" fontWeight={600} color="primary">
+            <Typography variant="body2" fontWeight={600} color="primary" fontSize="0.8rem">
               $ 0,00
             </Typography>
           );
@@ -277,7 +293,7 @@ const DocumentsTablePage: React.FC = () => {
           maximumFractionDigits: 2
         }).format(isNaN(numValue) ? 0 : numValue);
         return (
-          <Typography variant="body2" fontWeight={600} color="primary">
+          <Typography variant="body2" fontWeight={600} color="primary" fontSize="0.8rem">
             $ {formatted}
           </Typography>
         );
@@ -300,9 +316,9 @@ const DocumentsTablePage: React.FC = () => {
           const month = value.substring(4, 6);
           const day = value.substring(6, 8);
           return (
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <CalendarToday fontSize="small" color="action" />
-              <Typography variant="body2">
+            <Stack direction="row" alignItems="center" spacing={0.5}>
+              <CalendarToday sx={{ fontSize: '1rem' }} color="action" />
+              <Typography variant="body2" fontSize="0.8rem">
                 {`${day}/${month}/${year}`}
               </Typography>
             </Stack>
