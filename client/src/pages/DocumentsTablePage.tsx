@@ -130,7 +130,7 @@ const DocumentsTablePage: React.FC = () => {
     {
       id: '_country',
       label: 'País',
-      minWidth: 80,
+      minWidth: 70,
       sortable: true,
       filterable: false,
       visible: true,
@@ -153,7 +153,7 @@ const DocumentsTablePage: React.FC = () => {
               borderColor: alpha(country.color, 0.3),
               color: country.color,
               fontWeight: 500,
-              minWidth: 65,
+              minWidth: 55,
               bgcolor: alpha(country.color, 0.05),
               '& .MuiChip-icon': {
                 marginLeft: '6px',
@@ -166,7 +166,7 @@ const DocumentsTablePage: React.FC = () => {
     {
       id: 'numero',
       label: t?.documents?.number || 'Número',
-      minWidth: 120,
+      minWidth: 100,
       sortable: true,
       filterable: true,
       visible: true,
@@ -180,7 +180,7 @@ const DocumentsTablePage: React.FC = () => {
     {
       id: 'tipo',
       label: t?.documents?.type || 'Tipo',
-      minWidth: 130,
+      minWidth: 110,
       sortable: true,
       filterable: true,
       visible: true,
@@ -208,7 +208,7 @@ const DocumentsTablePage: React.FC = () => {
     {
       id: 'status',
       label: t?.documents?.status || 'Status',
-      minWidth: 140,
+      minWidth: 120,
       sortable: true,
       filterable: true,
       visible: true,
@@ -240,7 +240,7 @@ const DocumentsTablePage: React.FC = () => {
     {
       id: 'nome_fornecedor',
       label: t?.documents?.supplier || 'Fornecedor',
-      minWidth: 200,
+      minWidth: 180,
       sortable: true,
       filterable: true,
       visible: true,
@@ -257,7 +257,7 @@ const DocumentsTablePage: React.FC = () => {
     {
       id: 'vl_tot_documento',
       label: t?.documents?.totalValue || 'Valor Total',
-      minWidth: 140,
+      minWidth: 120,
       align: 'right',
       sortable: true,
       filterable: true,
@@ -267,7 +267,7 @@ const DocumentsTablePage: React.FC = () => {
         if (!value || typeof value !== 'string') {
           return (
             <Typography variant="body2" fontWeight={600} color="primary">
-              R$ 0,00
+              $ 0,00
             </Typography>
           );
         }
@@ -285,7 +285,7 @@ const DocumentsTablePage: React.FC = () => {
     {
       id: 'Emissao',
       label: t?.documents?.issueDate || 'Emissão',
-      minWidth: 110,
+      minWidth: 100,
       sortable: true,
       filterable: true,
       visible: true,
@@ -641,7 +641,7 @@ const DocumentsTablePage: React.FC = () => {
       }).format(isNaN(numValue) ? 0 : numValue);
     } catch (error) {
       console.error('Erro ao formatar valor do documento:', error);
-      return 'R$ 0,00';
+      return '$ 0,00';
     }
   }, []);
 
@@ -818,7 +818,7 @@ const DocumentsTablePage: React.FC = () => {
       const generalInfo = [
         [`${texts.country}:`, texts.countryNames[document._country || 'BR']],
         [`${texts.supplier}:`, (document.nome_fornecedor || 'N/A').toString().trim()],
-        [`${texts.totalValue}:`, formatDocumentValue(document) || 'R$ 0,00'],
+        [`${texts.totalValue}:`, formatDocumentValue(document) || '$ 0,00'],
         [`${texts.issueDate}:`, formatDate((document.Emissao || '').toString().trim())],
         [`${texts.buyer}:`, (document.comprador || '-').toString().trim()],
         [`${texts.paymentCondition}:`, (document.cond_pagamento || '-').toString().trim()],
@@ -846,8 +846,8 @@ const DocumentsTablePage: React.FC = () => {
         (item.descr_produto || '').toString().trim(),
         (item.quantidade || '').toString().trim(),
         (item.unidade_medida || '').toString().trim(),
-        `R$ ${(item.preco || '').toString().trim()}`,
-        `R$ ${(item.total || '').toString().trim()}`,
+        `$ ${(item.preco || '').toString().trim()}`,
+        `$ ${(item.total || '').toString().trim()}`,
         (item.observacao || '-').toString().trim()
       ]);
 
@@ -1411,7 +1411,7 @@ const DocumentsTablePage: React.FC = () => {
                                                       {t?.table?.totalValue || 'Valor Total'}
                                                     </Typography>
                                                     <Typography variant="body2" fontWeight={600} color="primary">
-                                                      R$ {item.total}
+                                                      $ {item.total}
                                                     </Typography>
                                                   </Grid>
                                                 </Grid>
@@ -1489,12 +1489,12 @@ const DocumentsTablePage: React.FC = () => {
                                                     </TableCell>
                                                     <TableCell align="right">
                                                       <Typography variant="body2">
-                                                        R$ {item.preco}
+                                                        $ {item.preco}
                                                       </Typography>
                                                     </TableCell>
                                                     <TableCell align="right">
                                                       <Typography variant="body2" fontWeight={600} color="primary">
-                                                        R$ {item.total}
+                                                        $ {item.total}
                                                       </Typography>
                                                     </TableCell>
                                                   </TableRow>
@@ -1521,7 +1521,7 @@ const DocumentsTablePage: React.FC = () => {
                                               </Typography>
                                               <Typography variant="body2" fontWeight={600} color="primary">
                                                 {(() => {
-                                                  if (!document.vl_tot_documento) return 'R$ 0,00';
+                                                  if (!document.vl_tot_documento) return '$ 0,00';
                                                   const numValue = parseFloat(document.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
                                                   return new Intl.NumberFormat('pt-BR', {
                                                     style: 'currency',

@@ -3,18 +3,20 @@ import { ptBR } from 'date-fns/locale';
 
 export const formatCurrency = (value: string): string => {
   if (!value || typeof value !== 'string') {
-    return 'R$ 0,00';
+    return '$ 0,00';
   }
-  
+
   const numValue = parseFloat(value.replace(/\./g, '').replace(',', '.'));
   if (isNaN(numValue)) {
-    return 'R$ 0,00';
+    return '$ 0,00';
   }
-  
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
+
+  const formatted = new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   }).format(numValue);
+
+  return `$ ${formatted}`;
 };
 
 export const formatDate = (date: string): string => {

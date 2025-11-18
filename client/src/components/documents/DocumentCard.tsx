@@ -393,8 +393,8 @@ const DocumentItems: React.FC<DocumentItemsProps> = ({ items }) => {
                   </TableCell>
                   <TableCell>{item.quantidade}</TableCell>
                   <TableCell>{item.unidade_medida}</TableCell>
-                  <TableCell>R$ {item.preco}</TableCell>
-                  <TableCell>R$ {item.total}</TableCell>
+                  <TableCell>$ {item.preco}</TableCell>
+                  <TableCell>$ {item.total}</TableCell>
                   <TableCell>
                     <Typography variant="caption">
                       {item.centro_custo} - {item.descr_cc}

@@ -167,12 +167,12 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
 
   const formatCurrency = (value: string) => {
     if (!value || typeof value !== 'string') {
-      return 'R$ 0,00';
+      return '$ 0,00';
     }
     // Remove pontos e converte vírgula para ponto
     const numValue = parseFloat(value.replace(/\./g, '').replace(',', '.'));
     if (isNaN(numValue)) {
-      return 'R$ 0,00';
+      return '$ 0,00';
     }
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -520,8 +520,8 @@ const DocumentCard: React.FC<DocumentCardWithDensityProps> = React.memo(({
                       </TableCell>
                       <TableCell>{item.quantidade}</TableCell>
                       <TableCell>{item.unidade_medida}</TableCell>
-                      <TableCell>R$ {item.preco}</TableCell>
-                      <TableCell>R$ {item.total}</TableCell>
+                      <TableCell>$ {item.preco}</TableCell>
+                      <TableCell>$ {item.total}</TableCell>
                       <TableCell>
                         <Typography variant="caption">
                           {item.centro_custo} - {item.descr_cc}
