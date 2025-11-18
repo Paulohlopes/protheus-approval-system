@@ -172,7 +172,7 @@ const DocumentsTablePage: React.FC = () => {
       visible: true,
       group: 'basic',
       format: (value: string) => (
-        <Typography variant="body2" fontSize="0.7rem">
+        <Typography variant="body2" fontSize="0.8125rem">
           {value ? value.trim() : '-'}
         </Typography>
       ),
@@ -186,7 +186,7 @@ const DocumentsTablePage: React.FC = () => {
       visible: true,
       group: 'basic',
       format: (value: string) => (
-        <Typography variant="body2" fontWeight={600} fontSize="0.7rem">
+        <Typography variant="body2" fontWeight={600} fontSize="0.8125rem">
           {value.trim()}
         </Typography>
       ),
@@ -215,7 +215,7 @@ const DocumentsTablePage: React.FC = () => {
             size="small"
             color={info.color as any}
             variant="outlined"
-            sx={{ fontSize: '0.65rem', height: '20px' }}
+            sx={{ fontSize: '0.75rem', height: '22px' }}
           />
         );
       },
@@ -248,7 +248,7 @@ const DocumentsTablePage: React.FC = () => {
             color={info.color as any}
             icon={info.icon as any}
             variant={documentStatus === 'Pendente' ? 'filled' : 'outlined'}
-            sx={{ fontSize: '0.65rem', height: '20px' }}
+            sx={{ fontSize: '0.75rem', height: '22px' }}
           />
         );
       },
@@ -263,8 +263,8 @@ const DocumentsTablePage: React.FC = () => {
       group: 'basic',
       format: (value: string) => (
         <Stack direction="row" alignItems="center" spacing={0.5}>
-          <Business sx={{ fontSize: '0.85rem' }} color="action" />
-          <Typography variant="body2" fontSize="0.7rem">
+          <Business sx={{ fontSize: '0.9rem' }} color="action" />
+          <Typography variant="body2" fontSize="0.8125rem">
             {value ? String(value).trim() : 'N/A'}
           </Typography>
         </Stack>
@@ -282,7 +282,7 @@ const DocumentsTablePage: React.FC = () => {
       format: (value: string) => {
         if (!value || typeof value !== 'string') {
           return (
-            <Typography variant="body2" fontWeight={600} color="primary" fontSize="0.7rem">
+            <Typography variant="body2" fontWeight={600} color="primary" fontSize="0.8125rem">
               $ 0,00
             </Typography>
           );
@@ -293,7 +293,7 @@ const DocumentsTablePage: React.FC = () => {
           maximumFractionDigits: 2
         }).format(isNaN(numValue) ? 0 : numValue);
         return (
-          <Typography variant="body2" fontWeight={600} color="primary" fontSize="0.7rem">
+          <Typography variant="body2" fontWeight={600} color="primary" fontSize="0.8125rem">
             $ {formatted}
           </Typography>
         );
@@ -317,8 +317,8 @@ const DocumentsTablePage: React.FC = () => {
           const day = value.substring(6, 8);
           return (
             <Stack direction="row" alignItems="center" spacing={0.5}>
-              <CalendarToday sx={{ fontSize: '0.85rem' }} color="action" />
-              <Typography variant="body2" fontSize="0.7rem">
+              <CalendarToday sx={{ fontSize: '0.9rem' }} color="action" />
+              <Typography variant="body2" fontSize="0.8125rem">
                 {`${day}/${month}/${year}`}
               </Typography>
             </Stack>
@@ -1054,6 +1054,7 @@ const DocumentsTablePage: React.FC = () => {
                   placeholder={t?.searchPlaceholders?.general || 'Buscar...'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  aria-label="Buscar documentos por número, fornecedor ou comprador"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -1124,7 +1125,10 @@ const DocumentsTablePage: React.FC = () => {
                 </FormControl>
 
                 <Tooltip title={t?.common?.filter || 'Filtros'}>
-                  <IconButton onClick={(e) => setFilterMenuAnchor(e.currentTarget)}>
+                  <IconButton
+                    onClick={(e) => setFilterMenuAnchor(e.currentTarget)}
+                    aria-label="Abrir menu de filtros avançados"
+                  >
                     <Badge badgeContent={Object.keys(filters).length} color="error">
                       <FilterList />
                     </Badge>
@@ -1132,25 +1136,37 @@ const DocumentsTablePage: React.FC = () => {
                 </Tooltip>
 
                 <Tooltip title={t?.common?.columns || 'Colunas'}>
-                  <IconButton onClick={(e) => setColumnMenuAnchor(e.currentTarget)}>
+                  <IconButton
+                    onClick={(e) => setColumnMenuAnchor(e.currentTarget)}
+                    aria-label="Selecionar colunas visíveis"
+                  >
                     <ViewColumn />
                   </IconButton>
                 </Tooltip>
 
                 <Tooltip title={t?.common?.exportExcel || 'Exportar Excel'}>
-                  <IconButton onClick={handleExportExcel}>
+                  <IconButton
+                    onClick={handleExportExcel}
+                    aria-label="Exportar documentos para Excel"
+                  >
                     <TableChart />
                   </IconButton>
                 </Tooltip>
 
                 <Tooltip title={t?.common?.exportPdf || 'Exportar PDF'}>
-                  <IconButton onClick={handleExportPDF}>
+                  <IconButton
+                    onClick={handleExportPDF}
+                    aria-label="Exportar documentos para PDF"
+                  >
                     <PictureAsPdf />
                   </IconButton>
                 </Tooltip>
 
                 <Tooltip title={t?.common?.refresh || 'Atualizar'}>
-                  <IconButton onClick={() => refetch()}>
+                  <IconButton
+                    onClick={() => refetch()}
+                    aria-label="Atualizar lista de documentos"
+                  >
                     <Refresh />
                   </IconButton>
                 </Tooltip>
@@ -1231,6 +1247,7 @@ const DocumentsTablePage: React.FC = () => {
                             hover
                             role="checkbox"
                             aria-checked={isItemSelected}
+                            aria-label={`Documento ${document.numero.trim()} de ${document.nome_fornecedor}, valor ${formatCurrency(document.vl_tot_documento)}`}
                             tabIndex={-1}
                             selected={isItemSelected}
                           >
@@ -1245,6 +1262,7 @@ const DocumentsTablePage: React.FC = () => {
                               <IconButton
                                 size="small"
                                 onClick={() => handleToggleRow(document.numero.trim())}
+                                aria-label={isExpanded ? 'Ocultar detalhes do documento' : 'Mostrar detalhes do documento'}
                               >
                                 {isExpanded ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
                               </IconButton>
@@ -1263,6 +1281,7 @@ const DocumentsTablePage: React.FC = () => {
                                                 size="small"
                                                 color="success"
                                                 onClick={() => handleApprove(document)}
+                                                aria-label={`Aprovar documento ${document.numero.trim()}`}
                                               >
                                                 <CheckCircle fontSize="small" />
                                               </IconButton>
@@ -1272,6 +1291,7 @@ const DocumentsTablePage: React.FC = () => {
                                                 size="small"
                                                 color="error"
                                                 onClick={() => handleReject(document)}
+                                                aria-label={`Rejeitar documento ${document.numero.trim()}`}
                                               >
                                                 <Cancel fontSize="small" />
                                               </IconButton>
@@ -1283,6 +1303,7 @@ const DocumentsTablePage: React.FC = () => {
                                             size="small"
                                             color="primary"
                                             onClick={() => handlePrintDocument(document)}
+                                            aria-label={`Imprimir PDF do documento ${document.numero.trim()}`}
                                           >
                                             <Print fontSize="small" />
                                           </IconButton>

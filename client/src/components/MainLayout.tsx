@@ -16,6 +16,7 @@ import {
   Stack,
   alpha,
   useTheme,
+  useMediaQuery,
   Button,
   Collapse,
   Menu,
@@ -57,10 +58,12 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [approvalMenuOpen, setApprovalMenuOpen] = useState(true);
   const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuthStore();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { t } = useLanguage();
 
   const handleLogout = async () => {
@@ -114,12 +117,44 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     return location.pathname === path;
   };
 
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Mobile hamburger menu */}
+      {isMobile && (
+        <IconButton
+          color="inherit"
+          aria-label="abrir menu de navegação"
+          edge="start"
+          onClick={handleDrawerToggle}
+          sx={{
+            position: 'fixed',
+            top: 16,
+            left: 16,
+            zIndex: 1201,
+            bgcolor: 'background.paper',
+            boxShadow: 2,
+            '&:hover': {
+              bgcolor: alpha(theme.palette.primary.main, 0.04),
+            },
+          }}
+        >
+          <MenuIcon />
+        </IconButton>
+      )}
+
       {/* Drawer */}
       <Drawer
-        variant="permanent"
+        variant={isMobile ? 'temporary' : 'permanent'}
+        open={isMobile ? mobileOpen : true}
+        onClose={handleDrawerToggle}
         anchor="left"
+        ModalProps={{
+          keepMounted: true, // Better mobile performance
+        }}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
@@ -191,7 +226,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                       {item.submenu?.map((subItem) => (
                         <ListItem key={subItem.id} disablePadding sx={{ mb: 0.5 }}>
                           <ListItemButton
-                            onClick={() => !subItem.disabled && navigate(subItem.path)}
+                            onClick={() => {
+                              if (!subItem.disabled) {
+                                navigate(subItem.path);
+                                if (isMobile) {
+                                  setMobileOpen(false);
+                                }
+                              }
+                            }}
                             disabled={subItem.disabled}
                             selected={isPathActive(subItem.path)}
                             sx={{
@@ -226,6 +268,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                 fontSize: '0.85rem',
                               }}
                             />
+                            {subItem.disabled && (
+                              <Chip
+                                label="Em breve"
+                                size="small"
+                                sx={{
+                                  height: 18,
+                                  fontSize: '0.65rem',
+                                  bgcolor: alpha(theme.palette.warning.main, 0.1),
+                                  color: 'warning.dark',
+                                  fontWeight: 500,
+                                }}
+                              />
+                            )}
                           </ListItemButton>
                         </ListItem>
                       ))}
@@ -235,7 +290,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               ) : (
                 <ListItem disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
-                    onClick={() => !item.disabled && item.path && navigate(item.path)}
+                    onClick={() => {
+                      if (!item.disabled && item.path) {
+                        navigate(item.path);
+                        if (isMobile) {
+                          setMobileOpen(false);
+                        }
+                      }
+                    }}
                     disabled={item.disabled}
                     selected={item.path ? isPathActive(item.path) : false}
                     sx={{
@@ -269,6 +331,19 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         fontSize: '0.9rem',
                       }}
                     />
+                    {item.disabled && (
+                      <Chip
+                        label="Em breve"
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: '0.65rem',
+                          bgcolor: alpha(theme.palette.warning.main, 0.1),
+                          color: 'warning.dark',
+                          fontWeight: 500,
+                        }}
+                      />
+                    )}
                   </ListItemButton>
                 </ListItem>
               )}
@@ -379,7 +454,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           flexGrow: 1,
           minHeight: '100vh',
           bgcolor: 'grey.50',
-          width: `calc(100% - ${drawerWidth}px)`,
+          width: { xs: '100%', md: `calc(100% - ${drawerWidth}px)` },
         }}
       >
         {children}
