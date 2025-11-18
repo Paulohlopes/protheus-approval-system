@@ -47,7 +47,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSelector from './LanguageSelector';
 import CompanyLogo from './CompanyLogo';
 
-const drawerWidth = 280;
+const drawerWidth = 240;
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -235,8 +235,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
-            background: `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
-            borderRight: `1px solid ${theme.palette.divider}`,
+            background: theme.palette.background.paper,
+            borderRight: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
             transition: theme.transitions.create('transform', {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.leavingScreen,
@@ -250,7 +250,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             alignItems: 'center',
             justifyContent: 'center',
             px: 2,
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+            py: 1.5,
+            minHeight: '56px !important',
+            background: alpha(theme.palette.primary.main, 0.04),
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
           }}
         >
           <Box sx={{
@@ -258,40 +261,44 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             alignItems: 'center',
             justifyContent: 'center',
             width: '100%',
-            filter: 'brightness(0) invert(1)', // Makes the logo white
+            opacity: 0.85,
           }}>
-            <CompanyLogo variant="full" size="medium" />
+            <CompanyLogo variant="full" size="small" />
           </Box>
         </Toolbar>
 
         <Divider />
 
-        <List sx={{ px: 2, py: 3 }}>
+        <List sx={{ px: 2, py: 2 }}>
           {menuItems.map((item) => (
             <React.Fragment key={item.id}>
               {item.expandable ? (
                 <>
-                  <ListItem disablePadding sx={{ mb: 1 }}>
+                  <ListItem disablePadding sx={{ mb: 0.5 }}>
                     <ListItemButton
                       onClick={() => setApprovalMenuOpen(!approvalMenuOpen)}
                       sx={{
-                        borderRadius: '12px',
-                        mb: 0.5,
+                        borderRadius: '8px',
+                        py: 0.75,
                         '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          bgcolor: alpha(theme.palette.primary.main, 0.04),
                         },
                       }}
                     >
-                      <ListItemIcon sx={{ color: theme.palette.primary.main }}>
+                      <ListItemIcon sx={{
+                        color: theme.palette.primary.main,
+                        minWidth: 36,
+                      }}>
                         {item.icon}
                       </ListItemIcon>
                       <ListItemText
                         primary={item.title}
                         primaryTypographyProps={{
-                          fontWeight: 600,
+                          fontWeight: 500,
+                          fontSize: '0.9rem',
                         }}
                       />
-                      {approvalMenuOpen ? <ExpandLess /> : <ExpandMore />}
+                      {approvalMenuOpen ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
                     </ListItemButton>
                   </ListItem>
                   <Collapse in={approvalMenuOpen} timeout="auto" unmountOnExit>
@@ -303,16 +310,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                             disabled={subItem.disabled}
                             selected={isPathActive(subItem.path)}
                             sx={{
-                              pl: 4,
-                              borderRadius: '12px',
+                              pl: 3.5,
+                              py: 0.75,
+                              borderRadius: '8px',
                               '&.Mui-selected': {
-                                bgcolor: alpha(theme.palette.primary.main, 0.12),
+                                bgcolor: alpha(theme.palette.primary.main, 0.08),
                                 '&:hover': {
-                                  bgcolor: alpha(theme.palette.primary.main, 0.16),
+                                  bgcolor: alpha(theme.palette.primary.main, 0.1),
                                 },
                               },
                               '&:hover': {
-                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                bgcolor: alpha(theme.palette.primary.main, 0.04),
                               },
                             }}
                           >
@@ -321,7 +329,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                 color: isPathActive(subItem.path)
                                   ? theme.palette.primary.main
                                   : 'inherit',
-                                minWidth: 40,
+                                minWidth: 32,
                               }}
                             >
                               {subItem.icon}
@@ -329,8 +337,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                             <ListItemText
                               primary={subItem.title}
                               primaryTypographyProps={{
-                                fontWeight: isPathActive(subItem.path) ? 600 : 400,
-                                fontSize: '0.9rem',
+                                fontWeight: isPathActive(subItem.path) ? 500 : 400,
+                                fontSize: '0.85rem',
                               }}
                             />
                           </ListItemButton>
@@ -340,21 +348,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   </Collapse>
                 </>
               ) : (
-                <ListItem disablePadding sx={{ mb: 1 }}>
+                <ListItem disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
                     onClick={() => !item.disabled && item.path && navigate(item.path)}
                     disabled={item.disabled}
                     selected={item.path ? isPathActive(item.path) : false}
                     sx={{
-                      borderRadius: '12px',
+                      borderRadius: '8px',
+                      py: 0.75,
                       '&.Mui-selected': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.12),
+                        bgcolor: alpha(theme.palette.primary.main, 0.08),
                         '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.16),
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
                         },
                       },
                       '&:hover': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                        bgcolor: alpha(theme.palette.primary.main, 0.04),
                       },
                     }}
                   >
@@ -363,6 +372,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                         color: item.path && isPathActive(item.path)
                           ? theme.palette.primary.main
                           : 'inherit',
+                        minWidth: 36,
                       }}
                     >
                       {item.icon}
@@ -370,7 +380,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     <ListItemText
                       primary={item.title}
                       primaryTypographyProps={{
-                        fontWeight: item.path && isPathActive(item.path) ? 600 : 400,
+                        fontWeight: item.path && isPathActive(item.path) ? 500 : 400,
+                        fontSize: '0.9rem',
                       }}
                     />
                   </ListItemButton>
@@ -384,21 +395,27 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
         <Divider />
 
-        <List sx={{ px: 2, py: 2 }}>
+        <List sx={{ px: 2, py: 1.5 }}>
           <ListItem disablePadding>
             <ListItemButton
               disabled
               sx={{
-                borderRadius: '12px',
+                borderRadius: '8px',
+                py: 0.75,
                 '&:hover': {
-                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                  bgcolor: alpha(theme.palette.primary.main, 0.04),
                 },
               }}
             >
-              <ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 36 }}>
                 <Settings />
               </ListItemIcon>
-              <ListItemText primary={t?.menu?.settings || 'Configurações'} />
+              <ListItemText
+                primary={t?.menu?.settings || 'Configurações'}
+                primaryTypographyProps={{
+                  fontSize: '0.9rem',
+                }}
+              />
             </ListItemButton>
           </ListItem>
         </List>
