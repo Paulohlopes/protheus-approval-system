@@ -313,26 +313,28 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             sx={{
               display: 'flex',
               alignItems: 'center',
-              p: 1.5,
+              p: 1.25,
               borderRadius: '8px',
-              background: alpha(theme.palette.primary.main, 0.04),
+              background: 'transparent',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+              border: `1px solid transparent`,
               '&:hover': {
-                background: alpha(theme.palette.primary.main, 0.08),
-                borderColor: alpha(theme.palette.divider, 0.5),
+                background: alpha(theme.palette.primary.main, 0.03),
+                borderColor: alpha(theme.palette.divider, 0.2),
               },
             }}
             onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
           >
             <Avatar
               sx={{
-                width: 36,
-                height: 36,
-                mr: 1.5,
-                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                fontSize: '0.95rem',
+                width: 32,
+                height: 32,
+                mr: 1.25,
+                background: alpha(theme.palette.primary.main, 0.1),
+                color: 'primary.main',
+                fontSize: '0.875rem',
+                fontWeight: 600,
               }}
             >
               {(user?.name || user?.displayName || user?.email)?.charAt(0).toUpperCase()}
@@ -343,7 +345,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 sx={{
                   color: 'text.primary',
                   fontWeight: 500,
-                  lineHeight: 1.2,
+                  lineHeight: 1.3,
                   fontSize: '0.875rem',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
@@ -352,21 +354,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               >
                 {user?.name || user?.displayName || user?.username || user?.email?.split('@')[0]}
               </Typography>
-              {user?.role && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    fontSize: '0.7rem',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: 'block',
-                  }}
-                >
-                  {user.role}
-                </Typography>
-              )}
             </Box>
           </Box>
         </Box>
