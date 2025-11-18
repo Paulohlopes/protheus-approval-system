@@ -120,100 +120,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      {/* AppBar */}
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          width: { sm: open ? `calc(100% - ${drawerWidth}px)` : '100%' },
-          ml: { sm: open ? `${drawerWidth}px` : 0 },
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
-          background: theme.palette.background.paper,
-          backdropFilter: 'blur(8px)',
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-        }}
-      >
-        <Toolbar sx={{ minHeight: '56px !important', py: 1, px: 3 }}>
-          <IconButton
-            aria-label="toggle drawer"
-            onClick={handleDrawerToggle}
-            edge="start"
-            size="small"
-            sx={{
-              mr: 2,
-              ml: -1,
-              color: 'text.secondary',
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.04),
-              },
-            }}
-          >
-            {open ? <ChevronLeft /> : <MenuIcon />}
-          </IconButton>
-
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ flexGrow: 1 }}>
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
-              fontWeight={600}
-              fontSize="1.05rem"
-              color="text.primary"
-            >
-              {t?.header?.title || 'AprovaFácil'}
-            </Typography>
-          </Stack>
-
-          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mr: -1 }}>
-            <LanguageSelector />
-
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                px: 1.5,
-                py: 0.5,
-                borderRadius: '8px',
-                background: alpha(theme.palette.primary.main, 0.04),
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
-                '&:hover': {
-                  background: alpha(theme.palette.primary.main, 0.08),
-                  borderColor: alpha(theme.palette.divider, 0.5),
-                },
-              }}
-              onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
-            >
-              <Avatar
-                sx={{
-                  width: 32,
-                  height: 32,
-                  mr: 1,
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                  fontSize: '0.9rem',
-                }}
-              >
-                {(user?.name || user?.displayName || user?.email)?.charAt(0).toUpperCase()}
-              </Avatar>
-              <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500, lineHeight: 1.2, fontSize: '0.875rem' }}>
-                  {user?.name || user?.displayName || user?.username || user?.email?.split('@')[0]}
-                </Typography>
-                {user?.role && (
-                  <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
-                    {user.role}
-                  </Typography>
-                )}
-              </Box>
-            </Box>
-          </Stack>
-        </Toolbar>
-      </AppBar>
-
       {/* Drawer */}
       <Drawer
         variant="persistent"
@@ -238,14 +144,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           },
         }}
       >
-        <Toolbar
+        <Box
           sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'space-between',
             px: 2,
             py: 1.5,
-            minHeight: '56px !important',
+            minHeight: '56px',
             background: alpha(theme.palette.primary.main, 0.04),
             borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
           }}
@@ -253,13 +159,24 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <Box sx={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
             opacity: 0.85,
+            flexGrow: 1,
           }}>
             <CompanyLogo variant="full" size="small" />
           </Box>
-        </Toolbar>
+          <IconButton
+            onClick={handleDrawerToggle}
+            size="small"
+            sx={{
+              color: 'text.secondary',
+              '&:hover': {
+                bgcolor: alpha(theme.palette.primary.main, 0.08),
+              },
+            }}
+          >
+            <ChevronLeft fontSize="small" />
+          </IconButton>
+        </Box>
 
         <Divider />
 
@@ -389,8 +306,75 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
         <Divider />
 
+        {/* User Profile Section */}
+        <Box sx={{ px: 2, py: 2 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              p: 1.5,
+              borderRadius: '8px',
+              background: alpha(theme.palette.primary.main, 0.04),
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              border: `1px solid ${alpha(theme.palette.divider, 0.3)}`,
+              '&:hover': {
+                background: alpha(theme.palette.primary.main, 0.08),
+                borderColor: alpha(theme.palette.divider, 0.5),
+              },
+            }}
+            onClick={(e) => setProfileMenuAnchor(e.currentTarget)}
+          >
+            <Avatar
+              sx={{
+                width: 36,
+                height: 36,
+                mr: 1.5,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                fontSize: '0.95rem',
+              }}
+            >
+              {(user?.name || user?.displayName || user?.email)?.charAt(0).toUpperCase()}
+            </Avatar>
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.primary',
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                  fontSize: '0.875rem',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {user?.name || user?.displayName || user?.username || user?.email?.split('@')[0]}
+              </Typography>
+              {user?.role && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    fontSize: '0.7rem',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: 'block',
+                  }}
+                >
+                  {user.role}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </Box>
+
+        <Divider />
+
+        {/* Settings and Language */}
         <List sx={{ px: 2, py: 1.5 }}>
-          <ListItem disablePadding>
+          <ListItem disablePadding sx={{ mb: 0.5 }}>
             <ListItemButton
               disabled
               sx={{
@@ -412,6 +396,20 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               />
             </ListItemButton>
           </ListItem>
+
+          <ListItem disablePadding>
+            <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', py: 0.75, px: 1 }}>
+              <ListItemIcon sx={{ minWidth: 36 }}>
+                <Language />
+              </ListItemIcon>
+              <Box sx={{ flexGrow: 1 }}>
+                <Typography variant="body2" sx={{ fontSize: '0.9rem', color: 'text.primary' }}>
+                  {t?.menu?.language || 'Idioma'}
+                </Typography>
+              </Box>
+              <LanguageSelector />
+            </Box>
+          </ListItem>
         </List>
       </Drawer>
 
@@ -427,9 +425,31 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
             duration: theme.transitions.duration.leavingScreen,
           }),
           width: `calc(100% - ${open ? drawerWidth : 0}px)`,
+          ml: open ? 0 : `-${drawerWidth}px`,
+          position: 'relative',
         }}
       >
-        <Toolbar />
+        {/* Floating Menu Button - Only visible when drawer is closed */}
+        {!open && (
+          <IconButton
+            onClick={handleDrawerToggle}
+            sx={{
+              position: 'fixed',
+              top: 16,
+              left: 16,
+              zIndex: theme.zIndex.drawer - 1,
+              bgcolor: 'background.paper',
+              boxShadow: 2,
+              border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+              '&:hover': {
+                bgcolor: 'background.paper',
+                boxShadow: 4,
+              },
+            }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
         {children}
       </Box>
 
