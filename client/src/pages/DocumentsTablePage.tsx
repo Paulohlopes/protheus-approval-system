@@ -970,10 +970,10 @@ const DocumentsTablePage: React.FC = () => {
         width: '100%',
         height: '100%',
         overflow: 'auto',
-        pt: 3,  // Top padding only
-        pr: 3,  // Right padding
-        pb: 3,  // Bottom padding
-        pl: 2   // Minimal left padding to reduce gap
+        pt: 2,  // Top padding
+        pr: 2,  // Right padding
+        pb: 2,  // Bottom padding
+        pl: 2   // Left padding
       }}>
         {/* API Error Alert */}
         {documentsResponse?.hasErrors && (
@@ -983,38 +983,33 @@ const DocumentsTablePage: React.FC = () => {
           />
         )}
         {/* Enhanced Table Header */}
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 2 }}>
           <Box sx={{
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
             justifyContent: 'space-between',
             alignItems: { xs: 'flex-start', md: 'center' },
-            mb: 3,
+            mb: 2,
           }}>
             <Box>
               <Typography
-                variant="h4"
+                variant="h5"
                 component="h1"
-                gutterBottom
-                fontWeight={700}
+                fontWeight={600}
                 sx={{
-                  background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                  backgroundClip: 'text',
-                  WebkitBackgroundClip: 'text',
-                  color: 'transparent',
-                  letterSpacing: '-0.5px',
-                  mb: 1,
+                  color: 'text.primary',
+                  letterSpacing: '-0.3px',
+                  mb: 0.5,
                 }}
               >
-                {t?.documents?.title || 'Tabela de Documentos'}
+                {t?.documents?.title || 'Documentos para Aprovação'}
               </Typography>
               <Typography
-                variant="body1"
+                variant="body2"
                 color="text.secondary"
                 sx={{
                   fontWeight: 400,
-                  lineHeight: 1.6,
-                  maxWidth: 600,
+                  fontSize: '0.875rem',
                 }}
               >
                 {t?.documentPage?.advancedView || 'Visualização avançada com controles completos de filtragem e ordenação.'}
@@ -1026,24 +1021,26 @@ const DocumentsTablePage: React.FC = () => {
         <Paper sx={{
           width: '100%',
           mb: 2,
-          overflow: 'hidden'
+          overflow: 'hidden',
+          boxShadow: 1
         }}>
           {/* Toolbar */}
           <Toolbar
             sx={{
               pl: { sm: 2 },
               pr: { xs: 1, sm: 1 },
+              minHeight: '56px !important',
               ...(selected.length > 0 && {
                 bgcolor: alpha(theme.palette.primary.main, 0.1),
               }),
             }}
           >
             {selected.length > 0 ? (
-              <Typography sx={{ flex: '1 1 100%' }} color="inherit" variant="subtitle1" component="div">
+              <Typography sx={{ flex: '1 1 100%' }} color="inherit" variant="body2" fontWeight={600} component="div">
                 {formatMessage(t?.documentPage?.selectedDocuments || '{{count}} selecionado(s)', { count: selected.length })}
               </Typography>
             ) : (
-              <Typography sx={{ flex: '1 1 100%' }} variant="h6" id="tableTitle" component="div">
+              <Typography sx={{ flex: '1 1 100%' }} variant="subtitle1" fontWeight={600} id="tableTitle" component="div">
                 {t?.documents?.title || 'Documentos para Aprovação'}
               </Typography>
             )}
