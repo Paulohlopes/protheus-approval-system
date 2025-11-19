@@ -1,5 +1,6 @@
 import React from 'react';
-import { toast as reactToast, ToastOptions, Id } from 'react-toastify';
+import { toast as reactToast, ToastOptions } from 'react-toastify';
+import type { Id } from 'react-toastify';
 import { Box, Button, Typography, Stack, IconButton } from '@mui/material';
 import {
   CheckCircle,
