@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   TextField,
@@ -75,19 +75,19 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
     }
   };
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     onChange('');
-  };
+  }, [onChange]);
 
-  const clearHistory = () => {
+  const clearHistory = useCallback(() => {
     setSearchHistory([]);
     localStorage.removeItem('searchHistory');
-  };
+  }, []);
 
-  const combinedSuggestions = [
+  const combinedSuggestions = useMemo(() => [
     ...searchHistory.map((term) => ({ label: term, type: 'history' as const })),
     ...suggestions.map((term) => ({ label: term, type: 'suggestion' as const })),
-  ];
+  ], [searchHistory, suggestions]);
 
   return (
     <Box sx={{ position: 'relative', width: '100%' }}>
@@ -171,4 +171,4 @@ const SmartSearch: React.FC<SmartSearchProps> = ({
   );
 };
 
-export default SmartSearch;
+export default React.memo(SmartSearch);

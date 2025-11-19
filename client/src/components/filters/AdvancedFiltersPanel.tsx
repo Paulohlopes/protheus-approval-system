@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Drawer,
   Box,
@@ -45,30 +45,28 @@ const AdvancedFiltersPanel: React.FC<AdvancedFiltersPanelProps> = ({
   onFiltersChange,
   onClearAll,
 }) => {
-  const updateFilter = (key: string, value: any) => {
+  const updateFilter = useCallback((key: string, value: any) => {
     onFiltersChange({
       ...filters,
       [key]: value,
     });
-  };
+  }, [filters, onFiltersChange]);
 
-  const handleApplyPreset = (presetFilters: Record<string, any>) => {
+  const handleApplyPreset = useCallback((presetFilters: Record<string, any>) => {
     onFiltersChange({
       ...filters,
       ...presetFilters,
     });
-  };
+  }, [filters, onFiltersChange]);
 
-  const getActiveFiltersCount = (): number => {
+  const activeCount = useMemo((): number => {
     let count = 0;
     if (filters.minValue) count++;
     if (filters.maxValue) count++;
     if (filters.startDate) count++;
     if (filters.endDate) count++;
     return count;
-  };
-
-  const activeCount = getActiveFiltersCount();
+  }, [filters.minValue, filters.maxValue, filters.startDate, filters.endDate]);
 
   return (
     <Drawer
@@ -182,4 +180,4 @@ const AdvancedFiltersPanel: React.FC<AdvancedFiltersPanelProps> = ({
   );
 };
 
-export default AdvancedFiltersPanel;
+export default React.memo(AdvancedFiltersPanel);

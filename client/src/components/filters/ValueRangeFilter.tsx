@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback } from 'react';
 import {
   Box,
   TextField,
@@ -25,21 +25,21 @@ const ValueRangeFilter: React.FC<ValueRangeFilterProps> = ({
   onMaxChange,
   currency = '$',
 }) => {
-  const formatNumber = (value: string): string => {
+  const formatNumber = useCallback((value: string): string => {
     // Remove non-numeric characters except comma and dot
     const cleaned = value.replace(/[^\d,\.]/g, '');
     return cleaned;
-  };
+  }, []);
 
-  const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMinChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatNumber(e.target.value);
     onMinChange(formatted);
-  };
+  }, [formatNumber, onMinChange]);
 
-  const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMaxChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatNumber(e.target.value);
     onMaxChange(formatted);
-  };
+  }, [formatNumber, onMaxChange]);
 
   return (
     <Box>
@@ -87,4 +87,4 @@ const ValueRangeFilter: React.FC<ValueRangeFilterProps> = ({
   );
 };
 
-export default ValueRangeFilter;
+export default React.memo(ValueRangeFilter);

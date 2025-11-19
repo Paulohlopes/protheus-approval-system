@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   Box,
   TextField,
@@ -26,14 +26,14 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   onEndDateChange,
   onQuickSelect,
 }) => {
-  const quickOptions = [
+  const quickOptions = useMemo(() => [
     { label: 'Hoje', days: 0 },
     { label: 'Últimos 7 dias', days: 7 },
     { label: 'Últimos 30 dias', days: 30 },
     { label: 'Últimos 90 dias', days: 90 },
-  ];
+  ], []);
 
-  const handleQuickSelect = (days: number) => {
+  const handleQuickSelect = useCallback((days: number) => {
     const end = new Date();
     const start = new Date();
 
@@ -51,7 +51,7 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
     if (onQuickSelect) {
       onQuickSelect(days);
     }
-  };
+  }, [onStartDateChange, onEndDateChange, onQuickSelect]);
 
   return (
     <Box>
@@ -111,4 +111,4 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   );
 };
 
-export default DateRangeFilter;
+export default React.memo(DateRangeFilter);

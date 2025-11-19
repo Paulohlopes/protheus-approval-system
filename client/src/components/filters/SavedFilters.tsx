@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -72,12 +72,12 @@ const SavedFilters: React.FC<SavedFiltersProps> = ({
   }, []);
 
   // Save presets to localStorage
-  const saveToStorage = (updatedPresets: FilterPreset[]) => {
+  const saveToStorage = useCallback((updatedPresets: FilterPreset[]) => {
     localStorage.setItem('filterPresets', JSON.stringify(updatedPresets));
     setPresets(updatedPresets);
-  };
+  }, []);
 
-  const handleSavePreset = () => {
+  const handleSavePreset = useCallback(() => {
     if (!presetName.trim()) return;
 
     const newPreset: FilterPreset = {
@@ -96,24 +96,24 @@ const SavedFilters: React.FC<SavedFiltersProps> = ({
 
     setPresetName('');
     setDialogOpen(false);
-  };
+  }, [presetName, currentFilters, presets, saveToStorage, onSave]);
 
-  const handleDeletePreset = (id: string) => {
+  const handleDeletePreset = useCallback((id: string) => {
     const updated = presets.filter((p) => p.id !== id);
     saveToStorage(updated);
     setMenuAnchor(null);
-  };
+  }, [presets, saveToStorage]);
 
-  const handleToggleFavorite = (id: string) => {
+  const handleToggleFavorite = useCallback((id: string) => {
     const updated = presets.map((p) =>
       p.id === id ? { ...p, isFavorite: !p.isFavorite } : p
     );
     saveToStorage(updated);
-  };
+  }, [presets, saveToStorage]);
 
-  const handleApplyPreset = (preset: FilterPreset) => {
+  const handleApplyPreset = useCallback((preset: FilterPreset) => {
     onApplyPreset(preset.filters);
-  };
+  }, [onApplyPreset]);
 
   const getActiveFiltersCount = (filters: Record<string, any>): number => {
     return Object.values(filters).filter((v) => {
@@ -123,8 +123,8 @@ const SavedFilters: React.FC<SavedFiltersProps> = ({
     }).length;
   };
 
-  const favoritePresets = presets.filter((p) => p.isFavorite);
-  const regularPresets = presets.filter((p) => !p.isFavorite);
+  const favoritePresets = useMemo(() => presets.filter((p) => p.isFavorite), [presets]);
+  const regularPresets = useMemo(() => presets.filter((p) => !p.isFavorite), [presets]);
 
   return (
     <Box>
@@ -304,4 +304,4 @@ const SavedFilters: React.FC<SavedFiltersProps> = ({
   );
 };
 
-export default SavedFilters;
+export default React.memo(SavedFilters);

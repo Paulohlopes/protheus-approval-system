@@ -38,19 +38,49 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: process.env.NODE_ENV === 'development',
     minify: 'esbuild',
+    target: 'es2015',
     rollupOptions: {
       output: {
         manualChunks: {
+          // Core React
           vendor: ['react', 'react-dom'],
-          mui: ['@mui/material', '@mui/icons-material'],
+
+          // MUI (split into smaller chunks)
+          'mui-core': ['@mui/material'],
+          'mui-icons': ['@mui/icons-material'],
+          'mui-emotion': ['@emotion/react', '@emotion/styled'],
+
+          // Routing
           router: ['react-router-dom'],
+
+          // Forms and validation
           forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
-          query: ['@tanstack/react-query'],
-          utils: ['axios', 'date-fns', 'zustand'],
+
+          // Data fetching
+          query: ['@tanstack/react-query', '@tanstack/react-query-devtools'],
+
+          // Heavy libraries (lazy loaded)
+          'pdf-lib': ['jspdf', 'jspdf-autotable', 'pdf-lib'],
+          'excel-lib': ['xlsx'],
+
+          // Animation
+          animation: ['framer-motion'],
+
+          // Utils
+          utils: ['axios', 'date-fns', 'zustand', 'clsx', 'tailwind-merge'],
+
+          // Notifications
+          toast: ['react-toastify'],
         },
+        // Optimize asset naming
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
       },
     },
     chunkSizeWarningLimit: 1000,
+    // Enable CSS code splitting
+    cssCodeSplit: true,
   },
   optimizeDeps: {
     include: [
@@ -66,5 +96,9 @@ export default defineConfig({
   },
   esbuild: {
     logOverride: { 'this-is-undefined-in-esm': 'silent' },
+    // Enable tree-shaking and optimizations
+    treeShaking: true,
+    // Remove console.log in production
+    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
   },
 })
