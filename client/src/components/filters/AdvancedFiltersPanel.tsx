@@ -180,4 +180,4 @@ const AdvancedFiltersPanel: React.FC<AdvancedFiltersPanelProps> = ({
   );
 };
 
-export default React.memo(AdvancedFiltersPanel);
+export default AdvancedFiltersPanel;
