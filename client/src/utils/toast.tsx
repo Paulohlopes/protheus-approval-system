@@ -1,6 +1,5 @@
 import React from 'react';
-import { toast as reactToast, ToastOptions } from 'react-toastify';
-import type { Id } from 'react-toastify';
+import { toast as reactToast } from 'react-toastify';
 import { Box, Button, Typography, Stack, IconButton } from '@mui/material';
 import {
   CheckCircle,
@@ -11,7 +10,13 @@ import {
   Undo,
 } from '@mui/icons-material';
 
-interface CustomToastOptions extends ToastOptions {
+interface CustomToastOptions {
+  position?: 'top-right' | 'top-center' | 'top-left' | 'bottom-right' | 'bottom-center' | 'bottom-left';
+  autoClose?: number | false;
+  hideProgressBar?: boolean;
+  closeOnClick?: boolean;
+  pauseOnHover?: boolean;
+  draggable?: boolean;
   action?: {
     label: string;
     onClick: () => void;
@@ -107,7 +112,7 @@ const CustomToastContent: React.FC<{
   );
 };
 
-const defaultOptions: ToastOptions = {
+const defaultOptions = {
   position: 'top-right',
   autoClose: 5000,
   hideProgressBar: false,
@@ -118,7 +123,7 @@ const defaultOptions: ToastOptions = {
 };
 
 export const toast = {
-  success: (message: string, options?: CustomToastOptions): Id => {
+  success: (message: string, options?: CustomToastOptions): string | number => {
     return reactToast.success(
       ({ closeToast }) => (
         <CustomToastContent
@@ -137,7 +142,7 @@ export const toast = {
     );
   },
 
-  error: (message: string, options?: CustomToastOptions): Id => {
+  error: (message: string, options?: CustomToastOptions): string | number => {
     return reactToast.error(
       ({ closeToast }) => (
         <CustomToastContent
@@ -156,7 +161,7 @@ export const toast = {
     );
   },
 
-  warning: (message: string, options?: CustomToastOptions): Id => {
+  warning: (message: string, options?: CustomToastOptions): string | number => {
     return reactToast.warning(
       ({ closeToast }) => (
         <CustomToastContent
@@ -174,7 +179,7 @@ export const toast = {
     );
   },
 
-  info: (message: string, options?: CustomToastOptions): Id => {
+  info: (message: string, options?: CustomToastOptions): string | number => {
     return reactToast.info(
       ({ closeToast }) => (
         <CustomToastContent
