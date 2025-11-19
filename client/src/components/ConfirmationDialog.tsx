@@ -10,7 +10,11 @@ import {
   Typography,
   Alert,
   TextField,
+  Slide,
+  Zoom,
+  CircularProgress,
 } from '@mui/material';
+import { TransitionProps } from '@mui/material/transitions';
 import {
   CheckCircle,
   Cancel,
@@ -77,19 +81,37 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
 
   const config = getActionConfig();
 
+  const Transition = React.forwardRef(function Transition(
+    props: TransitionProps & {
+      children: React.ReactElement<any, any>;
+    },
+    ref: React.Ref<unknown>,
+  ) {
+    return <Slide direction="down" ref={ref} {...props} />;
+  });
+
   return (
     <Dialog
       open={open}
       onClose={handleClose}
+      TransitionComponent={Transition}
       maxWidth="sm"
       fullWidth
       aria-labelledby="confirmation-dialog-title"
       aria-describedby="confirmation-dialog-description"
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+        }
+      }}
     >
-      <DialogTitle id="confirmation-dialog-title">
+      <DialogTitle id="confirmation-dialog-title" sx={{ pb: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          {config.icon}
-          <Typography variant="h6" component="span">
+          <Zoom in={open} style={{ transitionDelay: open ? '100ms' : '0ms' }}>
+            <Box>{config.icon}</Box>
+          </Zoom>
+          <Typography variant="h6" component="span" fontWeight={600}>
             {config.title}
           </Typography>
         </Box>
@@ -158,7 +180,15 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
           disabled={loading}
           size="large"
           autoFocus
-          startIcon={loading ? null : (isApprove ? <CheckCircle /> : <Cancel />)}
+          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : (isApprove ? <CheckCircle /> : <Cancel />)}
+          sx={{
+            minWidth: 180,
+            transition: 'all 0.2s ease-in-out',
+            '&:hover': {
+              transform: loading ? 'none' : 'translateY(-1px)',
+              boxShadow: loading ? 'none' : 6,
+            }
+          }}
         >
           {loading ? (t?.common?.processing || 'Processando...') : config.confirmButtonText}
         </Button>

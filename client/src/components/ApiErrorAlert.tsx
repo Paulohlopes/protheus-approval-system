@@ -115,13 +115,24 @@ const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
   };
 
   return (
-    <Collapse in={open}>
+    <Collapse in={open} timeout={300}>
       <Alert
         severity={getSeverity()}
         variant="filled"
         onClose={handleClose}
         sx={{
           mb: 2,
+          animation: 'slideInDown 0.4s ease-out',
+          '@keyframes slideInDown': {
+            from: {
+              opacity: 0,
+              transform: 'translateY(-20px)',
+            },
+            to: {
+              opacity: 1,
+              transform: 'translateY(0)',
+            },
+          },
           '& .MuiAlert-message': {
             width: '100%',
           },

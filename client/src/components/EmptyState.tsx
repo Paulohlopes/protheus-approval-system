@@ -4,6 +4,8 @@ import {
   Typography,
   Button,
   Stack,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   Assignment,
@@ -13,11 +15,13 @@ import {
   ErrorOutline,
   CheckCircle,
   Folder,
+  FilterAltOff,
+  AssignmentTurnedIn,
 } from '@mui/icons-material';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface EmptyStateProps {
-  type: 'no-documents' | 'no-results' | 'no-purchase-requests' | 'error' | 'success' | 'empty-folder';
+  type: 'no-documents' | 'no-results' | 'no-purchase-requests' | 'error' | 'success' | 'empty-folder' | 'no-filters';
   title?: string;
   description?: string;
   action?: {
@@ -34,16 +38,23 @@ const getEmptyStateConfig = (type: EmptyStateProps['type'], t?: any) => {
   switch (type) {
     case 'no-documents':
       return {
-        icon: <Assignment sx={{ fontSize: 80, color: 'text.secondary', opacity: 0.6 }} />,
+        icon: <AssignmentTurnedIn sx={{ fontSize: 80, color: 'success.main', opacity: 0.6 }} />,
         title: t?.emptyState?.noDocumentsTitle || 'Nenhum documento pendente',
-        description: t?.emptyState?.noDocumentsDesc || 'Não há documentos aguardando aprovação no momento. Que tal aproveitar para uma pausa? ☕',
+        description: t?.emptyState?.noDocumentsDesc || 'Parabéns! Você não tem documentos aguardando aprovação no momento.',
       };
 
     case 'no-results':
       return {
         icon: <Search sx={{ fontSize: 80, color: 'text.secondary', opacity: 0.6 }} />,
         title: t?.emptyState?.noResultsTitle || 'Nenhum resultado encontrado',
-        description: t?.emptyState?.noResultsDesc || 'Tente ajustar os filtros de busca ou limpar os filtros para ver todos os itens.',
+        description: t?.emptyState?.noResultsDesc || 'Não encontramos documentos que correspondam aos seus critérios de busca. Tente ajustar os filtros ou termos de busca.',
+      };
+
+    case 'no-filters':
+      return {
+        icon: <FilterAltOff sx={{ fontSize: 80, color: 'text.secondary', opacity: 0.6 }} />,
+        title: t?.emptyState?.noFiltersTitle || 'Nenhum documento com esses filtros',
+        description: t?.emptyState?.noFiltersDesc || 'Não há documentos que correspondam aos filtros selecionados. Tente remover alguns filtros.',
       };
 
     case 'no-purchase-requests':
@@ -85,8 +96,9 @@ export const EmptyState: React.FC<EmptyStateProps> = React.memo(({
   secondaryAction,
 }) => {
   const { t } = useLanguage();
+  const theme = useTheme();
   const config = getEmptyStateConfig(type, t);
-  
+
   return (
     <Box
       sx={{
@@ -98,9 +110,39 @@ export const EmptyState: React.FC<EmptyStateProps> = React.memo(({
         px: 4,
         textAlign: 'center',
         minHeight: 300,
+        animation: 'fadeInUp 0.5s ease-out',
+        '@keyframes fadeInUp': {
+          from: {
+            opacity: 0,
+            transform: 'translateY(30px)',
+          },
+          to: {
+            opacity: 1,
+            transform: 'translateY(0)',
+          },
+        },
       }}
     >
-      {config.icon}
+      <Box
+        sx={{
+          animation: 'iconBounce 0.6s ease-out',
+          '@keyframes iconBounce': {
+            '0%': {
+              opacity: 0,
+              transform: 'scale(0.3) translateY(-20px)',
+            },
+            '50%': {
+              transform: 'scale(1.05)',
+            },
+            '100%': {
+              opacity: 1,
+              transform: 'scale(1) translateY(0)',
+            },
+          },
+        }}
+      >
+        {config.icon}
+      </Box>
       
       <Typography
         variant="h5"

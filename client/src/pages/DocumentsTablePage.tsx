@@ -82,6 +82,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import CountryFlag from '../components/CountryFlag';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ApiErrorAlert from '../components/ApiErrorAlert';
+import { EmptyState } from '../components/EmptyState';
 import type { ProtheusDocument } from '../types/auth';
 import { formatCurrency } from '../utils/formatters';
 import { jsPDF } from 'jspdf';
@@ -1337,6 +1338,33 @@ const DocumentsTablePage: React.FC = () => {
                       </TableRow>
                     ))}
                   </>
+                ) : processedDocuments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.filter(col => visibleColumns.includes(col.id)).length + 2}>
+                      <EmptyState
+                        type={
+                          searchTerm || Object.values(filters).some(v => v !== '')
+                            ? 'no-results'
+                            : selectedCountries.length < 4
+                            ? 'no-filters'
+                            : 'no-documents'
+                        }
+                        action={
+                          searchTerm || Object.values(filters).some(v => v !== '') || selectedCountries.length < 4
+                            ? {
+                                label: t?.common?.clearFilters || 'Limpar Filtros',
+                                onClick: () => {
+                                  setSearchInput('');
+                                  setSearchTerm('');
+                                  setFilters({ tipo: '', status: '', fornecedor: '', comprador: '' });
+                                  setSelectedCountries(['BR', 'AR', 'CL', 'PE']);
+                                },
+                              }
+                            : undefined
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   processedDocuments
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
