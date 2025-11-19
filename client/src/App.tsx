@@ -1,24 +1,24 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { CircularProgress, Box } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LanguageProvider } from './contexts/LanguageContext';
 
-// Lazy loaded components
+// Lazy load dos componentes para otimização de bundle
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
 const MainLayout = lazy(() => import('./components/MainLayout'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const DocumentsTablePage = lazy(() => import('./pages/DocumentsTablePage'));
 
-// Loading fallback component
+// Componente de loading para Suspense
 const LoadingFallback = () => (
   <Box
     sx={{
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      height: '100vh',
-      width: '100vw',
+      minHeight: '100vh',
+      bgcolor: 'background.default',
     }}
   >
     <CircularProgress size={60} />
