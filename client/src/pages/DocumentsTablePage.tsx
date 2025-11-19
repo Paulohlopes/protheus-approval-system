@@ -80,6 +80,7 @@ import CountryFlag from '../components/CountryFlag';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ApiErrorAlert from '../components/ApiErrorAlert';
 import { EmptyState } from '../components/EmptyState';
+import ExcelIcon from '../components/icons/ExcelIcon';
 import type { ProtheusDocument } from '../types/auth';
 import { formatCurrency } from '../utils/formatters';
 import { jsPDF } from 'jspdf';
@@ -1244,10 +1245,9 @@ const DocumentsTablePage: React.FC = () => {
                 <Tooltip title={t?.common?.exportExcel || 'Exportar Excel'}>
                   <IconButton
                     onClick={handleExportExcel}
-                    color="primary"
                     aria-label="Exportar para Excel"
                   >
-                    <TableChart />
+                    <ExcelIcon />
                   </IconButton>
                 </Tooltip>
 
