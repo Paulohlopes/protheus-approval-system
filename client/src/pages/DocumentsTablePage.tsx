@@ -46,6 +46,7 @@ import {
 import {
   Search,
   FilterList,
+  FilterAlt,
   GetApp,
   Refresh,
   ViewColumn,
@@ -81,6 +82,9 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import ApiErrorAlert from '../components/ApiErrorAlert';
 import { EmptyState } from '../components/EmptyState';
 import ExcelIcon from '../components/icons/ExcelIcon';
+import SmartSearch from '../components/filters/SmartSearch';
+import AdvancedFiltersPanel from '../components/filters/AdvancedFiltersPanel';
+import type { AdvancedFilters } from '../components/filters/AdvancedFiltersPanel';
 import type { ProtheusDocument } from '../types/auth';
 import { formatCurrency } from '../utils/formatters';
 import { jsPDF } from 'jspdf';
@@ -414,6 +418,13 @@ const DocumentsTablePage: React.FC = () => {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [processingDocs, setProcessingDocs] = useState<Set<string>>(new Set());
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    minValue: '',
+    maxValue: '',
+    startDate: '',
+    endDate: '',
+  });
 
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -568,6 +579,49 @@ const DocumentsTablePage: React.FC = () => {
       }
     });
 
+    // Aplicar filtros avançados
+    // Filtro de valor mínimo
+    if (advancedFilters.minValue) {
+      const minValue = parseFloat(advancedFilters.minValue.replace(/\./g, '').replace(',', '.'));
+      if (!isNaN(minValue)) {
+        filtered = filtered.filter(doc => {
+          const docValue = parseFloat(doc.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
+          return !isNaN(docValue) && docValue >= minValue;
+        });
+      }
+    }
+
+    // Filtro de valor máximo
+    if (advancedFilters.maxValue) {
+      const maxValue = parseFloat(advancedFilters.maxValue.replace(/\./g, '').replace(',', '.'));
+      if (!isNaN(maxValue)) {
+        filtered = filtered.filter(doc => {
+          const docValue = parseFloat(doc.vl_tot_documento.replace(/\./g, '').replace(',', '.'));
+          return !isNaN(docValue) && docValue <= maxValue;
+        });
+      }
+    }
+
+    // Filtro de data de início
+    if (advancedFilters.startDate) {
+      filtered = filtered.filter(doc => {
+        if (!doc.Emissao || doc.Emissao.length !== 8) return false;
+        // Convert YYYYMMDD to comparable format
+        const docDate = doc.Emissao.substring(0, 4) + '-' + doc.Emissao.substring(4, 6) + '-' + doc.Emissao.substring(6, 8);
+        return docDate >= advancedFilters.startDate;
+      });
+    }
+
+    // Filtro de data de fim
+    if (advancedFilters.endDate) {
+      filtered = filtered.filter(doc => {
+        if (!doc.Emissao || doc.Emissao.length !== 8) return false;
+        // Convert YYYYMMDD to comparable format
+        const docDate = doc.Emissao.substring(0, 4) + '-' + doc.Emissao.substring(4, 6) + '-' + doc.Emissao.substring(6, 8);
+        return docDate <= advancedFilters.endDate;
+      });
+    }
+
     // Ordenar
     filtered.sort((a, b) => {
       let aValue: any;
@@ -594,7 +648,7 @@ const DocumentsTablePage: React.FC = () => {
     }
 
     return filtered;
-  }, [documents, searchTerm, filters, orderBy, order, groupBy, selectedCountries]);
+  }, [documents, searchTerm, filters, orderBy, order, groupBy, selectedCountries, advancedFilters]);
 
   // Memoized handlers to prevent unnecessary re-renders
   const handleRequestSort = useCallback((property: string) => {
@@ -1149,22 +1203,13 @@ const DocumentsTablePage: React.FC = () => {
               </Stack>
             ) : (
               <Stack direction="row" spacing={1}>
-                <TextField
-                  size="small"
-                  placeholder={t?.searchPlaceholders?.general || 'Buscar...'}
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  inputRef={searchInputRef}
-                  aria-label="Buscar documentos por número, fornecedor ou comprador"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ width: 250 }}
-                />
+                <Box sx={{ width: 300 }}>
+                  <SmartSearch
+                    value={searchInput}
+                    onChange={(value) => setSearchInput(value)}
+                    placeholder={t?.searchPlaceholders?.general || 'Buscar documentos...'}
+                  />
+                </Box>
 
                 <ToggleButtonGroup
                   value={selectedCountries}
@@ -1220,6 +1265,21 @@ const DocumentsTablePage: React.FC = () => {
                   >
                     <Badge badgeContent={Object.keys(filters).length} color="error">
                       <FilterList />
+                    </Badge>
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Filtros Avançados">
+                  <IconButton
+                    onClick={() => setAdvancedFiltersOpen(true)}
+                    aria-label="Abrir filtros avançados"
+                    color={Object.values(advancedFilters).some(v => v) ? 'primary' : 'default'}
+                  >
+                    <Badge
+                      badgeContent={Object.values(advancedFilters).filter(v => v).length}
+                      color="primary"
+                    >
+                      <FilterAlt />
                     </Badge>
                   </IconButton>
                 </Tooltip>
@@ -1849,6 +1909,20 @@ const DocumentsTablePage: React.FC = () => {
         documentNumber={`${bulkConfirmDialog.documentCount} documentos`}
         documentValue="Operação em massa"
         loading={isProcessing}
+      />
+
+      {/* Advanced Filters Panel */}
+      <AdvancedFiltersPanel
+        open={advancedFiltersOpen}
+        onClose={() => setAdvancedFiltersOpen(false)}
+        filters={advancedFilters}
+        onFiltersChange={setAdvancedFilters}
+        onClearAll={() => setAdvancedFilters({
+          minValue: '',
+          maxValue: '',
+          startDate: '',
+          endDate: '',
+        })}
       />
     </ErrorBoundary>
   );
