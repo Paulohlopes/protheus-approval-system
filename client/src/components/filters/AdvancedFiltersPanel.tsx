@@ -20,7 +20,7 @@ import {
 } from '@mui/icons-material';
 import ValueRangeFilter from './ValueRangeFilter';
 import DateRangeFilter from './DateRangeFilter';
-import SavedFilters, { FilterPreset } from './SavedFilters';
+import SavedFilters from './SavedFilters';
 
 export interface AdvancedFilters {
   minValue: string;
