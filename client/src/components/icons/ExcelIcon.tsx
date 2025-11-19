@@ -1,7 +1,7 @@
 import React from 'react';
-import { SvgIcon, SvgIconProps } from '@mui/material';
+import { SvgIcon } from '@mui/material';
 
-const ExcelIcon: React.FC<SvgIconProps> = (props) => {
+const ExcelIcon: React.FC<any> = (props) => {
   return (
     <SvgIcon {...props} viewBox="0 0 24 24">
       <path
