@@ -14,7 +14,6 @@ import {
   Zoom,
   CircularProgress,
 } from '@mui/material';
-import { TransitionProps } from '@mui/material/transitions';
 import {
   CheckCircle,
   Cancel,
@@ -82,9 +81,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = React.memo(({
   const config = getActionConfig();
 
   const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & {
-      children: React.ReactElement<any, any>;
-    },
+    props: any,
     ref: React.Ref<unknown>,
   ) {
     return <Slide direction="down" ref={ref} {...props} />;
