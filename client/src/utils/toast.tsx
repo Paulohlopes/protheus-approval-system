@@ -1,5 +1,5 @@
 import React from 'react';
-import { toast as reactToast, ToastOptions, ToastContent, Id } from 'react-toastify';
+import { toast as reactToast, ToastOptions, Id } from 'react-toastify';
 import { Box, Button, Typography, Stack, IconButton } from '@mui/material';
 import {
   CheckCircle,
@@ -18,7 +18,7 @@ interface CustomToastOptions extends ToastOptions {
   undoAction?: () => void;
 }
 
-const ToastContent: React.FC<{
+const CustomToastContent: React.FC<{
   message: string;
   type: 'success' | 'error' | 'warning' | 'info';
   action?: {
@@ -120,7 +120,7 @@ export const toast = {
   success: (message: string, options?: CustomToastOptions): Id => {
     return reactToast.success(
       ({ closeToast }) => (
-        <ToastContent
+        <CustomToastContent
           message={message}
           type="success"
           action={options?.action}
@@ -139,7 +139,7 @@ export const toast = {
   error: (message: string, options?: CustomToastOptions): Id => {
     return reactToast.error(
       ({ closeToast }) => (
-        <ToastContent
+        <CustomToastContent
           message={message}
           type="error"
           action={options?.action}
@@ -158,7 +158,7 @@ export const toast = {
   warning: (message: string, options?: CustomToastOptions): Id => {
     return reactToast.warning(
       ({ closeToast }) => (
-        <ToastContent
+        <CustomToastContent
           message={message}
           type="warning"
           action={options?.action}
@@ -176,7 +176,7 @@ export const toast = {
   info: (message: string, options?: CustomToastOptions): Id => {
     return reactToast.info(
       ({ closeToast }) => (
-        <ToastContent
+        <CustomToastContent
           message={message}
           type="info"
           action={options?.action}
