@@ -4,6 +4,82 @@ import type { Theme } from '@mui/material/styles';
 type PaletteMode = 'light' | 'dark';
 type ThemeOptions = Parameters<typeof createTheme>[0];
 
+// Extend MUI Theme with custom properties
+declare module '@mui/material/styles' {
+  interface Theme {
+    customSpacing: {
+      xs: number;
+      sm: number;
+      md: number;
+      lg: number;
+      xl: number;
+      xxl: number;
+    };
+    statusColors: {
+      approved: {
+        main: string;
+        light: string;
+        dark: string;
+        bg: string;
+      };
+      pending: {
+        main: string;
+        light: string;
+        dark: string;
+        bg: string;
+      };
+      rejected: {
+        main: string;
+        light: string;
+        dark: string;
+        bg: string;
+      };
+      blocked: {
+        main: string;
+        light: string;
+        dark: string;
+        bg: string;
+      };
+    };
+  }
+  interface ThemeOptions {
+    customSpacing?: {
+      xs: number;
+      sm: number;
+      md: number;
+      lg: number;
+      xl: number;
+      xxl: number;
+    };
+    statusColors?: {
+      approved: {
+        main: string;
+        light: string;
+        dark: string;
+        bg: string;
+      };
+      pending: {
+        main: string;
+        light: string;
+        dark: string;
+        bg: string;
+      };
+      rejected: {
+        main: string;
+        light: string;
+        dark: string;
+        bg: string;
+      };
+      blocked: {
+        main: string;
+        light: string;
+        dark: string;
+        bg: string;
+      };
+    };
+  }
+}
+
 const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
   palette: {
     mode,
@@ -273,6 +349,42 @@ const getDesignTokens = (mode: PaletteMode): ThemeOptions => ({
           borderRadius: 8,
         },
       },
+    },
+  },
+  // Custom spacing constants
+  customSpacing: {
+    xs: 4,    // 0.5 * 8px
+    sm: 8,    // 1 * 8px
+    md: 16,   // 2 * 8px
+    lg: 24,   // 3 * 8px
+    xl: 32,   // 4 * 8px
+    xxl: 48,  // 6 * 8px
+  },
+  // Status colors for document states
+  statusColors: {
+    approved: {
+      main: mode === 'light' ? '#2e7d32' : '#10b981',
+      light: mode === 'light' ? '#4caf50' : '#34d399',
+      dark: mode === 'light' ? '#1b5e20' : '#059669',
+      bg: mode === 'light' ? 'rgba(46, 125, 50, 0.08)' : 'rgba(16, 185, 129, 0.15)',
+    },
+    pending: {
+      main: mode === 'light' ? '#ed6c02' : '#f59e0b',
+      light: mode === 'light' ? '#ff9800' : '#fbbf24',
+      dark: mode === 'light' ? '#e65100' : '#d97706',
+      bg: mode === 'light' ? 'rgba(237, 108, 2, 0.08)' : 'rgba(245, 158, 11, 0.15)',
+    },
+    rejected: {
+      main: mode === 'light' ? '#d32f2f' : '#ef4444',
+      light: mode === 'light' ? '#ef5350' : '#f87171',
+      dark: mode === 'light' ? '#c62828' : '#dc2626',
+      bg: mode === 'light' ? 'rgba(211, 47, 47, 0.08)' : 'rgba(239, 68, 68, 0.15)',
+    },
+    blocked: {
+      main: mode === 'light' ? '#757575' : '#6b7280',
+      light: mode === 'light' ? '#9e9e9e' : '#9ca3af',
+      dark: mode === 'light' ? '#424242' : '#4b5563',
+      bg: mode === 'light' ? 'rgba(117, 117, 117, 0.08)' : 'rgba(107, 114, 128, 0.15)',
     },
   },
 });

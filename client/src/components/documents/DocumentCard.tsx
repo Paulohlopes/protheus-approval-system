@@ -21,6 +21,7 @@ import {
   TableRow,
   TableCell,
   Paper,
+  useTheme,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -49,10 +50,10 @@ interface DocumentCardProps {
   isPending: boolean;
 }
 
-const DocumentCard: React.FC<DocumentCardProps> = memo(({ 
-  document, 
-  onApprove, 
-  onReject, 
+const DocumentCard: React.FC<DocumentCardProps> = memo(({
+  document,
+  onApprove,
+  onReject,
   loading,
   userEmail,
   isSelected,
@@ -63,16 +64,17 @@ const DocumentCard: React.FC<DocumentCardProps> = memo(({
 }) => {
   const [expanded, setExpanded] = useState(false);
   const { t } = useLanguage();
+  const theme = useTheme();
 
   return (
-    <Card 
-      sx={{ 
-        mb: 2,
+    <Card
+      sx={{
+        mb: theme.customSpacing.md / 8,
         border: isPending ? 2 : 1,
-        borderColor: isPending ? 'grey.400' : 'divider',
-        borderRadius: 2,
+        borderColor: isPending ? theme.statusColors.pending.light : 'divider',
+        borderRadius: theme.customSpacing.md / 8,
         transition: 'all 0.2s ease-in-out',
-        bgcolor: isPending ? 'grey.50' : 'background.paper',
+        bgcolor: isPending ? theme.statusColors.pending.bg : 'background.paper',
         '&:hover': {
           boxShadow: 4,
           transform: 'translateY(-2px)',
@@ -105,11 +107,11 @@ const DocumentCard: React.FC<DocumentCardProps> = memo(({
                 color={getStatusColor(currentStatus.situacao_aprov)}
                 size="small"
                 variant={isPending ? 'filled' : 'outlined'}
-                sx={{ 
+                sx={{
                   width: 'fit-content',
                   ...(isPending && {
-                    bgcolor: 'warning.light',
-                    color: 'warning.dark',
+                    bgcolor: theme.statusColors.pending.light,
+                    color: theme.statusColors.pending.dark,
                     fontWeight: 600,
                   })
                 }}
@@ -217,13 +219,15 @@ interface DocumentDetailsProps {
   loading?: boolean;
 }
 
-const DocumentDetails: React.FC<DocumentDetailsProps> = ({ 
-  document, 
-  onApprove, 
-  onReject, 
-  isPending, 
-  loading 
+const DocumentDetails: React.FC<DocumentDetailsProps> = ({
+  document,
+  onApprove,
+  onReject,
+  isPending,
+  loading
 }) => {
+  const theme = useTheme();
+
   return (
     <>
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -285,7 +289,15 @@ const DocumentDetails: React.FC<DocumentDetailsProps> = ({
           </Typography>
           <Box sx={{ pl: 2 }}>
             {document.alcada.map((nivel, index) => (
-              <Box key={index} sx={{ mb: 1, p: 1, bgcolor: nivel.situacao_aprov === 'Pendente' ? 'warning.light' : 'transparent', borderRadius: 1 }}>
+              <Box
+                key={index}
+                sx={{
+                  mb: 1,
+                  p: 1,
+                  bgcolor: nivel.situacao_aprov === 'Pendente' ? theme.statusColors.pending.bg : 'transparent',
+                  borderRadius: 1
+                }}
+              >
                 <Typography variant="body2" fontWeight={500}>
                   Nível {nivel.nivel_aprov} - {nivel.avaliado_aprov}
                 </Typography>

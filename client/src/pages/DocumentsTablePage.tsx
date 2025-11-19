@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, memo } from 'react';
+import React, { useState, useMemo, useCallback, memo, useEffect, useRef } from 'react';
 import {
   Box,
   Paper,
@@ -404,6 +404,7 @@ const DocumentsTablePage: React.FC = () => {
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [selected, setSelected] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // Local input state
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
     columns.filter(col => col.visible).map(col => col.id)
   );
@@ -415,6 +416,9 @@ const DocumentsTablePage: React.FC = () => {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [processingDocs, setProcessingDocs] = useState<Set<string>>(new Set());
+
+  // Refs
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Hooks
   const { data: documentsResponse, refetch, isLoading } = useDocuments({}, { page: 1, limit: 1000 });
@@ -433,6 +437,67 @@ const DocumentsTablePage: React.FC = () => {
   } = useDocumentActions();
 
   const documents = documentsResponse?.documentos || [];
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Persist filter preferences to localStorage
+  useEffect(() => {
+    const preferences = {
+      selectedCountries,
+      filters,
+      visibleColumns,
+      rowsPerPage,
+    };
+    localStorage.setItem('documentFilters', JSON.stringify(preferences));
+  }, [selectedCountries, filters, visibleColumns, rowsPerPage]);
+
+  // Restore filter preferences from localStorage
+  useEffect(() => {
+    const savedPreferences = localStorage.getItem('documentFilters');
+    if (savedPreferences) {
+      try {
+        const { selectedCountries: savedCountries, filters: savedFilters, visibleColumns: savedColumns, rowsPerPage: savedRowsPerPage } = JSON.parse(savedPreferences);
+        if (savedCountries) setSelectedCountries(savedCountries);
+        if (savedFilters) setFilters(savedFilters);
+        if (savedColumns) setVisibleColumns(savedColumns);
+        if (savedRowsPerPage) setRowsPerPage(savedRowsPerPage);
+      } catch (error) {
+        console.error('Error restoring preferences:', error);
+      }
+    }
+  }, []); // Run only on mount
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + K = Focus search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      // Ctrl/Cmd + R = Refresh (prevent default browser refresh)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        refetch();
+      }
+
+      // Escape = Clear selection
+      if (e.key === 'Escape') {
+        setSelected([]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [refetch]);
 
   // Wrapper functions for optimistic UI feedback
   const handleApproveWithFeedback = useCallback(async (document: ProtheusDocument) => {
@@ -1089,8 +1154,9 @@ const DocumentsTablePage: React.FC = () => {
                 <TextField
                   size="small"
                   placeholder={t?.searchPlaceholders?.general || 'Buscar...'}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  inputRef={searchInputRef}
                   aria-label="Buscar documentos por número, fornecedor ou comprador"
                   InputProps={{
                     startAdornment: (
@@ -1169,7 +1235,7 @@ const DocumentsTablePage: React.FC = () => {
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title={t?.common?.refresh || 'Atualizar'}>
+                <Tooltip title={`${t?.common?.refresh || 'Atualizar'} (Ctrl+R)`}>
                   <IconButton
                     onClick={() => refetch()}
                     aria-label="Atualizar lista de documentos"
