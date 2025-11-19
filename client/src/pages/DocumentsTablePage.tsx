@@ -35,8 +35,6 @@ import {
   FormControl,
   InputLabel,
   OutlinedInput,
-  ListItemText,
-  ListItemIcon,
   ToggleButtonGroup,
   ToggleButton,
   Skeleton,
@@ -55,7 +53,6 @@ import {
   KeyboardArrowRight,
   CheckCircle,
   Cancel,
-  MoreVert,
   PictureAsPdf,
   TableChart,
   Description,
@@ -412,7 +409,6 @@ const DocumentsTablePage: React.FC = () => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [filterMenuAnchor, setFilterMenuAnchor] = useState<null | HTMLElement>(null);
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(null);
-  const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
   const [groupBy, setGroupBy] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
@@ -1245,12 +1241,23 @@ const DocumentsTablePage: React.FC = () => {
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title="Mais opções">
+                <Tooltip title={t?.common?.exportExcel || 'Exportar Excel'}>
                   <IconButton
-                    onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
-                    aria-label="Abrir menu de mais opções"
+                    onClick={handleExportExcel}
+                    color="primary"
+                    aria-label="Exportar para Excel"
                   >
-                    <MoreVert />
+                    <TableChart />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title={t?.common?.exportPdf || 'Exportar PDF'}>
+                  <IconButton
+                    onClick={handleExportPDF}
+                    color="error"
+                    aria-label="Exportar para PDF"
+                  >
+                    <PictureAsPdf />
                   </IconButton>
                 </Tooltip>
               </Stack>
@@ -1820,48 +1827,6 @@ const DocumentsTablePage: React.FC = () => {
                 ))}
             </FormGroup>
           </Box>
-        </Menu>
-
-        {/* Menu Overflow - Mais Opções */}
-        <Menu
-          anchorEl={moreMenuAnchor}
-          open={Boolean(moreMenuAnchor)}
-          onClose={() => setMoreMenuAnchor(null)}
-          PaperProps={{
-            sx: {
-              mt: 1,
-              minWidth: 200,
-            },
-          }}
-        >
-          <MenuItem
-            onClick={() => {
-              handleExportExcel();
-              setMoreMenuAnchor(null);
-            }}
-          >
-            <ListItemIcon>
-              <TableChart fontSize="small" color="primary" />
-            </ListItemIcon>
-            <ListItemText
-              primary={t?.common?.exportExcel || 'Exportar Excel'}
-              primaryTypographyProps={{ fontSize: '0.875rem' }}
-            />
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              handleExportPDF();
-              setMoreMenuAnchor(null);
-            }}
-          >
-            <ListItemIcon>
-              <PictureAsPdf fontSize="small" color="error" />
-            </ListItemIcon>
-            <ListItemText
-              primary={t?.common?.exportPdf || 'Exportar PDF'}
-              primaryTypographyProps={{ fontSize: '0.875rem' }}
-            />
-          </MenuItem>
         </Menu>
       </Box>
 
