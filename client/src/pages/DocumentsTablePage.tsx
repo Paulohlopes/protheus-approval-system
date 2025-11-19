@@ -39,6 +39,8 @@ import {
   ListItemIcon,
   ToggleButtonGroup,
   ToggleButton,
+  Skeleton,
+  CircularProgress,
   Fade,
   Card,
   CardContent,
@@ -412,6 +414,7 @@ const DocumentsTablePage: React.FC = () => {
   const [groupBy, setGroupBy] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [processingDocs, setProcessingDocs] = useState<Set<string>>(new Set());
 
   // Hooks
   const { data: documentsResponse, refetch, isLoading } = useDocuments({}, { page: 1, limit: 1000 });
@@ -430,6 +433,35 @@ const DocumentsTablePage: React.FC = () => {
   } = useDocumentActions();
 
   const documents = documentsResponse?.documentos || [];
+
+  // Wrapper functions for optimistic UI feedback
+  const handleApproveWithFeedback = useCallback(async (document: ProtheusDocument) => {
+    const docNumber = document.numero.trim();
+    setProcessingDocs(prev => new Set(prev).add(docNumber));
+    try {
+      await handleApprove(document);
+    } finally {
+      setProcessingDocs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(docNumber);
+        return newSet;
+      });
+    }
+  }, [handleApprove]);
+
+  const handleRejectWithFeedback = useCallback(async (document: ProtheusDocument) => {
+    const docNumber = document.numero.trim();
+    setProcessingDocs(prev => new Set(prev).add(docNumber));
+    try {
+      await handleReject(document);
+    } finally {
+      setProcessingDocs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(docNumber);
+        return newSet;
+      });
+    }
+  }, [handleReject]);
 
   // Filtrar e ordenar documentos
   const processedDocuments = useMemo(() => {
@@ -1211,11 +1243,34 @@ const DocumentsTablePage: React.FC = () => {
               </TableHead>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={visibleColumns.length + 2} align="center">
-                      <LinearProgress />
-                    </TableCell>
-                  </TableRow>
+                  <>
+                    {[...Array(rowsPerPage)].map((_, index) => (
+                      <TableRow key={`skeleton-${index}`}>
+                        <TableCell padding="checkbox">
+                          <Skeleton variant="rectangular" width={24} height={24} />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton variant="rectangular" width={24} height={24} />
+                        </TableCell>
+                        {columns.filter(col => visibleColumns.includes(col.id) && col.id !== 'select' && col.id !== 'actions').map((col) => (
+                          <TableCell key={col.id}>
+                            {col.id === 'tipo' || col.id === 'status' || col.id === '_country' ? (
+                              <Skeleton variant="rounded" width={80} height={22} />
+                            ) : (
+                              <Skeleton variant="text" width="85%" />
+                            )}
+                          </TableCell>
+                        ))}
+                        <TableCell>
+                          <Stack direction="row" spacing={1} justifyContent="center">
+                            <Skeleton variant="circular" width={28} height={28} />
+                            <Skeleton variant="circular" width={28} height={28} />
+                            <Skeleton variant="circular" width={28} height={28} />
+                          </Stack>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
                 ) : (
                   processedDocuments
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -1264,20 +1319,30 @@ const DocumentsTablePage: React.FC = () => {
                                               <IconButton
                                                 size="small"
                                                 color="success"
-                                                onClick={() => handleApprove(document)}
+                                                onClick={() => handleApproveWithFeedback(document)}
+                                                disabled={processingDocs.has(document.numero.trim())}
                                                 aria-label={`Aprovar documento ${document.numero.trim()}`}
                                               >
-                                                <CheckCircle fontSize="small" />
+                                                {processingDocs.has(document.numero.trim()) ? (
+                                                  <CircularProgress size={16} color="success" />
+                                                ) : (
+                                                  <CheckCircle fontSize="small" />
+                                                )}
                                               </IconButton>
                                             </Tooltip>
                                             <Tooltip title={t?.common?.reject || 'Rejeitar'}>
                                               <IconButton
                                                 size="small"
                                                 color="error"
-                                                onClick={() => handleReject(document)}
+                                                onClick={() => handleRejectWithFeedback(document)}
+                                                disabled={processingDocs.has(document.numero.trim())}
                                                 aria-label={`Rejeitar documento ${document.numero.trim()}`}
                                               >
-                                                <Cancel fontSize="small" />
+                                                {processingDocs.has(document.numero.trim()) ? (
+                                                  <CircularProgress size={16} color="error" />
+                                                ) : (
+                                                  <Cancel fontSize="small" />
+                                                )}
                                               </IconButton>
                                             </Tooltip>
                                           </>
