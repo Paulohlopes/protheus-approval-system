@@ -1,0 +1,221 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER MANAGEMENT
+// ==========================================
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  name      String
+  email     String   @unique
+  password  String?
+  department String?
+  manager   String?
+  isActive  Boolean  @default(true)
+  isAdmin   Boolean  @default(false)
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  registrationRequests RegistrationRequest[]
+  approvals            RegistrationApproval[]
+
+  @@map("users")
+}
+
+// ==========================================
+// FORM TEMPLATE MANAGEMENT
+// ==========================================
+
+model FormTemplate {
+  id          String      @id @default(uuid())
+  tableName   String      @unique  // SB1, SA1, SA2, DA0, DA1
+  label       String                // "Cadastro de Produtos"
+  description String?
+  isActive    Boolean     @default(true)
+  metadata    Json?
+
+  // Timestamps
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  fields      FormField[]
+  workflows   RegistrationWorkflow[]
+  requests    RegistrationRequest[]
+
+  @@map("form_templates")
+}
+
+model FormField {
+  id              String       @id @default(uuid())
+  templateId      String
+  template        FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  // Field definition from SX3
+  sx3FieldName    String        // B1_COD, B1_DESC, etc
+  label           String        // X3_TITULO
+  fieldType       String        // string, number, date, boolean
+  isRequired      Boolean       // X3_OBRIGAT == 'S'
+  isVisible       Boolean       // Admin configures this
+  isEnabled       Boolean       @default(true)
+
+  // Ordering and grouping
+  fieldOrder      Int
+  fieldGroup      String?       // "Dados Básicos", "Estoque", etc
+
+  // Additional configuration
+  validationRules Json?         // Custom validation rules
+  metadata        Json?         // { size, decimals, mask, lookup }
+
+  // Timestamps
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("form_fields")
+  @@index([templateId])
+}
+
+// ==========================================
+// WORKFLOW CONFIGURATION
+// ==========================================
+
+model RegistrationWorkflow {
+  id           String          @id @default(uuid())
+  templateId   String
+  template     FormTemplate    @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  name         String
+  description  String?
+  isActive     Boolean         @default(true)
+  routingRules Json?           // Conditional routing rules
+
+  // Timestamps
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  // Relations
+  levels       WorkflowLevel[]
+
+  @@map("registration_workflows")
+  @@index([templateId])
+}
+
+model WorkflowLevel {
+  id          String                @id @default(uuid())
+  workflowId  String
+  workflow    RegistrationWorkflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  levelOrder  Int
+  levelName   String?               // "Gerente", "Diretor", etc
+  approverIds String[]              // Array of user IDs
+  isParallel  Boolean               @default(false)  // All must approve?
+  conditions  Json?                 // Conditional rules (e.g., value > 10000)
+
+  // Timestamps
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@map("workflow_levels")
+  @@index([workflowId])
+  @@unique([workflowId, levelOrder])
+}
+
+// ==========================================
+// REGISTRATION REQUESTS
+// ==========================================
+
+enum RegistrationStatus {
+  DRAFT
+  PENDING_APPROVAL
+  IN_APPROVAL
+  APPROVED
+  REJECTED
+  SYNCING_TO_PROTHEUS
+  SYNCED
+  SYNC_FAILED
+}
+
+model RegistrationRequest {
+  id              String              @id @default(uuid())
+  templateId      String
+  template        FormTemplate        @relation(fields: [templateId], references: [id])
+  tableName       String              // Denormalized for quick access
+
+  // Requester info
+  requestedById   String
+  requestedBy     User                @relation(fields: [requestedById], references: [id])
+  requestedByEmail String
+  requestedAt     DateTime            @default(now())
+
+  // Form data
+  formData        Json                // All form field values
+
+  // Workflow status
+  status          RegistrationStatus  @default(DRAFT)
+  currentLevel    Int                 @default(1)
+  workflowSnapshot Json?              // Snapshot of workflow at submission
+
+  // Protheus integration
+  protheusRecno   String?             // R_E_C_N_O_ from Protheus
+  syncedAt        DateTime?
+  syncError       String?
+  syncLog         Json?
+
+  // Timestamps
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  approvals       RegistrationApproval[]
+
+  @@map("registration_requests")
+  @@index([templateId])
+  @@index([requestedById])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ApprovalAction {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model RegistrationApproval {
+  id            String              @id @default(uuid())
+  requestId     String
+  request       RegistrationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  level         Int
+  approverId    String
+  approver      User                @relation(fields: [approverId], references: [id])
+  approverEmail String
+
+  action        ApprovalAction      @default(PENDING)
+  comments      String?
+  actionAt      DateTime?
+
+  // Timestamps
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@map("registration_approvals")
+  @@index([requestId])
+  @@index([approverId])
+  @@index([level])
+  @@unique([requestId, approverId, level])
+}
