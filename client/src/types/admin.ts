@@ -2,11 +2,8 @@
 // FORM TEMPLATES
 // ==========================================
 
-// Import shared types from registration.ts to avoid duplication
-import type { FormTemplate, FormField } from './registration';
-
-// Re-export for convenience
-export type { FormTemplate, FormField };
+// NOTE: FormTemplate and FormField are defined in ./registration.ts
+// Import them from there to avoid duplication
 
 export interface CreateFormTemplateDto {
   label: string;

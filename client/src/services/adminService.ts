@@ -1,6 +1,6 @@
 import { backendApi } from './api';
+import type { FormTemplate } from '../types/registration';
 import type {
-  FormTemplate,
   CreateFormTemplateDto,
   UpdateFormTemplateDto,
   ReorderFieldsDto,

@@ -35,7 +35,8 @@ import {
   ArrowDownward,
 } from '@mui/icons-material';
 import { adminService } from '../../services/adminService';
-import type { FormTemplate, CreateWorkflowDto, Workflow } from '../../types/admin';
+import type { FormTemplate } from '../../types/registration';
+import type { CreateWorkflowDto, Workflow } from '../../types/admin';
 
 interface ApprovalStepForm {
   stepOrder: number;

@@ -40,7 +40,8 @@ import {
   ExpandLess,
 } from '@mui/icons-material';
 import { adminService } from '../../services/adminService';
-import type { FormTemplate, CreateFormTemplateDto, FormField } from '../../types/admin';
+import type { FormTemplate, FormField } from '../../types/registration';
+import type { CreateFormTemplateDto } from '../../types/admin';
 
 const TemplateManager: React.FC = () => {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
