@@ -32,7 +32,7 @@ type FormValue = string | number | boolean | null;
 export const DynamicFormPage = () => {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
-  const { language, t } = useLanguage();
+  const { language, t, formatMessage } = useLanguage();
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [fields, setFields] = useState<FormField[]>([]);
   const [formData, setFormData] = useState<Record<string, FormValue>>({});
@@ -109,7 +109,7 @@ export const DynamicFormPage = () => {
 
       if (field.isRequired) {
         if (value === null || value === undefined || value === '') {
-          newErrors[field.sx3FieldName] = t('validation.required', { field: label });
+          newErrors[field.sx3FieldName] = formatMessage(t.validation.required, { field: label });
           return;
         }
       }
@@ -118,21 +118,21 @@ export const DynamicFormPage = () => {
         switch (field.fieldType) {
           case 'number':
             if (typeof value === 'string' && isNaN(Number(value))) {
-              newErrors[field.sx3FieldName] = t('validation.invalidNumber', { field: label });
+              newErrors[field.sx3FieldName] = formatMessage(t.validation.invalidNumber, { field: label });
             }
             break;
           case 'date':
             if (typeof value === 'string') {
               const date = new Date(value);
               if (isNaN(date.getTime())) {
-                newErrors[field.sx3FieldName] = t('validation.invalidDate', { field: label });
+                newErrors[field.sx3FieldName] = formatMessage(t.validation.invalidDate, { field: label });
               }
             }
             break;
         }
 
         if (field.metadata?.size && typeof value === 'string' && value.length > field.metadata.size) {
-          newErrors[field.sx3FieldName] = t('validation.maxLength', { field: label, max: field.metadata.size });
+          newErrors[field.sx3FieldName] = formatMessage(t.validation.maxLength, { field: label, max: field.metadata.size });
         }
       }
     });
@@ -140,12 +140,12 @@ export const DynamicFormPage = () => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      toast.error(t('validation.fixErrors'));
+      toast.error(t.validation.fixErrors);
       return false;
     }
 
     return true;
-  }, [fields, formData, language, t]);
+  }, [fields, formData, language, t, formatMessage]);
 
   const renderField = (field: FormField) => {
     const value = formData[field.sx3FieldName];
@@ -167,7 +167,7 @@ export const DynamicFormPage = () => {
             }}
             required={field.isRequired}
             error={hasError}
-            helperText={errorMessage || (field.metadata?.mask ? `${t('common.format')}: ${field.metadata.mask}` : undefined)}
+            helperText={errorMessage || (field.metadata?.mask ? `${t.common.format}: ${field.metadata.mask}` : undefined)}
             inputProps={{
               step: field.metadata?.decimals ? `0.${'0'.repeat(field.metadata.decimals - 1)}1` : '1',
             }}
@@ -238,7 +238,7 @@ export const DynamicFormPage = () => {
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
             required={field.isRequired}
             error={hasError}
-            helperText={errorMessage || (field.metadata?.mask ? `${t('common.format')}: ${field.metadata.mask}` : undefined)}
+            helperText={errorMessage || (field.metadata?.mask ? `${t.common.format}: ${field.metadata.mask}` : undefined)}
             inputProps={{
               maxLength: field.metadata?.size || undefined,
             }}
