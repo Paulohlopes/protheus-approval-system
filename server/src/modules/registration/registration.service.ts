@@ -6,6 +6,7 @@ import { UpdateRegistrationDto } from './dto/update-registration.dto';
 import { ApproveRegistrationDto } from './dto/approve-registration.dto';
 import { RejectRegistrationDto } from './dto/reject-registration.dto';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
+import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
 import { ProtheusIntegrationService } from '../protheus-integration/protheus-integration.service';
 
 @Injectable()
@@ -22,7 +23,82 @@ export class RegistrationService {
   // ==========================================
 
   /**
-   * Create workflow configuration
+   * Create workflow configuration (simple version with emails)
+   */
+  async createWorkflowSimple(dto: CreateWorkflowSimpleDto) {
+    this.logger.log(`Creating workflow for template ${dto.templateId}`);
+
+    // Check if template exists
+    const template = await this.prisma.formTemplate.findUnique({
+      where: { id: dto.templateId },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Template ${dto.templateId} not found`);
+    }
+
+    // Find all users by email
+    const emails = dto.steps.map((step) => step.approverEmail);
+    const users = await this.prisma.user.findMany({
+      where: {
+        email: {
+          in: emails,
+        },
+      },
+    });
+
+    // Create email to user ID mapping
+    const emailToUserId = new Map(users.map((user) => [user.email, user.id]));
+
+    // Validate all emails were found
+    const missingEmails = emails.filter((email) => !emailToUserId.has(email));
+    if (missingEmails.length > 0) {
+      throw new BadRequestException(
+        `Users not found for emails: ${missingEmails.join(', ')}`,
+      );
+    }
+
+    // Convert steps to levels
+    // Group by stepOrder to support multiple approvers per level
+    const levelMap = new Map<number, string[]>();
+    dto.steps.forEach((step) => {
+      const userId = emailToUserId.get(step.approverEmail);
+      if (userId) {
+        const existing = levelMap.get(step.stepOrder) || [];
+        existing.push(userId);
+        levelMap.set(step.stepOrder, existing);
+      }
+    });
+
+    // Create workflow with levels
+    const workflow = await this.prisma.registrationWorkflow.create({
+      data: {
+        templateId: dto.templateId,
+        name: dto.name,
+        description: dto.description,
+        isActive: dto.isActive ?? true,
+        levels: {
+          create: Array.from(levelMap.entries()).map(([order, approverIds]) => ({
+            levelOrder: order,
+            levelName: dto.steps.find((s) => s.stepOrder === order)?.approverRole || `Nível ${order}`,
+            approverIds,
+            isParallel: !dto.requiresSequentialApproval,
+          })),
+        },
+      },
+      include: {
+        levels: {
+          orderBy: { levelOrder: 'asc' },
+        },
+      },
+    });
+
+    this.logger.log(`Created workflow ${workflow.id} with ${workflow.levels.length} levels`);
+    return workflow;
+  }
+
+  /**
+   * Create workflow configuration (advanced version with levels)
    */
   async createWorkflow(dto: CreateWorkflowDto) {
     this.logger.log(`Creating workflow for template ${dto.templateId}`);

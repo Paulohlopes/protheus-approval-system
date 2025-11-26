@@ -13,7 +13,7 @@ import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { UpdateRegistrationDto } from './dto/update-registration.dto';
 import { ApproveRegistrationDto } from './dto/approve-registration.dto';
 import { RejectRegistrationDto } from './dto/reject-registration.dto';
-import { CreateWorkflowDto } from './dto/create-workflow.dto';
+import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
 import { RegistrationStatus } from '@prisma/client';
 
 @Controller('registrations')
@@ -25,8 +25,8 @@ export class RegistrationController {
   // ==========================================
 
   @Post('workflows')
-  createWorkflow(@Body() dto: CreateWorkflowDto) {
-    return this.registrationService.createWorkflow(dto);
+  createWorkflow(@Body() dto: CreateWorkflowSimpleDto) {
+    return this.registrationService.createWorkflowSimple(dto);
   }
 
   @Get('workflows/template/:templateId')
