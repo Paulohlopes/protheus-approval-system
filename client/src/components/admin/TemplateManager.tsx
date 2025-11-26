@@ -216,7 +216,7 @@ const TemplateManager: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight={500}>
-                        {template.name}
+                        {template.label}
                       </Typography>
                     </TableCell>
                     <TableCell>

@@ -2,41 +2,11 @@
 // FORM TEMPLATES
 // ==========================================
 
-export interface FormField {
-  id: string;
-  templateId: string;
-  sx3FieldName: string;
-  label: string;
-  fieldType: string;
-  isRequired: boolean;
-  isVisible: boolean;
-  isEnabled: boolean;
-  fieldOrder: number;
-  fieldGroup?: string;
-  validationRules?: any;
-  metadata?: {
-    size?: number;
-    decimals?: number;
-    mask?: string;
-    lookup?: string;
-    validation?: string;
-    when?: string;
-    defaultValue?: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+// Import shared types from registration.ts to avoid duplication
+import type { FormTemplate, FormField } from './registration';
 
-export interface FormTemplate {
-  id: string;
-  name: string;
-  description?: string;
-  tableName: string;
-  isActive: boolean;
-  fields?: FormField[];
-  createdAt: string;
-  updatedAt: string;
-}
+// Re-export for convenience
+export type { FormTemplate, FormField };
 
 export interface CreateFormTemplateDto {
   label: string;

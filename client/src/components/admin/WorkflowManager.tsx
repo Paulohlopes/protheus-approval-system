@@ -220,7 +220,7 @@ const WorkflowManager: React.FC = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                     <AccountTree color="primary" />
-                    <Typography variant="h6">{template.name}</Typography>
+                    <Typography variant="h6">{template.label}</Typography>
                   </Box>
 
                   <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -343,7 +343,7 @@ const WorkflowManager: React.FC = () => {
       {/* Create/Edit Workflow Dialog */}
       <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
-          {selectedTemplate && `Workflow para ${selectedTemplate.name}`}
+          {selectedTemplate && `Workflow para ${selectedTemplate.label}`}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
