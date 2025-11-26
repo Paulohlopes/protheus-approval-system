@@ -305,19 +305,19 @@ const WorkflowManager: React.FC = () => {
                       setSelectedTemplate(template);
                       if (workflow) {
                         setWorkflowData({
-                          name: workflow.name,
+                          name: workflow.name || '',
                           description: workflow.description || '',
-                          isActive: workflow.isActive,
-                          requiresSequentialApproval: workflow.requiresSequentialApproval,
+                          isActive: workflow.isActive ?? true,
+                          requiresSequentialApproval: workflow.requiresSequentialApproval ?? true,
                         });
                         if (workflow.steps) {
                           setApprovalSteps(
                             workflow.steps.map((step) => ({
                               stepOrder: step.stepOrder,
-                              approverEmail: step.approverEmail,
+                              approverEmail: step.approverEmail || '',
                               approverName: step.approverName || '',
                               approverRole: step.approverRole || '',
-                              isRequired: step.isRequired,
+                              isRequired: step.isRequired ?? true,
                             }))
                           );
                         }

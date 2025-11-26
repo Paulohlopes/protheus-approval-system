@@ -101,6 +101,7 @@ model RegistrationWorkflow {
   name         String
   description  String?
   isActive     Boolean         @default(true)
+  requiresSequentialApproval Boolean @default(true)
   routingRules Json?           // Conditional routing rules
 
   // Timestamps

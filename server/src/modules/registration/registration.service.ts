@@ -77,6 +77,7 @@ export class RegistrationService {
         name: dto.name,
         description: dto.description,
         isActive: dto.isActive ?? true,
+        requiresSequentialApproval: dto.requiresSequentialApproval ?? true,
         levels: {
           create: Array.from(levelMap.entries()).map(([order, approverIds]) => ({
             levelOrder: order,
@@ -119,6 +120,7 @@ export class RegistrationService {
         name: dto.name,
         description: dto.description,
         isActive: dto.isActive ?? true,
+        requiresSequentialApproval: true, // Advanced workflow - will be determined by levels
         routingRules: dto.routingRules,
         levels: {
           create: dto.levels.map((level) => ({
