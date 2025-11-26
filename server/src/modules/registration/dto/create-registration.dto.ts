@@ -1,4 +1,4 @@
-import { IsString, IsObject, IsOptional } from 'class-validator';
+import { IsString, IsObject } from 'class-validator';
 
 export class CreateRegistrationDto {
   @IsString()
@@ -6,8 +6,6 @@ export class CreateRegistrationDto {
 
   @IsObject()
   formData: Record<string, any>; // Form field values
-
-  @IsOptional()
-  @IsString()
-  requestedById?: string; // Will be set from JWT if not provided
+  // Note: requestedById is intentionally NOT included here for security
+  // It must come from the authenticated user (JWT) in the controller
 }

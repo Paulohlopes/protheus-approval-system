@@ -1,14 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { registrationService } from '../../services/registrationService';
+import { toast } from '../../utils/toast';
 import type { FormTemplate, FormField } from '../../types/registration';
+
+type FormValue = string | number | boolean | null;
+
+interface ValidationError {
+  field: string;
+  message: string;
+}
 
 export const DynamicFormPage = () => {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [fields, setFields] = useState<FormField[]>([]);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formData, setFormData] = useState<Record<string, FormValue>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -31,34 +40,108 @@ export const DynamicFormPage = () => {
 
       setFields(visibleFields);
 
-      // Initialize form data with empty values
-      const initialData: Record<string, any> = {};
+      // Initialize form data with appropriate default values based on field type
+      const initialData: Record<string, FormValue> = {};
       visibleFields.forEach((field) => {
-        initialData[field.sx3FieldName] = '';
+        switch (field.fieldType) {
+          case 'boolean':
+            initialData[field.sx3FieldName] = false;
+            break;
+          case 'number':
+            initialData[field.sx3FieldName] = null;
+            break;
+          default:
+            initialData[field.sx3FieldName] = '';
+        }
       });
       setFormData(initialData);
+      setErrors({});
     } catch (error) {
       console.error('Error loading template:', error);
-      alert('Erro ao carregar formulário');
+      toast.error('Erro ao carregar formulário. Por favor, tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (fieldName: string, value: any) => {
+  const handleChange = (fieldName: string, value: FormValue) => {
     setFormData((prev) => ({
       ...prev,
       [fieldName]: value,
     }));
+    // Clear error when field is modified
+    if (errors[fieldName]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
   };
 
+  // Validate form before submission
+  const validateForm = useCallback((): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    fields.forEach((field) => {
+      const value = formData[field.sx3FieldName];
+
+      // Required field validation
+      if (field.isRequired) {
+        if (value === null || value === undefined || value === '') {
+          newErrors[field.sx3FieldName] = `${field.label} é obrigatório`;
+          return;
+        }
+      }
+
+      // Type-specific validation
+      if (value !== null && value !== undefined && value !== '') {
+        switch (field.fieldType) {
+          case 'number':
+            if (typeof value === 'string' && isNaN(Number(value))) {
+              newErrors[field.sx3FieldName] = `${field.label} deve ser um número válido`;
+            }
+            break;
+          case 'date':
+            if (typeof value === 'string') {
+              const date = new Date(value);
+              if (isNaN(date.getTime())) {
+                newErrors[field.sx3FieldName] = `${field.label} deve ser uma data válida`;
+              }
+            }
+            break;
+        }
+
+        // Max length validation for strings
+        if (field.metadata?.size && typeof value === 'string' && value.length > field.metadata.size) {
+          newErrors[field.sx3FieldName] = `${field.label} deve ter no máximo ${field.metadata.size} caracteres`;
+        }
+      }
+    });
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      toast.error('Por favor, corrija os erros no formulário');
+      return false;
+    }
+
+    return true;
+  }, [fields, formData]);
+
   const renderField = (field: FormField) => {
-    const value = formData[field.sx3FieldName] || '';
+    const value = formData[field.sx3FieldName];
+    const hasError = !!errors[field.sx3FieldName];
 
     const commonProps = {
       id: field.sx3FieldName,
-      required: field.isRequired,
-      className: 'w-full border border-gray-300 rounded px-3 py-2',
+      name: field.sx3FieldName,
+      'aria-required': field.isRequired,
+      'aria-invalid': hasError,
+      'aria-describedby': hasError ? `${field.sx3FieldName}-error` : undefined,
+      className: `w-full border rounded px-3 py-2 ${
+        hasError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+      } focus:outline-none focus:ring-2`,
     };
 
     switch (field.fieldType) {
@@ -66,8 +149,11 @@ export const DynamicFormPage = () => {
         return (
           <input
             type="number"
-            value={value}
-            onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
+            value={value === null ? '' : String(value)}
+            onChange={(e) => {
+              const numValue = e.target.value === '' ? null : parseFloat(e.target.value);
+              handleChange(field.sx3FieldName, numValue);
+            }}
             {...commonProps}
             step={field.metadata?.decimals ? `0.${'0'.repeat(field.metadata.decimals - 1)}1` : '1'}
           />
@@ -77,7 +163,7 @@ export const DynamicFormPage = () => {
         return (
           <input
             type="date"
-            value={value}
+            value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
             {...commonProps}
           />
@@ -87,16 +173,18 @@ export const DynamicFormPage = () => {
         return (
           <input
             type="checkbox"
-            checked={value === true || value === 'true'}
+            checked={value === true}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.checked)}
-            className="w-5 h-5"
+            className={`w-5 h-5 ${hasError ? 'border-red-500' : ''}`}
+            aria-required={field.isRequired}
+            aria-invalid={hasError}
           />
         );
 
       case 'text':
         return (
           <textarea
-            value={value}
+            value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
             {...commonProps}
             rows={4}
@@ -108,7 +196,7 @@ export const DynamicFormPage = () => {
         return (
           <input
             type="text"
-            value={value}
+            value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
             {...commonProps}
             maxLength={field.metadata?.size || undefined}
@@ -122,23 +210,37 @@ export const DynamicFormPage = () => {
 
     if (!templateId) return;
 
+    // Validate form before submission
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       setSubmitting(true);
+
+      // Prepare form data - convert types as needed
+      const preparedData: Record<string, any> = {};
+      fields.forEach((field) => {
+        const value = formData[field.sx3FieldName];
+        if (value !== null && value !== undefined && value !== '') {
+          preparedData[field.sx3FieldName] = value;
+        }
+      });
 
       // Create registration
       const registration = await registrationService.createRegistration({
         templateId,
-        formData,
+        formData: preparedData,
       });
 
       // Submit for approval
       await registrationService.submitRegistration(registration.id);
 
-      alert('Solicitação enviada para aprovação com sucesso!');
+      toast.success('Solicitação enviada para aprovação com sucesso!');
       navigate('/registration/my-requests');
     } catch (error) {
       console.error('Error submitting registration:', error);
-      alert('Erro ao enviar solicitação');
+      toast.error('Erro ao enviar solicitação. Por favor, tente novamente.');
     } finally {
       setSubmitting(false);
     }
@@ -186,7 +288,16 @@ export const DynamicFormPage = () => {
                     {field.isRequired && <span className="text-red-500 ml-1">*</span>}
                   </label>
                   {renderField(field)}
-                  {field.metadata?.mask && (
+                  {errors[field.sx3FieldName] && (
+                    <p
+                      id={`${field.sx3FieldName}-error`}
+                      className="text-xs text-red-500 mt-1"
+                      role="alert"
+                    >
+                      {errors[field.sx3FieldName]}
+                    </p>
+                  )}
+                  {field.metadata?.mask && !errors[field.sx3FieldName] && (
                     <p className="text-xs text-gray-500 mt-1">Formato: {field.metadata.mask}</p>
                   )}
                 </div>

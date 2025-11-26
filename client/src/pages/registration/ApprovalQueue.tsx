@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
+import { toast } from '../../utils/toast';
 import { RegistrationRequest, RegistrationStatus } from '../../types/registration';
+import { InputDialog } from '../../components/InputDialog';
+
+type ActionDialogType = 'approve' | 'reject' | null;
 
 export const ApprovalQueuePage = () => {
   const { user } = useAuthStore();
@@ -9,6 +13,7 @@ export const ApprovalQueuePage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionDialog, setActionDialog] = useState<ActionDialogType>(null);
 
   useEffect(() => {
     loadPendingApprovals();
@@ -26,42 +31,50 @@ export const ApprovalQueuePage = () => {
       setRequests(data);
     } catch (error) {
       console.error('Error loading pending approvals:', error);
-      alert('Erro ao carregar aprovações pendentes');
+      toast.error('Erro ao carregar aprovações pendentes. Por favor, tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async (requestId: string, comments?: string) => {
+  const handleApproveWithComments = async (comments: string) => {
+    if (!selectedRequest) return;
+
+    setActionDialog(null);
+
     try {
       setActionLoading(true);
-      await registrationService.approveRegistration(requestId, comments);
-      alert('Solicitação aprovada com sucesso!');
+      await registrationService.approveRegistration(selectedRequest.id, comments || undefined);
+      toast.success('Solicitação aprovada com sucesso!');
       setSelectedRequest(null);
       await loadPendingApprovals();
     } catch (error) {
       console.error('Error approving request:', error);
-      alert('Erro ao aprovar solicitação');
+      toast.error('Erro ao aprovar solicitação. Por favor, tente novamente.');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleReject = async (requestId: string, reason: string) => {
+  const handleRejectWithReason = async (reason: string) => {
+    if (!selectedRequest) return;
+
     if (!reason.trim()) {
-      alert('Por favor, informe o motivo da rejeição');
+      toast.warning('Por favor, informe o motivo da rejeição');
       return;
     }
 
+    setActionDialog(null);
+
     try {
       setActionLoading(true);
-      await registrationService.rejectRegistration(requestId, reason);
-      alert('Solicitação rejeitada');
+      await registrationService.rejectRegistration(selectedRequest.id, reason);
+      toast.success('Solicitação rejeitada');
       setSelectedRequest(null);
       await loadPendingApprovals();
     } catch (error) {
       console.error('Error rejecting request:', error);
-      alert('Erro ao rejeitar solicitação');
+      toast.error('Erro ao rejeitar solicitação. Por favor, tente novamente.');
     } finally {
       setActionLoading(false);
     }
@@ -210,22 +223,14 @@ export const ApprovalQueuePage = () => {
                 Fechar
               </button>
               <button
-                onClick={() => {
-                  const reason = prompt('Motivo da rejeição:');
-                  if (reason) {
-                    handleReject(selectedRequest.id, reason);
-                  }
-                }}
+                onClick={() => setActionDialog('reject')}
                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400"
                 disabled={actionLoading}
               >
                 Rejeitar
               </button>
               <button
-                onClick={() => {
-                  const comments = prompt('Comentários (opcional):');
-                  handleApprove(selectedRequest.id, comments || undefined);
-                }}
+                onClick={() => setActionDialog('approve')}
                 className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
                 disabled={actionLoading}
               >
@@ -235,6 +240,33 @@ export const ApprovalQueuePage = () => {
           </div>
         </div>
       )}
+
+      {/* Approve Dialog */}
+      <InputDialog
+        open={actionDialog === 'approve'}
+        title="Aprovar Solicitação"
+        message="Adicione comentários opcionais sobre a aprovação."
+        placeholder="Comentários (opcional)..."
+        multiline
+        onConfirm={handleApproveWithComments}
+        onCancel={() => setActionDialog(null)}
+        confirmText="Aprovar"
+        confirmColor="green"
+      />
+
+      {/* Reject Dialog */}
+      <InputDialog
+        open={actionDialog === 'reject'}
+        title="Rejeitar Solicitação"
+        message="Por favor, informe o motivo da rejeição."
+        placeholder="Motivo da rejeição..."
+        required
+        multiline
+        onConfirm={handleRejectWithReason}
+        onCancel={() => setActionDialog(null)}
+        confirmText="Rejeitar"
+        confirmColor="red"
+      />
     </div>
   );
 };

@@ -45,7 +45,7 @@ export class RegistrationController {
    */
   @Post()
   create(@Body() dto: CreateRegistrationDto, @CurrentUser() user: UserInfo) {
-    return this.registrationService.create(dto, user.email);
+    return this.registrationService.create(dto, user.id, user.email);
   }
 
   /**
@@ -84,16 +84,20 @@ export class RegistrationController {
    * Update draft registration
    */
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateRegistrationDto) {
-    return this.registrationService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateRegistrationDto,
+    @CurrentUser() user: UserInfo,
+  ) {
+    return this.registrationService.update(id, dto, user.id);
   }
 
   /**
    * Delete registration (DRAFT only)
    */
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.registrationService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: UserInfo) {
+    return this.registrationService.remove(id, user.id);
   }
 
   // ==========================================
@@ -117,8 +121,8 @@ export class RegistrationController {
     @Body() dto: ApproveRegistrationDto,
     @CurrentUser() user: UserInfo,
   ) {
-    dto.approverId = user.id;
-    return this.registrationService.approve(id, dto);
+    // Pass approverId from authenticated user, not from DTO (security)
+    return this.registrationService.approve(id, dto, user.id);
   }
 
   /**
@@ -130,8 +134,8 @@ export class RegistrationController {
     @Body() dto: RejectRegistrationDto,
     @CurrentUser() user: UserInfo,
   ) {
-    dto.approverId = user.id;
-    return this.registrationService.reject(id, dto);
+    // Pass approverId from authenticated user, not from DTO (security)
+    return this.registrationService.reject(id, dto, user.id);
   }
 
   /**

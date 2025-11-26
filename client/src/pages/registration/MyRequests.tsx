@@ -2,13 +2,17 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
+import { toast } from '../../utils/toast';
 import { RegistrationRequest, RegistrationStatus } from '../../types/registration';
+import { ConfirmDialog } from '../../components/InputDialog';
 
 export const MyRequestsPage = () => {
   const { user } = useAuthStore();
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
+  const [retrySyncDialogOpen, setRetrySyncDialogOpen] = useState(false);
+  const [requestIdToRetry, setRequestIdToRetry] = useState<string | null>(null);
 
   useEffect(() => {
     loadMyRequests();
@@ -17,33 +21,53 @@ export const MyRequestsPage = () => {
   const loadMyRequests = async () => {
     try {
       setLoading(true);
-      // Filtrar por usuário autenticado
-      const data = await registrationService.getRegistrations();
-      // Filter client-side if backend doesn't support filtering by user
-      const userRequests = user?.id
-        ? data.filter(req => req.requestedById === user.id)
-        : data;
-      setRequests(userRequests);
-    } catch (error) {
+
+      if (!user?.id) {
+        toast.error('Usuário não autenticado');
+        setRequests([]);
+        return;
+      }
+
+      // Use backend filter for better performance and security
+      const data = await registrationService.getRegistrations({
+        requestedById: user.id,
+      });
+      setRequests(data);
+    } catch (error: any) {
       console.error('Error loading requests:', error);
-      alert('Erro ao carregar solicitações');
+
+      // Better error handling
+      if (error.response?.status === 401) {
+        toast.error('Sessão expirada. Faça login novamente.');
+      } else if (error.response?.status === 403) {
+        toast.error('Você não tem permissão para acessar este recurso.');
+      } else {
+        toast.error('Erro ao carregar solicitações. Por favor, tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRetrySync = async (requestId: string) => {
-    if (!confirm('Deseja retentar a sincronização com o Protheus?')) {
-      return;
-    }
+  const handleRetrySyncClick = (requestId: string) => {
+    setRequestIdToRetry(requestId);
+    setRetrySyncDialogOpen(true);
+  };
+
+  const handleRetrySync = async () => {
+    if (!requestIdToRetry) return;
+
+    setRetrySyncDialogOpen(false);
 
     try {
-      await registrationService.retrySync(requestId);
-      alert('Sincronização iniciada!');
+      await registrationService.retrySync(requestIdToRetry);
+      toast.success('Sincronização iniciada com sucesso!');
       await loadMyRequests();
     } catch (error) {
       console.error('Error retrying sync:', error);
-      alert('Erro ao retentar sincronização');
+      toast.error('Erro ao retentar sincronização. Por favor, tente novamente.');
+    } finally {
+      setRequestIdToRetry(null);
     }
   };
 
@@ -139,7 +163,7 @@ export const MyRequestsPage = () => {
                       <span className="text-green-600">RECNO: {request.protheusRecno}</span>
                     ) : request.status === RegistrationStatus.SYNC_FAILED ? (
                       <button
-                        onClick={() => handleRetrySync(request.id)}
+                        onClick={() => handleRetrySyncClick(request.id)}
                         className="text-red-500 hover:text-red-700"
                       >
                         Retentar
@@ -249,6 +273,21 @@ export const MyRequestsPage = () => {
           </div>
         </div>
       )}
+
+      {/* Retry Sync Confirmation Dialog */}
+      <ConfirmDialog
+        open={retrySyncDialogOpen}
+        title="Retentar Sincronização"
+        message="Deseja retentar a sincronização com o Protheus?"
+        onConfirm={handleRetrySync}
+        onCancel={() => {
+          setRetrySyncDialogOpen(false);
+          setRequestIdToRetry(null);
+        }}
+        confirmText="Retentar"
+        cancelText="Cancelar"
+        confirmColor="blue"
+      />
     </div>
   );
 };

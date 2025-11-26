@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registrationService } from '../../services/registrationService';
+import { toast } from '../../utils/toast';
 import type { FormTemplate } from '../../types/registration';
 
 export const SelectRegistrationTypePage = () => {
@@ -20,7 +21,7 @@ export const SelectRegistrationTypePage = () => {
       setTemplates(data.filter((t) => t.isActive));
     } catch (error) {
       console.error('Error loading templates:', error);
-      alert('Erro ao carregar tipos de cadastro');
+      toast.error('Erro ao carregar tipos de cadastro. Por favor, tente novamente.');
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationStatus, ApprovalAction } from '@prisma/client';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
@@ -173,27 +173,38 @@ export class RegistrationService {
   /**
    * Create draft registration
    */
-  async create(dto: CreateRegistrationDto, userEmail: string) {
+  async create(dto: CreateRegistrationDto, userId: string, userEmail: string) {
     this.logger.log(`Creating registration draft for template ${dto.templateId}`);
 
-    // Get template
+    // Get template with fields for validation
     const template = await this.prisma.formTemplate.findUnique({
       where: { id: dto.templateId },
+      include: {
+        fields: {
+          where: { isVisible: true, isEnabled: true },
+        },
+      },
     });
 
     if (!template) {
       throw new NotFoundException(`Template ${dto.templateId} not found`);
     }
 
-    // TODO: Validate formData against template fields
-    // For now, we'll skip validation
+    // Validate formData against template fields
+    const validationErrors = this.validateFormData(dto.formData, template.fields);
+    if (validationErrors.length > 0) {
+      throw new BadRequestException({
+        message: 'Form validation failed',
+        errors: validationErrors,
+      });
+    }
 
-    // Create registration
+    // Create registration with userId from JWT (secure)
     const registration = await this.prisma.registrationRequest.create({
       data: {
         templateId: dto.templateId,
         tableName: template.tableName,
-        requestedById: dto.requestedById, // TODO: Get from JWT
+        requestedById: userId, // From JWT - secure
         requestedByEmail: userEmail,
         formData: dto.formData,
         status: RegistrationStatus.DRAFT,
@@ -209,9 +220,62 @@ export class RegistrationService {
   }
 
   /**
+   * Validate form data against template fields
+   */
+  private validateFormData(
+    formData: Record<string, any>,
+    fields: Array<{ sx3FieldName: string; label: string; isRequired: boolean; fieldType: string; metadata?: any }>,
+  ): string[] {
+    const errors: string[] = [];
+
+    fields.forEach((field) => {
+      const value = formData[field.sx3FieldName];
+
+      // Check required fields
+      if (field.isRequired) {
+        if (value === null || value === undefined || value === '') {
+          errors.push(`${field.label} é obrigatório`);
+          return;
+        }
+      }
+
+      // Type validation
+      if (value !== null && value !== undefined && value !== '') {
+        switch (field.fieldType) {
+          case 'number':
+            if (typeof value !== 'number' && isNaN(Number(value))) {
+              errors.push(`${field.label} deve ser um número válido`);
+            }
+            break;
+          case 'date':
+            if (typeof value === 'string') {
+              const date = new Date(value);
+              if (isNaN(date.getTime())) {
+                errors.push(`${field.label} deve ser uma data válida`);
+              }
+            }
+            break;
+          case 'boolean':
+            if (typeof value !== 'boolean') {
+              errors.push(`${field.label} deve ser verdadeiro ou falso`);
+            }
+            break;
+        }
+
+        // Max length validation
+        if (field.metadata?.size && typeof value === 'string' && value.length > field.metadata.size) {
+          errors.push(`${field.label} deve ter no máximo ${field.metadata.size} caracteres`);
+        }
+      }
+    });
+
+    return errors;
+  }
+
+  /**
    * Update draft registration
    */
-  async update(id: string, dto: UpdateRegistrationDto) {
+  async update(id: string, dto: UpdateRegistrationDto, userId: string) {
     // Check if exists and is DRAFT
     const registration = await this.prisma.registrationRequest.findUnique({
       where: { id },
@@ -219,6 +283,11 @@ export class RegistrationService {
 
     if (!registration) {
       throw new NotFoundException(`Registration ${id} not found`);
+    }
+
+    // Ownership check - only owner can update
+    if (registration.requestedById !== userId) {
+      throw new ForbiddenException('You can only update your own registrations');
     }
 
     if (registration.status !== RegistrationStatus.DRAFT) {
@@ -313,13 +382,18 @@ export class RegistrationService {
   /**
    * Delete registration (only DRAFT)
    */
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
     const registration = await this.prisma.registrationRequest.findUnique({
       where: { id },
     });
 
     if (!registration) {
       throw new NotFoundException(`Registration ${id} not found`);
+    }
+
+    // Ownership check - only owner can delete
+    if (registration.requestedById !== userId) {
+      throw new ForbiddenException('You can only delete your own registrations');
     }
 
     if (registration.status !== RegistrationStatus.DRAFT) {
@@ -395,8 +469,8 @@ export class RegistrationService {
   /**
    * Approve registration at current level
    */
-  async approve(id: string, dto: ApproveRegistrationDto) {
-    this.logger.log(`Approving registration ${id}`);
+  async approve(id: string, dto: ApproveRegistrationDto, approverId: string) {
+    this.logger.log(`Approving registration ${id} by user ${approverId}`);
 
     const registration = await this.findOne(id);
 
@@ -410,7 +484,7 @@ export class RegistrationService {
     // Find pending approval for this user at current level
     const approval = registration.approvals.find(
       (a) =>
-        a.approverId === dto.approverId &&
+        a.approverId === approverId &&
         a.level === registration.currentLevel &&
         a.action === ApprovalAction.PENDING,
     );
@@ -444,7 +518,7 @@ export class RegistrationService {
       }
     }
 
-    this.logger.log(`Registration ${id} approved by ${dto.approverId}`);
+    this.logger.log(`Registration ${id} approved by ${approverId}`);
 
     return this.findOne(id);
   }
@@ -452,8 +526,8 @@ export class RegistrationService {
   /**
    * Reject registration
    */
-  async reject(id: string, dto: RejectRegistrationDto) {
-    this.logger.log(`Rejecting registration ${id}`);
+  async reject(id: string, dto: RejectRegistrationDto, approverId: string) {
+    this.logger.log(`Rejecting registration ${id} by user ${approverId}`);
 
     const registration = await this.findOne(id);
 
@@ -467,7 +541,7 @@ export class RegistrationService {
     // Find pending approval for this user at current level
     const approval = registration.approvals.find(
       (a) =>
-        a.approverId === dto.approverId &&
+        a.approverId === approverId &&
         a.level === registration.currentLevel &&
         a.action === ApprovalAction.PENDING,
     );
@@ -494,7 +568,7 @@ export class RegistrationService {
       },
     });
 
-    this.logger.log(`Registration ${id} rejected by ${dto.approverId}`);
+    this.logger.log(`Registration ${id} rejected by ${approverId}`);
 
     // TODO: Send notification to requester
 

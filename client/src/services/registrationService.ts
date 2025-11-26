@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { backendApi } from './api';
 import type {
   FormTemplate,
   RegistrationRequest,
@@ -6,23 +6,7 @@ import type {
 } from '../types/registration';
 import { RegistrationStatus } from '../types/registration';
 
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api';
-
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Use the centralized backendApi instance with proper auth handling
 
 export const registrationService = {
   // ==========================================
@@ -33,7 +17,7 @@ export const registrationService = {
    * Get all form templates
    */
   async getTemplates(includeFields = false): Promise<FormTemplate[]> {
-    const response = await api.get('/form-templates', {
+    const response = await backendApi.get('/form-templates', {
       params: { includeFields },
     });
     return response.data;
@@ -43,7 +27,7 @@ export const registrationService = {
    * Get template by ID
    */
   async getTemplate(id: string): Promise<FormTemplate> {
-    const response = await api.get(`/form-templates/${id}`);
+    const response = await backendApi.get(`/form-templates/${id}`);
     return response.data;
   },
 
@@ -51,7 +35,7 @@ export const registrationService = {
    * Get template by table name
    */
   async getTemplateByTableName(tableName: string): Promise<FormTemplate> {
-    const response = await api.get(`/form-templates/by-table/${tableName}`);
+    const response = await backendApi.get(`/form-templates/by-table/${tableName}`);
     return response.data;
   },
 
@@ -63,7 +47,7 @@ export const registrationService = {
     label: string;
     description?: string;
   }): Promise<FormTemplate> {
-    const response = await api.post('/form-templates', data);
+    const response = await backendApi.post('/form-templates', data);
     return response.data;
   },
 
@@ -74,7 +58,7 @@ export const registrationService = {
     id: string,
     data: { label?: string; description?: string; isActive?: boolean },
   ): Promise<FormTemplate> {
-    const response = await api.put(`/form-templates/${id}`, data);
+    const response = await backendApi.put(`/form-templates/${id}`, data);
     return response.data;
   },
 
@@ -91,7 +75,7 @@ export const registrationService = {
       fieldGroup?: string;
     },
   ): Promise<any> {
-    const response = await api.put(`/form-templates/${templateId}/fields/${fieldId}`, data);
+    const response = await backendApi.put(`/form-templates/${templateId}/fields/${fieldId}`, data);
     return response.data;
   },
 
@@ -99,7 +83,7 @@ export const registrationService = {
    * Reorder fields
    */
   async reorderFields(templateId: string, fieldIds: string[]): Promise<FormTemplate> {
-    const response = await api.post(`/form-templates/${templateId}/reorder`, { fieldIds });
+    const response = await backendApi.post(`/form-templates/${templateId}/reorder`, { fieldIds });
     return response.data;
   },
 
@@ -107,7 +91,7 @@ export const registrationService = {
    * Get visible fields for form
    */
   async getVisibleFields(templateId: string): Promise<any[]> {
-    const response = await api.get(`/form-templates/${templateId}/visible-fields`);
+    const response = await backendApi.get(`/form-templates/${templateId}/visible-fields`);
     return response.data;
   },
 
@@ -115,7 +99,7 @@ export const registrationService = {
    * Sync template with SX3
    */
   async syncTemplateWithSx3(templateId: string): Promise<FormTemplate> {
-    const response = await api.post(`/form-templates/${templateId}/sync`);
+    const response = await backendApi.post(`/form-templates/${templateId}/sync`);
     return response.data;
   },
 
@@ -137,7 +121,7 @@ export const registrationService = {
       isParallel?: boolean;
     }>;
   }): Promise<RegistrationWorkflow> {
-    const response = await api.post('/registrations/workflows', data);
+    const response = await backendApi.post('/registrations/workflows', data);
     return response.data;
   },
 
@@ -145,7 +129,7 @@ export const registrationService = {
    * Get active workflow for template
    */
   async getActiveWorkflow(templateId: string): Promise<RegistrationWorkflow> {
-    const response = await api.get(`/registrations/workflows/template/${templateId}`);
+    const response = await backendApi.get(`/registrations/workflows/template/${templateId}`);
     return response.data;
   },
 
@@ -160,7 +144,7 @@ export const registrationService = {
     templateId: string;
     formData: Record<string, any>;
   }): Promise<RegistrationRequest> {
-    const response = await api.post('/registrations', data);
+    const response = await backendApi.post('/registrations', data);
     return response.data;
   },
 
@@ -171,7 +155,7 @@ export const registrationService = {
     id: string,
     formData: Record<string, any>,
   ): Promise<RegistrationRequest> {
-    const response = await api.put(`/registrations/${id}`, { formData });
+    const response = await backendApi.put(`/registrations/${id}`, { formData });
     return response.data;
   },
 
@@ -183,7 +167,7 @@ export const registrationService = {
     requestedById?: string;
     templateId?: string;
   }): Promise<RegistrationRequest[]> {
-    const response = await api.get('/registrations', { params: filters });
+    const response = await backendApi.get('/registrations', { params: filters });
     return response.data;
   },
 
@@ -191,7 +175,7 @@ export const registrationService = {
    * Get registration by ID
    */
   async getRegistration(id: string): Promise<RegistrationRequest> {
-    const response = await api.get(`/registrations/${id}`);
+    const response = await backendApi.get(`/registrations/${id}`);
     return response.data;
   },
 
@@ -199,14 +183,14 @@ export const registrationService = {
    * Delete draft registration
    */
   async deleteRegistration(id: string): Promise<void> {
-    await api.delete(`/registrations/${id}`);
+    await backendApi.delete(`/registrations/${id}`);
   },
 
   /**
    * Submit registration for approval
    */
   async submitRegistration(id: string): Promise<RegistrationRequest> {
-    const response = await api.post(`/registrations/${id}/submit`);
+    const response = await backendApi.post(`/registrations/${id}/submit`);
     return response.data;
   },
 
@@ -214,7 +198,7 @@ export const registrationService = {
    * Approve registration
    */
   async approveRegistration(id: string, comments?: string): Promise<RegistrationRequest> {
-    const response = await api.post(`/registrations/${id}/approve`, { comments });
+    const response = await backendApi.post(`/registrations/${id}/approve`, { comments });
     return response.data;
   },
 
@@ -222,7 +206,7 @@ export const registrationService = {
    * Reject registration
    */
   async rejectRegistration(id: string, reason: string): Promise<RegistrationRequest> {
-    const response = await api.post(`/registrations/${id}/reject`, { reason });
+    const response = await backendApi.post(`/registrations/${id}/reject`, { reason });
     return response.data;
   },
 
@@ -230,7 +214,7 @@ export const registrationService = {
    * Get pending approvals for current user
    */
   async getPendingApprovals(approverId: string): Promise<RegistrationRequest[]> {
-    const response = await api.get('/registrations/pending-approval', {
+    const response = await backendApi.get('/registrations/pending-approval', {
       params: { approverId },
     });
     return response.data;
@@ -240,7 +224,7 @@ export const registrationService = {
    * Retry sync to Protheus
    */
   async retrySync(id: string): Promise<RegistrationRequest> {
-    const response = await api.post(`/registrations/${id}/retry-sync`);
+    const response = await backendApi.post(`/registrations/${id}/retry-sync`);
     return response.data;
   },
 
@@ -252,7 +236,7 @@ export const registrationService = {
    * Get table structure from SX3
    */
   async getTableStructure(tableName: string): Promise<any> {
-    const response = await api.get(`/sx3/tables/${tableName}/fields`);
+    const response = await backendApi.get(`/sx3/tables/${tableName}/fields`);
     return response.data;
   },
 
@@ -260,7 +244,7 @@ export const registrationService = {
    * Get available tables
    */
   async getAvailableTables(): Promise<{ tables: string[] }> {
-    const response = await api.get('/sx3/tables');
+    const response = await backendApi.get('/sx3/tables');
     return response.data;
   },
 
@@ -268,6 +252,6 @@ export const registrationService = {
    * Sync SX3 cache
    */
   async syncSx3Cache(): Promise<void> {
-    await api.post('/sx3/sync');
+    await backendApi.post('/sx3/sync');
   },
 };

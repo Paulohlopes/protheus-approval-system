@@ -4,8 +4,6 @@ export class ApproveRegistrationDto {
   @IsOptional()
   @IsString()
   comments?: string;
-
-  @IsOptional()
-  @IsString()
-  approverId?: string; // Will be set from JWT if not provided
+  // Note: approverId is intentionally NOT included here for security
+  // It must come from the authenticated user (JWT) in the controller
 }
