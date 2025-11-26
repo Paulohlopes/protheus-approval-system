@@ -23,19 +23,27 @@ import {
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
-import type { FormTemplate, FormField } from '../../types/registration';
+import { useLanguage } from '../../contexts/LanguageContext';
+import type { FormTemplate, FormField, SupportedLanguage } from '../../types/registration';
+import { getFieldLabel } from '../../types/registration';
 
 type FormValue = string | number | boolean | null;
 
 export const DynamicFormPage = () => {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
+  const { language, t } = useLanguage();
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [fields, setFields] = useState<FormField[]>([]);
   const [formData, setFormData] = useState<Record<string, FormValue>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Get localized field label
+  const getLabel = (field: FormField): string => {
+    return getFieldLabel(field, language as SupportedLanguage);
+  };
 
   useEffect(() => {
     loadTemplate();
@@ -97,10 +105,11 @@ export const DynamicFormPage = () => {
 
     fields.forEach((field) => {
       const value = formData[field.sx3FieldName];
+      const label = getFieldLabel(field, language as SupportedLanguage);
 
       if (field.isRequired) {
         if (value === null || value === undefined || value === '') {
-          newErrors[field.sx3FieldName] = `${field.label} é obrigatório`;
+          newErrors[field.sx3FieldName] = t('validation.required', { field: label });
           return;
         }
       }
@@ -109,21 +118,21 @@ export const DynamicFormPage = () => {
         switch (field.fieldType) {
           case 'number':
             if (typeof value === 'string' && isNaN(Number(value))) {
-              newErrors[field.sx3FieldName] = `${field.label} deve ser um número válido`;
+              newErrors[field.sx3FieldName] = t('validation.invalidNumber', { field: label });
             }
             break;
           case 'date':
             if (typeof value === 'string') {
               const date = new Date(value);
               if (isNaN(date.getTime())) {
-                newErrors[field.sx3FieldName] = `${field.label} deve ser uma data válida`;
+                newErrors[field.sx3FieldName] = t('validation.invalidDate', { field: label });
               }
             }
             break;
         }
 
         if (field.metadata?.size && typeof value === 'string' && value.length > field.metadata.size) {
-          newErrors[field.sx3FieldName] = `${field.label} deve ter no máximo ${field.metadata.size} caracteres`;
+          newErrors[field.sx3FieldName] = t('validation.maxLength', { field: label, max: field.metadata.size });
         }
       }
     });
@@ -131,17 +140,18 @@ export const DynamicFormPage = () => {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
-      toast.error('Por favor, corrija os erros no formulário');
+      toast.error(t('validation.fixErrors'));
       return false;
     }
 
     return true;
-  }, [fields, formData]);
+  }, [fields, formData, language, t]);
 
   const renderField = (field: FormField) => {
     const value = formData[field.sx3FieldName];
     const hasError = !!errors[field.sx3FieldName];
     const errorMessage = errors[field.sx3FieldName];
+    const label = getLabel(field);
 
     switch (field.fieldType) {
       case 'number':
@@ -149,7 +159,7 @@ export const DynamicFormPage = () => {
           <TextField
             fullWidth
             type="number"
-            label={field.label}
+            label={label}
             value={value === null ? '' : String(value)}
             onChange={(e) => {
               const numValue = e.target.value === '' ? null : parseFloat(e.target.value);
@@ -157,7 +167,7 @@ export const DynamicFormPage = () => {
             }}
             required={field.isRequired}
             error={hasError}
-            helperText={errorMessage || (field.metadata?.mask ? `Formato: ${field.metadata.mask}` : undefined)}
+            helperText={errorMessage || (field.metadata?.mask ? `${t('common.format')}: ${field.metadata.mask}` : undefined)}
             inputProps={{
               step: field.metadata?.decimals ? `0.${'0'.repeat(field.metadata.decimals - 1)}1` : '1',
             }}
@@ -170,7 +180,7 @@ export const DynamicFormPage = () => {
           <TextField
             fullWidth
             type="date"
-            label={field.label}
+            label={label}
             value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
             required={field.isRequired}
@@ -192,7 +202,7 @@ export const DynamicFormPage = () => {
                   color="primary"
                 />
               }
-              label={field.label}
+              label={label}
             />
             {hasError && (
               <Typography variant="caption" color="error">
@@ -208,7 +218,7 @@ export const DynamicFormPage = () => {
             fullWidth
             multiline
             rows={4}
-            label={field.label}
+            label={label}
             value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
             required={field.isRequired}
@@ -223,12 +233,12 @@ export const DynamicFormPage = () => {
         return (
           <TextField
             fullWidth
-            label={field.label}
+            label={label}
             value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
             required={field.isRequired}
             error={hasError}
-            helperText={errorMessage || (field.metadata?.mask ? `Formato: ${field.metadata.mask}` : undefined)}
+            helperText={errorMessage || (field.metadata?.mask ? `${t('common.format')}: ${field.metadata.mask}` : undefined)}
             inputProps={{
               maxLength: field.metadata?.size || undefined,
             }}

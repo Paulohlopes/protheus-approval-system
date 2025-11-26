@@ -1,7 +1,18 @@
 export class Sx3FieldDto {
   fieldName: string; // X3_CAMPO
-  label: string; // X3_TITULO
-  description: string; // X3_DESCRIC
+  label: string; // X3_TITULO (Portuguese - default/fallback)
+  description: string; // X3_DESCRIC (Portuguese - default/fallback)
+
+  // Multi-language labels
+  labelPtBR: string; // X3_TITULO (Portuguese)
+  labelEn: string; // X3_TITENG (English)
+  labelEs: string; // X3_TITSPA (Spanish)
+
+  // Multi-language descriptions
+  descriptionPtBR: string; // X3_DESCRIC (Portuguese)
+  descriptionEn: string; // X3_DESCENG (English)
+  descriptionEs: string; // X3_DESCSPA (Spanish)
+
   fieldType: 'string' | 'number' | 'date' | 'boolean' | 'text'; // Mapped from X3_TIPO
   size: number; // X3_TAMANHO
   decimals: number; // X3_DECIMAL

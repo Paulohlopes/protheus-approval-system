@@ -67,11 +67,21 @@ model FormField {
 
   // Field definition from SX3
   sx3FieldName    String        // B1_COD, B1_DESC, etc
-  label           String        // X3_TITULO
+  label           String        // X3_TITULO (Portuguese - default)
   fieldType       String        // string, number, date, boolean
   isRequired      Boolean       // X3_OBRIGAT == 'S'
   isVisible       Boolean       // Admin configures this
   isEnabled       Boolean       @default(true)
+
+  // Multi-language labels from SX3
+  labelPtBR       String?       // X3_TITULO (Portuguese)
+  labelEn         String?       // X3_TITENG (English)
+  labelEs         String?       // X3_TITSPA (Spanish)
+
+  // Multi-language descriptions from SX3
+  descriptionPtBR String?       // X3_DESCRIC (Portuguese)
+  descriptionEn   String?       // X3_DESCENG (English)
+  descriptionEs   String?       // X3_DESCSPA (Spanish)
 
   // Ordering and grouping
   fieldOrder      Int

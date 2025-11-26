@@ -38,6 +38,18 @@ export const en = {
     clear: 'Clear',
     selectAll: 'Select all',
     unselectAll: 'Unselect all',
+    format: 'Format',
+    general: 'General',
+    submit: 'Submit',
+    submitForApproval: 'Submit for Approval',
+    sending: 'Sending...',
+  },
+  validation: {
+    required: '{{field}} is required',
+    invalidNumber: '{{field}} must be a valid number',
+    invalidDate: '{{field}} must be a valid date',
+    maxLength: '{{field}} must have at most {{max}} characters',
+    fixErrors: 'Please fix the errors in the form',
   },
   header: {
     title: 'AprovaFácil',

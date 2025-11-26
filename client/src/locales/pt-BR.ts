@@ -38,6 +38,18 @@ export const ptBR = {
     clear: 'Limpar',
     selectAll: 'Selecionar todos',
     unselectAll: 'Desmarcar todos',
+    format: 'Formato',
+    general: 'Geral',
+    submit: 'Enviar',
+    submitForApproval: 'Enviar para Aprovação',
+    sending: 'Enviando...',
+  },
+  validation: {
+    required: '{{field}} é obrigatório',
+    invalidNumber: '{{field}} deve ser um número válido',
+    invalidDate: '{{field}} deve ser uma data válida',
+    maxLength: '{{field}} deve ter no máximo {{max}} caracteres',
+    fixErrors: 'Por favor, corrija os erros no formulário',
   },
   header: {
     title: 'AprovaFácil',

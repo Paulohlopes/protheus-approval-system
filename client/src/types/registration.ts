@@ -41,6 +41,14 @@ export interface FormField {
   isEnabled: boolean;
   fieldOrder: number;
   fieldGroup?: string;
+  // Multi-language labels
+  labelPtBR?: string;
+  labelEn?: string;
+  labelEs?: string;
+  // Multi-language descriptions
+  descriptionPtBR?: string;
+  descriptionEn?: string;
+  descriptionEs?: string;
   validationRules?: any;
   metadata?: {
     size?: number;
@@ -53,6 +61,35 @@ export interface FormField {
   };
   createdAt: string;
   updatedAt: string;
+}
+
+// Supported languages type
+export type SupportedLanguage = 'pt-BR' | 'en' | 'es';
+
+// Helper function to get field label based on current language
+export function getFieldLabel(field: FormField, language: SupportedLanguage): string {
+  switch (language) {
+    case 'en':
+      return field.labelEn || field.label;
+    case 'es':
+      return field.labelEs || field.label;
+    case 'pt-BR':
+    default:
+      return field.labelPtBR || field.label;
+  }
+}
+
+// Helper function to get field description based on current language
+export function getFieldDescription(field: FormField, language: SupportedLanguage): string | undefined {
+  switch (language) {
+    case 'en':
+      return field.descriptionEn || field.descriptionPtBR;
+    case 'es':
+      return field.descriptionEs || field.descriptionPtBR;
+    case 'pt-BR':
+    default:
+      return field.descriptionPtBR;
+  }
 }
 
 export type RegistrationRequest = {

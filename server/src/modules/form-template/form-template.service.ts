@@ -52,6 +52,14 @@ export class FormTemplateService {
             isEnabled: true,
             fieldOrder: index,
             fieldGroup: null,
+            // Multi-language labels from SX3
+            labelPtBR: field.labelPtBR,
+            labelEn: field.labelEn,
+            labelEs: field.labelEs,
+            // Multi-language descriptions from SX3
+            descriptionPtBR: field.descriptionPtBR,
+            descriptionEn: field.descriptionEn,
+            descriptionEs: field.descriptionEs,
             validationRules: null,
             metadata: {
               size: field.size,
@@ -267,6 +275,14 @@ export class FormTemplateService {
           label: sx3Field.label,
           fieldType: sx3Field.fieldType,
           isRequired: sx3Field.isRequired,
+          // Multi-language labels from SX3
+          labelPtBR: sx3Field.labelPtBR,
+          labelEn: sx3Field.labelEn,
+          labelEs: sx3Field.labelEs,
+          // Multi-language descriptions from SX3
+          descriptionPtBR: sx3Field.descriptionPtBR,
+          descriptionEn: sx3Field.descriptionEn,
+          descriptionEs: sx3Field.descriptionEs,
           metadata: {
             ...(typeof field.metadata === 'object' && field.metadata !== null ? field.metadata : {}),
             size: sx3Field.size,

@@ -38,6 +38,18 @@ export const es = {
     clear: 'Limpiar',
     selectAll: 'Seleccionar todos',
     unselectAll: 'Deseleccionar todos',
+    format: 'Formato',
+    general: 'General',
+    submit: 'Enviar',
+    submitForApproval: 'Enviar para Aprobación',
+    sending: 'Enviando...',
+  },
+  validation: {
+    required: '{{field}} es obligatorio',
+    invalidNumber: '{{field}} debe ser un número válido',
+    invalidDate: '{{field}} debe ser una fecha válida',
+    maxLength: '{{field}} debe tener como máximo {{max}} caracteres',
+    fixErrors: 'Por favor, corrija los errores en el formulario',
   },
   header: {
     title: 'AprovaFácil',

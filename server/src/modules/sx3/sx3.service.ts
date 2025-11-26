@@ -96,10 +96,27 @@ export class Sx3Service {
    * Map SX3 entity to DTO
    */
   private mapToDto(record: Sx3): Sx3FieldDto {
+    const labelPtBR = record.x3Titulo?.trim() || '';
+    const labelEn = record.x3TitEng?.trim() || '';
+    const labelEs = record.x3TitSpa?.trim() || '';
+    const descriptionPtBR = record.x3Descric?.trim() || '';
+    const descriptionEn = record.x3DescEng?.trim() || '';
+    const descriptionEs = record.x3DescSpa?.trim() || '';
+
     return {
       fieldName: record.x3Campo?.trim() || '',
-      label: record.x3Titulo?.trim() || '',
-      description: record.x3Descric?.trim() || '',
+      // Default label/description (Portuguese as fallback)
+      label: labelPtBR,
+      description: descriptionPtBR,
+      // Multi-language labels (fallback to Portuguese if empty)
+      labelPtBR,
+      labelEn: labelEn || labelPtBR,
+      labelEs: labelEs || labelPtBR,
+      // Multi-language descriptions (fallback to Portuguese if empty)
+      descriptionPtBR,
+      descriptionEn: descriptionEn || descriptionPtBR,
+      descriptionEs: descriptionEs || descriptionPtBR,
+      // Other fields
       fieldType: this.mapFieldType(record.x3Tipo),
       size: record.x3Tamanho || 0,
       decimals: record.x3Decimal || 0,
