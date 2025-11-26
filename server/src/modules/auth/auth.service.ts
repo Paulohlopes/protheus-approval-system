@@ -9,6 +9,7 @@ import axios from 'axios';
 import { LoginDto } from './dto/login.dto';
 import {
   ProtheusTokenResponse,
+  ProtheusTokenResponseSuccess,
   ProtheusUserIdResponse,
   ProtheusUserDetailsResponse,
   AuthResponse,
@@ -101,7 +102,7 @@ export class AuthService {
   private async getProtheusToken(
     username: string,
     password: string,
-  ): Promise<ProtheusTokenResponse> {
+  ): Promise<ProtheusTokenResponseSuccess> {
     try {
       const url = `${this.protheusOAuthUrl}/rest/api/oauth2/v1/token`;
       const params = {
@@ -131,13 +132,14 @@ export class AuthService {
         );
       }
 
-      if (!response.data || !response.data.access_token) {
+      // Ensure response.data is an object with access_token
+      if (typeof response.data !== 'object' || response.data === null || !('access_token' in response.data)) {
         throw new UnauthorizedException(
           'Authentication failed - Token not received',
         );
       }
 
-      return response.data;
+      return response.data as ProtheusTokenResponseSuccess;
     } catch (error) {
       this.handleProtheusError(error, 'Failed to get OAuth2 token');
     }

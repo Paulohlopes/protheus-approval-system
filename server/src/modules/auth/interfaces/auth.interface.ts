@@ -1,9 +1,11 @@
-export interface ProtheusTokenResponse {
+export interface ProtheusTokenResponseSuccess {
   access_token: string;
   refresh_token: string;
   expires_in: number;
   token_type?: string;
 }
+
+export type ProtheusTokenResponse = ProtheusTokenResponseSuccess | string;
 
 export interface ProtheusUserIdResponse {
   userID: string;

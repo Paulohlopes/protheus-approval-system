@@ -268,7 +268,7 @@ export class FormTemplateService {
           fieldType: sx3Field.fieldType,
           isRequired: sx3Field.isRequired,
           metadata: {
-            ...field.metadata,
+            ...(typeof field.metadata === 'object' && field.metadata !== null ? field.metadata : {}),
             size: sx3Field.size,
             decimals: sx3Field.decimals,
             mask: sx3Field.mask,
