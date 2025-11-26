@@ -323,6 +323,102 @@ export const en = {
     documentApprovedSuccess: 'Document approved successfully!',
     documentRejectedSuccess: 'Document rejected successfully!',
   },
+  registration: {
+    // Menu items
+    menuTitle: 'Registrations',
+    newRegistration: 'New Registration',
+    myRequests: 'My Requests',
+    approvalQueue: 'Approval Queue',
+
+    // SelectType page
+    selectTypeTitle: 'New Registration',
+    selectTypeSubtitle: 'Select the type of registration you want to create',
+    noTemplatesTitle: 'No registration types available',
+    noTemplatesDesc: 'There are no registration types configured at the moment. Contact the administrator.',
+
+    // MyRequests page
+    myRequestsTitle: 'My Requests',
+    myRequestsSubtitle: 'Track the status of your registration requests',
+    noRequestsTitle: 'No requests found',
+    noRequestsDesc: 'You don\'t have any requests yet. Create a new request to get started.',
+    newRequest: 'New Request',
+    requestDetails: 'Request Details',
+    generalInfo: 'General Information',
+    approvalHistory: 'Approval History',
+    formData: 'Form Data',
+    retrySync: 'Retry Sync',
+    retrySyncQuestion: 'Do you want to retry syncing with Protheus?',
+    retrying: 'Retrying...',
+    retry: 'Retry',
+
+    // ApprovalQueue page
+    approvalQueueTitle: 'Approval Queue',
+    approvalQueueSubtitle: 'Review and approve or reject pending registration requests',
+    noPendingTitle: 'No pending requests',
+    noPendingDesc: 'Congratulations! You have no requests awaiting approval at the moment.',
+    review: 'Review',
+    reviewRequest: 'Review Request',
+    requester: 'Requester',
+    currentLevel: 'Current Level',
+    level: 'Level',
+
+    // Approval actions
+    approveRequest: 'Approve Request',
+    rejectRequest: 'Reject Request',
+    approveCommentHint: 'Add optional comments about the approval.',
+    rejectCommentHint: 'Please provide the reason for rejection.',
+    commentsOptional: 'Comments (optional)...',
+    rejectReason: 'Rejection reason...',
+    rejectReasonRequired: 'Rejection reason is required',
+    approving: 'Approving...',
+    rejecting: 'Rejecting...',
+
+    // Status labels
+    statusDraft: 'Draft',
+    statusPendingApproval: 'Pending Approval',
+    statusInApproval: 'In Approval',
+    statusApproved: 'Approved',
+    statusRejected: 'Rejected',
+    statusSyncing: 'Syncing',
+    statusSynced: 'Synced',
+    statusSyncFailed: 'Sync Failed',
+
+    // Approval action labels
+    actionPending: 'Pending',
+    actionApproved: 'Approved',
+    actionRejected: 'Rejected',
+
+    // Table headers
+    tableType: 'Type',
+    tableDate: 'Date',
+    tableStatus: 'Status',
+    tableProtheus: 'Protheus',
+    tableActions: 'Actions',
+    tableRequester: 'Requester',
+    tableLevel: 'Level',
+
+    // DynamicForm
+    formCancelButton: 'Cancel',
+    formSubmitButton: 'Submit for Approval',
+    formSubmitting: 'Submitting...',
+
+    // Success/Error messages
+    successApproved: 'Request approved successfully!',
+    successRejected: 'Request rejected',
+    successSyncStarted: 'Sync started successfully!',
+    successSubmitted: 'Request submitted for approval successfully!',
+    errorLoadTemplates: 'Error loading registration types. Please try again.',
+    errorLoadRequests: 'Error loading requests. Please try again.',
+    errorLoadPending: 'Error loading pending approvals. Please try again.',
+    errorApprove: 'Error approving request. Please try again.',
+    errorReject: 'Error rejecting request. Please try again.',
+    errorRetrySync: 'Error retrying sync. Please try again.',
+    errorSubmit: 'Error submitting request. Please try again.',
+    errorLoadForm: 'Error loading form. Please try again.',
+    errorTemplateNotFound: 'Template not found',
+    errorSessionExpired: 'Session expired. Please log in again.',
+    errorNoPermission: 'You do not have permission to access this resource.',
+  },
   apiErrors: {
     errorConnectingCountries: 'Error connecting to {{count}} {{countryWord}}',
     warningCountriesUnavailable: 'Warning: {{count}} {{countryWord}} {{verbPhrase}} unavailable',

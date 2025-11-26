@@ -38,6 +38,7 @@ import {
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
+import { useLanguage } from '../../contexts/LanguageContext';
 import type { RegistrationRequest } from '../../types/registration';
 import { RegistrationStatus } from '../../types/registration';
 import { EmptyState } from '../../components/EmptyState';
@@ -45,19 +46,9 @@ import { EmptyState } from '../../components/EmptyState';
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 type ActionDialogType = 'approve' | 'reject' | null;
 
-const statusConfig: Record<RegistrationStatus, { label: string; color: ChipColor; icon: React.ReactNode }> = {
-  DRAFT: { label: 'Rascunho', color: 'default', icon: <Schedule fontSize="small" /> },
-  PENDING_APPROVAL: { label: 'Aguardando Aprovação', color: 'warning', icon: <Schedule fontSize="small" /> },
-  IN_APPROVAL: { label: 'Em Aprovação', color: 'info', icon: <Schedule fontSize="small" /> },
-  APPROVED: { label: 'Aprovado', color: 'success', icon: <CheckCircle fontSize="small" /> },
-  REJECTED: { label: 'Rejeitado', color: 'error', icon: <ErrorIcon fontSize="small" /> },
-  SYNCING_TO_PROTHEUS: { label: 'Sincronizando', color: 'info', icon: <Sync fontSize="small" /> },
-  SYNCED: { label: 'Sincronizado', color: 'success', icon: <CheckCircle fontSize="small" /> },
-  SYNC_FAILED: { label: 'Falha na Sincronização', color: 'error', icon: <SyncProblem fontSize="small" /> },
-};
-
 export const ApprovalQueuePage = () => {
   const { user } = useAuthStore();
+  const { t, language } = useLanguage();
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
@@ -65,6 +56,17 @@ export const ApprovalQueuePage = () => {
   const [actionDialog, setActionDialog] = useState<ActionDialogType>(null);
   const [actionInput, setActionInput] = useState('');
   const [actionError, setActionError] = useState('');
+
+  const statusConfig: Record<RegistrationStatus, { label: string; color: ChipColor; icon: React.ReactNode }> = {
+    DRAFT: { label: t.registration.statusDraft, color: 'default', icon: <Schedule fontSize="small" /> },
+    PENDING_APPROVAL: { label: t.registration.statusPendingApproval, color: 'warning', icon: <Schedule fontSize="small" /> },
+    IN_APPROVAL: { label: t.registration.statusInApproval, color: 'info', icon: <Schedule fontSize="small" /> },
+    APPROVED: { label: t.registration.statusApproved, color: 'success', icon: <CheckCircle fontSize="small" /> },
+    REJECTED: { label: t.registration.statusRejected, color: 'error', icon: <ErrorIcon fontSize="small" /> },
+    SYNCING_TO_PROTHEUS: { label: t.registration.statusSyncing, color: 'info', icon: <Sync fontSize="small" /> },
+    SYNCED: { label: t.registration.statusSynced, color: 'success', icon: <CheckCircle fontSize="small" /> },
+    SYNC_FAILED: { label: t.registration.statusSyncFailed, color: 'error', icon: <SyncProblem fontSize="small" /> },
+  };
 
   useEffect(() => {
     loadPendingApprovals();
@@ -82,7 +84,7 @@ export const ApprovalQueuePage = () => {
       setRequests(data);
     } catch (error) {
       console.error('Error loading pending approvals:', error);
-      toast.error('Erro ao carregar aprovações pendentes. Por favor, tente novamente.');
+      toast.error(t.registration.errorLoadPending);
     } finally {
       setLoading(false);
     }
@@ -106,13 +108,13 @@ export const ApprovalQueuePage = () => {
     try {
       setActionLoading(true);
       await registrationService.approveRegistration(selectedRequest.id, actionInput || undefined);
-      toast.success('Solicitação aprovada com sucesso!');
+      toast.success(t.registration.successApproved);
       handleCloseActionDialog();
       setSelectedRequest(null);
       await loadPendingApprovals();
     } catch (error) {
       console.error('Error approving request:', error);
-      toast.error('Erro ao aprovar solicitação. Por favor, tente novamente.');
+      toast.error(t.registration.errorApprove);
     } finally {
       setActionLoading(false);
     }
@@ -122,20 +124,20 @@ export const ApprovalQueuePage = () => {
     if (!selectedRequest) return;
 
     if (!actionInput.trim()) {
-      setActionError('O motivo da rejeição é obrigatório');
+      setActionError(t.registration.rejectReasonRequired);
       return;
     }
 
     try {
       setActionLoading(true);
       await registrationService.rejectRegistration(selectedRequest.id, actionInput);
-      toast.success('Solicitação rejeitada');
+      toast.success(t.registration.successRejected);
       handleCloseActionDialog();
       setSelectedRequest(null);
       await loadPendingApprovals();
     } catch (error) {
       console.error('Error rejecting request:', error);
-      toast.error('Erro ao rejeitar solicitação. Por favor, tente novamente.');
+      toast.error(t.registration.errorReject);
     } finally {
       setActionLoading(false);
     }
@@ -155,6 +157,14 @@ export const ApprovalQueuePage = () => {
     );
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : language === 'es' ? 'es-ES' : 'pt-BR');
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString(language === 'en' ? 'en-US' : language === 'es' ? 'es-ES' : 'pt-BR');
+  };
+
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -172,11 +182,11 @@ export const ApprovalQueuePage = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
           <HowToReg fontSize="large" color="primary" />
           <Typography variant="h4" component="h1" fontWeight={600}>
-            Fila de Aprovação
+            {t.registration.approvalQueueTitle}
           </Typography>
         </Box>
         <Typography variant="body1" color="text.secondary">
-          Revise e aprove ou rejeite as solicitações de cadastro pendentes
+          {t.registration.approvalQueueSubtitle}
         </Typography>
       </Box>
 
@@ -185,20 +195,20 @@ export const ApprovalQueuePage = () => {
         {requests.length === 0 ? (
           <EmptyState
             type="no-documents"
-            title="Nenhuma solicitação pendente"
-            description="Parabéns! Você não tem solicitações aguardando aprovação no momento."
+            title={t.registration.noPendingTitle}
+            description={t.registration.noPendingDesc}
           />
         ) : (
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: 'grey.50' }}>
-                  <TableCell sx={{ fontWeight: 600 }}>Tipo</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Solicitante</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Data</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Nível</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }} align="right">Ações</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableType}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableRequester}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableDate}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableLevel}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableStatus}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">{t.registration.tableActions}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -225,12 +235,12 @@ export const ApprovalQueuePage = () => {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {new Date(request.requestedAt).toLocaleDateString('pt-BR')}
+                        {formatDate(request.requestedAt)}
                       </Typography>
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={`Nível ${request.currentLevel}`}
+                        label={`${t.registration.level} ${request.currentLevel}`}
                         size="small"
                         variant="outlined"
                         sx={{ borderRadius: 1 }}
@@ -238,7 +248,7 @@ export const ApprovalQueuePage = () => {
                     </TableCell>
                     <TableCell>{getStatusChip(request.status)}</TableCell>
                     <TableCell align="right">
-                      <Tooltip title="Revisar solicitação">
+                      <Tooltip title={t.registration.reviewRequest}>
                         <Button
                           size="small"
                           variant="outlined"
@@ -246,7 +256,7 @@ export const ApprovalQueuePage = () => {
                           onClick={() => setSelectedRequest(request)}
                           sx={{ borderRadius: 2, textTransform: 'none' }}
                         >
-                          Revisar
+                          {t.registration.review}
                         </Button>
                       </Tooltip>
                     </TableCell>
@@ -273,7 +283,7 @@ export const ApprovalQueuePage = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <RateReview color="primary" />
                   <Typography variant="h6" fontWeight={600}>
-                    Revisar Solicitação
+                    {t.registration.reviewRequest}
                   </Typography>
                 </Box>
                 <IconButton onClick={() => setSelectedRequest(null)} size="small">
@@ -285,18 +295,18 @@ export const ApprovalQueuePage = () => {
               {/* Request Info */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Informações Gerais
+                  {t.registration.generalInfo}
                 </Typography>
                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                   <Stack spacing={1.5}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Tipo:</Typography>
+                      <Typography variant="body2" color="text.secondary">{t.registration.tableType}:</Typography>
                       <Typography variant="body2" fontWeight={500}>
                         {selectedRequest.template?.label || selectedRequest.tableName}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">Solicitante:</Typography>
+                      <Typography variant="body2" color="text.secondary">{t.registration.requester}:</Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
                           <Person sx={{ fontSize: 14 }} />
@@ -307,15 +317,15 @@ export const ApprovalQueuePage = () => {
                       </Box>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Data:</Typography>
+                      <Typography variant="body2" color="text.secondary">{t.registration.tableDate}:</Typography>
                       <Typography variant="body2">
-                        {new Date(selectedRequest.requestedAt).toLocaleString('pt-BR')}
+                        {formatDateTime(selectedRequest.requestedAt)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Nível Atual:</Typography>
+                      <Typography variant="body2" color="text.secondary">{t.registration.currentLevel}:</Typography>
                       <Chip
-                        label={`Nível ${selectedRequest.currentLevel}`}
+                        label={`${t.registration.level} ${selectedRequest.currentLevel}`}
                         size="small"
                         variant="outlined"
                         sx={{ borderRadius: 1 }}
@@ -328,7 +338,7 @@ export const ApprovalQueuePage = () => {
               {/* Form Data */}
               <Box>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Dados do Formulário
+                  {t.registration.formData}
                 </Typography>
                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                   <Stack spacing={1}>
@@ -349,7 +359,7 @@ export const ApprovalQueuePage = () => {
                 disabled={actionLoading}
                 sx={{ borderRadius: 2, textTransform: 'none' }}
               >
-                Fechar
+                {t.common.close}
               </Button>
               <Button
                 onClick={() => handleOpenActionDialog('reject')}
@@ -359,7 +369,7 @@ export const ApprovalQueuePage = () => {
                 disabled={actionLoading}
                 sx={{ borderRadius: 2, textTransform: 'none' }}
               >
-                Rejeitar
+                {t.common.reject}
               </Button>
               <Button
                 onClick={() => handleOpenActionDialog('approve')}
@@ -369,7 +379,7 @@ export const ApprovalQueuePage = () => {
                 disabled={actionLoading}
                 sx={{ borderRadius: 2, textTransform: 'none' }}
               >
-                Aprovar
+                {t.common.approve}
               </Button>
             </DialogActions>
           </>
@@ -387,18 +397,18 @@ export const ApprovalQueuePage = () => {
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CheckCircle color="success" />
-            <Typography variant="h6">Aprovar Solicitação</Typography>
+            <Typography variant="h6">{t.registration.approveRequest}</Typography>
           </Box>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Adicione comentários opcionais sobre a aprovação.
+            {t.registration.approveCommentHint}
           </Typography>
           <TextField
             fullWidth
             multiline
             rows={4}
-            placeholder="Comentários (opcional)..."
+            placeholder={t.registration.commentsOptional}
             value={actionInput}
             onChange={(e) => setActionInput(e.target.value)}
             variant="outlined"
@@ -415,7 +425,7 @@ export const ApprovalQueuePage = () => {
             disabled={actionLoading}
             sx={{ textTransform: 'none' }}
           >
-            Cancelar
+            {t.common.cancel}
           </Button>
           <Button
             onClick={handleApprove}
@@ -425,7 +435,7 @@ export const ApprovalQueuePage = () => {
             startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <CheckCircle />}
             sx={{ borderRadius: 2, textTransform: 'none' }}
           >
-            {actionLoading ? 'Aprovando...' : 'Aprovar'}
+            {actionLoading ? t.registration.approving : t.common.approve}
           </Button>
         </DialogActions>
       </Dialog>
@@ -441,18 +451,18 @@ export const ApprovalQueuePage = () => {
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Cancel color="error" />
-            <Typography variant="h6">Rejeitar Solicitação</Typography>
+            <Typography variant="h6">{t.registration.rejectRequest}</Typography>
           </Box>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Por favor, informe o motivo da rejeição.
+            {t.registration.rejectCommentHint}
           </Typography>
           <TextField
             fullWidth
             multiline
             rows={4}
-            placeholder="Motivo da rejeição..."
+            placeholder={t.registration.rejectReason}
             value={actionInput}
             onChange={(e) => {
               setActionInput(e.target.value);
@@ -475,7 +485,7 @@ export const ApprovalQueuePage = () => {
             disabled={actionLoading}
             sx={{ textTransform: 'none' }}
           >
-            Cancelar
+            {t.common.cancel}
           </Button>
           <Button
             onClick={handleReject}
@@ -485,7 +495,7 @@ export const ApprovalQueuePage = () => {
             startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <Cancel />}
             sx={{ borderRadius: 2, textTransform: 'none' }}
           >
-            {actionLoading ? 'Rejeitando...' : 'Rejeitar'}
+            {actionLoading ? t.registration.rejecting : t.common.reject}
           </Button>
         </DialogActions>
       </Dialog>

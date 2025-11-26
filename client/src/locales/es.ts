@@ -323,6 +323,102 @@ export const es = {
     documentApprovedSuccess: '¡Documento aprobado con éxito!',
     documentRejectedSuccess: '¡Documento rechazado con éxito!',
   },
+  registration: {
+    // Menu items
+    menuTitle: 'Registros',
+    newRegistration: 'Nuevo Registro',
+    myRequests: 'Mis Solicitudes',
+    approvalQueue: 'Cola de Aprobación',
+
+    // SelectType page
+    selectTypeTitle: 'Nuevo Registro',
+    selectTypeSubtitle: 'Seleccione el tipo de registro que desea crear',
+    noTemplatesTitle: 'Ningún tipo de registro disponible',
+    noTemplatesDesc: 'No hay tipos de registro configurados en este momento. Contacte al administrador.',
+
+    // MyRequests page
+    myRequestsTitle: 'Mis Solicitudes',
+    myRequestsSubtitle: 'Siga el estado de sus solicitudes de registro',
+    noRequestsTitle: 'Ninguna solicitud encontrada',
+    noRequestsDesc: 'Aún no tiene solicitudes. Cree una nueva solicitud para comenzar.',
+    newRequest: 'Nueva Solicitud',
+    requestDetails: 'Detalles de la Solicitud',
+    generalInfo: 'Información General',
+    approvalHistory: 'Historial de Aprobaciones',
+    formData: 'Datos del Formulario',
+    retrySync: 'Reintentar Sincronización',
+    retrySyncQuestion: '¿Desea reintentar la sincronización con Protheus?',
+    retrying: 'Reintentando...',
+    retry: 'Reintentar',
+
+    // ApprovalQueue page
+    approvalQueueTitle: 'Cola de Aprobación',
+    approvalQueueSubtitle: 'Revise y apruebe o rechace las solicitudes de registro pendientes',
+    noPendingTitle: 'Ninguna solicitud pendiente',
+    noPendingDesc: '¡Felicitaciones! No tiene solicitudes esperando aprobación en este momento.',
+    review: 'Revisar',
+    reviewRequest: 'Revisar Solicitud',
+    requester: 'Solicitante',
+    currentLevel: 'Nivel Actual',
+    level: 'Nivel',
+
+    // Approval actions
+    approveRequest: 'Aprobar Solicitud',
+    rejectRequest: 'Rechazar Solicitud',
+    approveCommentHint: 'Agregue comentarios opcionales sobre la aprobación.',
+    rejectCommentHint: 'Por favor, indique el motivo del rechazo.',
+    commentsOptional: 'Comentarios (opcional)...',
+    rejectReason: 'Motivo del rechazo...',
+    rejectReasonRequired: 'El motivo del rechazo es obligatorio',
+    approving: 'Aprobando...',
+    rejecting: 'Rechazando...',
+
+    // Status labels
+    statusDraft: 'Borrador',
+    statusPendingApproval: 'Pendiente de Aprobación',
+    statusInApproval: 'En Aprobación',
+    statusApproved: 'Aprobado',
+    statusRejected: 'Rechazado',
+    statusSyncing: 'Sincronizando',
+    statusSynced: 'Sincronizado',
+    statusSyncFailed: 'Fallo en Sincronización',
+
+    // Approval action labels
+    actionPending: 'Pendiente',
+    actionApproved: 'Aprobado',
+    actionRejected: 'Rechazado',
+
+    // Table headers
+    tableType: 'Tipo',
+    tableDate: 'Fecha',
+    tableStatus: 'Estado',
+    tableProtheus: 'Protheus',
+    tableActions: 'Acciones',
+    tableRequester: 'Solicitante',
+    tableLevel: 'Nivel',
+
+    // DynamicForm
+    formCancelButton: 'Cancelar',
+    formSubmitButton: 'Enviar para Aprobación',
+    formSubmitting: 'Enviando...',
+
+    // Success/Error messages
+    successApproved: '¡Solicitud aprobada con éxito!',
+    successRejected: 'Solicitud rechazada',
+    successSyncStarted: '¡Sincronización iniciada con éxito!',
+    successSubmitted: '¡Solicitud enviada para aprobación con éxito!',
+    errorLoadTemplates: 'Error al cargar tipos de registro. Por favor, inténtelo de nuevo.',
+    errorLoadRequests: 'Error al cargar solicitudes. Por favor, inténtelo de nuevo.',
+    errorLoadPending: 'Error al cargar aprobaciones pendientes. Por favor, inténtelo de nuevo.',
+    errorApprove: 'Error al aprobar solicitud. Por favor, inténtelo de nuevo.',
+    errorReject: 'Error al rechazar solicitud. Por favor, inténtelo de nuevo.',
+    errorRetrySync: 'Error al reintentar sincronización. Por favor, inténtelo de nuevo.',
+    errorSubmit: 'Error al enviar solicitud. Por favor, inténtelo de nuevo.',
+    errorLoadForm: 'Error al cargar formulario. Por favor, inténtelo de nuevo.',
+    errorTemplateNotFound: 'Plantilla no encontrada',
+    errorSessionExpired: 'Sesión expirada. Inicie sesión nuevamente.',
+    errorNoPermission: 'No tiene permiso para acceder a este recurso.',
+  },
   apiErrors: {
     errorConnectingCountries: 'Error al conectar con {{count}} {{countryWord}}',
     warningCountriesUnavailable: 'Aviso: {{count}} {{countryWord}} {{verbPhrase}} disponible{{plural}}',

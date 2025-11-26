@@ -35,37 +35,39 @@ import {
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
+import { useLanguage } from '../../contexts/LanguageContext';
 import type { RegistrationRequest, RegistrationApproval } from '../../types/registration';
 import { RegistrationStatus, ApprovalAction } from '../../types/registration';
 import { EmptyState } from '../../components/EmptyState';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 
-const statusConfig: Record<RegistrationStatus, { label: string; color: ChipColor; icon: React.ReactNode }> = {
-  DRAFT: { label: 'Rascunho', color: 'default', icon: <Schedule fontSize="small" /> },
-  PENDING_APPROVAL: { label: 'Aguardando Aprovação', color: 'warning', icon: <Schedule fontSize="small" /> },
-  IN_APPROVAL: { label: 'Em Aprovação', color: 'info', icon: <Schedule fontSize="small" /> },
-  APPROVED: { label: 'Aprovado', color: 'success', icon: <CheckCircle fontSize="small" /> },
-  REJECTED: { label: 'Rejeitado', color: 'error', icon: <ErrorIcon fontSize="small" /> },
-  SYNCING_TO_PROTHEUS: { label: 'Sincronizando', color: 'info', icon: <Sync fontSize="small" /> },
-  SYNCED: { label: 'Sincronizado', color: 'success', icon: <CheckCircle fontSize="small" /> },
-  SYNC_FAILED: { label: 'Falha na Sincronização', color: 'error', icon: <SyncProblem fontSize="small" /> },
-};
-
-const approvalActionLabels: Record<string, string> = {
-  PENDING: 'Pendente',
-  APPROVED: 'Aprovado',
-  REJECTED: 'Rejeitado',
-};
-
 export const MyRequestsPage = () => {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
   const [retrySyncDialogOpen, setRetrySyncDialogOpen] = useState(false);
   const [requestIdToRetry, setRequestIdToRetry] = useState<string | null>(null);
   const [retryLoading, setRetryLoading] = useState(false);
+
+  const statusConfig: Record<RegistrationStatus, { label: string; color: ChipColor; icon: React.ReactNode }> = {
+    DRAFT: { label: t.registration.statusDraft, color: 'default', icon: <Schedule fontSize="small" /> },
+    PENDING_APPROVAL: { label: t.registration.statusPendingApproval, color: 'warning', icon: <Schedule fontSize="small" /> },
+    IN_APPROVAL: { label: t.registration.statusInApproval, color: 'info', icon: <Schedule fontSize="small" /> },
+    APPROVED: { label: t.registration.statusApproved, color: 'success', icon: <CheckCircle fontSize="small" /> },
+    REJECTED: { label: t.registration.statusRejected, color: 'error', icon: <ErrorIcon fontSize="small" /> },
+    SYNCING_TO_PROTHEUS: { label: t.registration.statusSyncing, color: 'info', icon: <Sync fontSize="small" /> },
+    SYNCED: { label: t.registration.statusSynced, color: 'success', icon: <CheckCircle fontSize="small" /> },
+    SYNC_FAILED: { label: t.registration.statusSyncFailed, color: 'error', icon: <SyncProblem fontSize="small" /> },
+  };
+
+  const approvalActionLabels: Record<string, string> = {
+    PENDING: t.registration.actionPending,
+    APPROVED: t.registration.actionApproved,
+    REJECTED: t.registration.actionRejected,
+  };
 
   useEffect(() => {
     loadMyRequests();
@@ -74,19 +76,17 @@ export const MyRequestsPage = () => {
   const loadMyRequests = async () => {
     try {
       setLoading(true);
-
-      // Use the new endpoint that gets user ID from the token
       const data = await registrationService.getMyRequests();
       setRequests(data);
     } catch (error: any) {
       console.error('Error loading requests:', error);
 
       if (error.response?.status === 401) {
-        toast.error('Sessão expirada. Faça login novamente.');
+        toast.error(t.registration.errorSessionExpired);
       } else if (error.response?.status === 403) {
-        toast.error('Você não tem permissão para acessar este recurso.');
+        toast.error(t.registration.errorNoPermission);
       } else {
-        toast.error('Erro ao carregar solicitações. Por favor, tente novamente.');
+        toast.error(t.registration.errorLoadRequests);
       }
     } finally {
       setLoading(false);
@@ -104,12 +104,12 @@ export const MyRequestsPage = () => {
     try {
       setRetryLoading(true);
       await registrationService.retrySync(requestIdToRetry);
-      toast.success('Sincronização iniciada com sucesso!');
+      toast.success(t.registration.successSyncStarted);
       setRetrySyncDialogOpen(false);
       await loadMyRequests();
     } catch (error) {
       console.error('Error retrying sync:', error);
-      toast.error('Erro ao retentar sincronização. Por favor, tente novamente.');
+      toast.error(t.registration.errorRetrySync);
     } finally {
       setRetryLoading(false);
       setRequestIdToRetry(null);
@@ -130,6 +130,14 @@ export const MyRequestsPage = () => {
     );
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : language === 'es' ? 'es-ES' : 'pt-BR');
+  };
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString(language === 'en' ? 'en-US' : language === 'es' ? 'es-ES' : 'pt-BR');
+  };
+
   if (loading) {
     return (
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -148,7 +156,7 @@ export const MyRequestsPage = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Assignment fontSize="large" color="primary" />
             <Typography variant="h4" component="h1" fontWeight={600}>
-              Minhas Solicitações
+              {t.registration.myRequestsTitle}
             </Typography>
           </Box>
           <Button
@@ -157,11 +165,11 @@ export const MyRequestsPage = () => {
             onClick={() => navigate('/registration/new')}
             sx={{ borderRadius: 2, textTransform: 'none' }}
           >
-            Nova Solicitação
+            {t.registration.newRequest}
           </Button>
         </Box>
         <Typography variant="body1" color="text.secondary">
-          Acompanhe o status das suas solicitações de cadastro
+          {t.registration.myRequestsSubtitle}
         </Typography>
       </Box>
 
@@ -170,10 +178,10 @@ export const MyRequestsPage = () => {
         {requests.length === 0 ? (
           <EmptyState
             type="no-results"
-            title="Nenhuma solicitação encontrada"
-            description="Você ainda não tem solicitações. Crie uma nova solicitação para começar."
+            title={t.registration.noRequestsTitle}
+            description={t.registration.noRequestsDesc}
             action={{
-              label: 'Nova Solicitação',
+              label: t.registration.newRequest,
               onClick: () => navigate('/registration/new'),
             }}
           />
@@ -182,11 +190,11 @@ export const MyRequestsPage = () => {
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: 'grey.50' }}>
-                  <TableCell sx={{ fontWeight: 600 }}>Tipo</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Data</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Protheus</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }} align="right">Ações</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableType}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableDate}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableStatus}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableProtheus}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">{t.registration.tableActions}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -202,13 +210,13 @@ export const MyRequestsPage = () => {
                           {request.template?.label || request.tableName}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Nível {request.currentLevel}
+                          {t.registration.level} {request.currentLevel}
                         </Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {new Date(request.requestedAt).toLocaleDateString('pt-BR')}
+                        {formatDate(request.requestedAt)}
                       </Typography>
                     </TableCell>
                     <TableCell>{getStatusChip(request.status)}</TableCell>
@@ -222,7 +230,7 @@ export const MyRequestsPage = () => {
                           sx={{ borderRadius: 2 }}
                         />
                       ) : request.status === RegistrationStatus.SYNC_FAILED ? (
-                        <Tooltip title="Retentar sincronização">
+                        <Tooltip title={t.registration.retrySync}>
                           <Button
                             size="small"
                             color="error"
@@ -230,7 +238,7 @@ export const MyRequestsPage = () => {
                             onClick={() => handleRetrySyncClick(request.id)}
                             sx={{ textTransform: 'none' }}
                           >
-                            Retentar
+                            {t.registration.retry}
                           </Button>
                         </Tooltip>
                       ) : (
@@ -240,7 +248,7 @@ export const MyRequestsPage = () => {
                       )}
                     </TableCell>
                     <TableCell align="right">
-                      <Tooltip title="Ver detalhes">
+                      <Tooltip title={t.common.viewDetails}>
                         <IconButton
                           size="small"
                           color="primary"
@@ -272,7 +280,7 @@ export const MyRequestsPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Assignment color="primary" />
                 <Typography variant="h6" fontWeight={600}>
-                  Detalhes da Solicitação
+                  {t.registration.requestDetails}
                 </Typography>
               </Box>
             </DialogTitle>
@@ -280,28 +288,28 @@ export const MyRequestsPage = () => {
               {/* Request Info */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Informações Gerais
+                  {t.registration.generalInfo}
                 </Typography>
                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                   <Stack spacing={1.5}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Tipo:</Typography>
+                      <Typography variant="body2" color="text.secondary">{t.registration.tableType}:</Typography>
                       <Typography variant="body2" fontWeight={500}>
                         {selectedRequest.template?.label || selectedRequest.tableName}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Data:</Typography>
+                      <Typography variant="body2" color="text.secondary">{t.registration.tableDate}:</Typography>
                       <Typography variant="body2">
-                        {new Date(selectedRequest.requestedAt).toLocaleString('pt-BR')}
+                        {formatDateTime(selectedRequest.requestedAt)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">Status:</Typography>
+                      <Typography variant="body2" color="text.secondary">{t.registration.tableStatus}:</Typography>
                       {getStatusChip(selectedRequest.status)}
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Nível Atual:</Typography>
+                      <Typography variant="body2" color="text.secondary">{t.registration.currentLevel}:</Typography>
                       <Typography variant="body2">{selectedRequest.currentLevel}</Typography>
                     </Box>
                     {selectedRequest.protheusRecno && (
@@ -314,7 +322,7 @@ export const MyRequestsPage = () => {
                     )}
                     {selectedRequest.syncError && (
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">Erro:</Typography>
+                        <Typography variant="body2" color="text.secondary">{t.errors.unknownError}:</Typography>
                         <Typography variant="body2" color="error.main">
                           {selectedRequest.syncError}
                         </Typography>
@@ -328,14 +336,14 @@ export const MyRequestsPage = () => {
               {selectedRequest.approvals && selectedRequest.approvals.length > 0 && (
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Histórico de Aprovações
+                    {t.registration.approvalHistory}
                   </Typography>
                   <Stack spacing={1}>
                     {selectedRequest.approvals.map((approval: RegistrationApproval) => (
                       <Paper key={approval.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                           <Typography variant="body2" fontWeight={500}>
-                            Nível {approval.level}: {approval.approver?.name || approval.approverEmail}
+                            {t.registration.level} {approval.level}: {approval.approver?.name || approval.approverEmail}
                           </Typography>
                           <Chip
                             label={approvalActionLabels[approval.action] || approval.action}
@@ -358,7 +366,7 @@ export const MyRequestsPage = () => {
                         )}
                         {approval.actionAt && (
                           <Typography variant="caption" color="text.disabled">
-                            {new Date(approval.actionAt).toLocaleString('pt-BR')}
+                            {formatDateTime(approval.actionAt)}
                           </Typography>
                         )}
                       </Paper>
@@ -370,7 +378,7 @@ export const MyRequestsPage = () => {
               {/* Form Data */}
               <Box>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  Dados do Formulário
+                  {t.registration.formData}
                 </Typography>
                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                   <Stack spacing={1}>
@@ -390,7 +398,7 @@ export const MyRequestsPage = () => {
                 variant="outlined"
                 sx={{ borderRadius: 2, textTransform: 'none' }}
               >
-                Fechar
+                {t.common.close}
               </Button>
             </DialogActions>
           </>
@@ -411,12 +419,12 @@ export const MyRequestsPage = () => {
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Refresh color="primary" />
-            <Typography variant="h6">Retentar Sincronização</Typography>
+            <Typography variant="h6">{t.registration.retrySync}</Typography>
           </Box>
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary">
-            Deseja retentar a sincronização com o Protheus?
+            {t.registration.retrySyncQuestion}
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
@@ -428,7 +436,7 @@ export const MyRequestsPage = () => {
             disabled={retryLoading}
             sx={{ textTransform: 'none' }}
           >
-            Cancelar
+            {t.common.cancel}
           </Button>
           <Button
             onClick={handleRetrySync}
@@ -437,7 +445,7 @@ export const MyRequestsPage = () => {
             startIcon={retryLoading ? <CircularProgress size={16} /> : <Refresh />}
             sx={{ borderRadius: 2, textTransform: 'none' }}
           >
-            {retryLoading ? 'Retentando...' : 'Retentar'}
+            {retryLoading ? t.registration.retrying : t.registration.retry}
           </Button>
         </DialogActions>
       </Dialog>

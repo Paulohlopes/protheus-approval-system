@@ -323,6 +323,102 @@ export const ptBR = {
     documentApprovedSuccess: 'Documento aprovado com sucesso!',
     documentRejectedSuccess: 'Documento rejeitado com sucesso!',
   },
+  registration: {
+    // Menu items
+    menuTitle: 'Cadastros',
+    newRegistration: 'Novo Cadastro',
+    myRequests: 'Minhas Solicitações',
+    approvalQueue: 'Fila de Aprovação',
+
+    // SelectType page
+    selectTypeTitle: 'Novo Cadastro',
+    selectTypeSubtitle: 'Selecione o tipo de cadastro que deseja realizar',
+    noTemplatesTitle: 'Nenhum tipo de cadastro disponível',
+    noTemplatesDesc: 'Não há tipos de cadastro configurados no momento. Entre em contato com o administrador.',
+
+    // MyRequests page
+    myRequestsTitle: 'Minhas Solicitações',
+    myRequestsSubtitle: 'Acompanhe o status das suas solicitações de cadastro',
+    noRequestsTitle: 'Nenhuma solicitação encontrada',
+    noRequestsDesc: 'Você ainda não tem solicitações. Crie uma nova solicitação para começar.',
+    newRequest: 'Nova Solicitação',
+    requestDetails: 'Detalhes da Solicitação',
+    generalInfo: 'Informações Gerais',
+    approvalHistory: 'Histórico de Aprovações',
+    formData: 'Dados do Formulário',
+    retrySync: 'Retentar Sincronização',
+    retrySyncQuestion: 'Deseja retentar a sincronização com o Protheus?',
+    retrying: 'Retentando...',
+    retry: 'Retentar',
+
+    // ApprovalQueue page
+    approvalQueueTitle: 'Fila de Aprovação',
+    approvalQueueSubtitle: 'Revise e aprove ou rejeite as solicitações de cadastro pendentes',
+    noPendingTitle: 'Nenhuma solicitação pendente',
+    noPendingDesc: 'Parabéns! Você não tem solicitações aguardando aprovação no momento.',
+    review: 'Revisar',
+    reviewRequest: 'Revisar Solicitação',
+    requester: 'Solicitante',
+    currentLevel: 'Nível Atual',
+    level: 'Nível',
+
+    // Approval actions
+    approveRequest: 'Aprovar Solicitação',
+    rejectRequest: 'Rejeitar Solicitação',
+    approveCommentHint: 'Adicione comentários opcionais sobre a aprovação.',
+    rejectCommentHint: 'Por favor, informe o motivo da rejeição.',
+    commentsOptional: 'Comentários (opcional)...',
+    rejectReason: 'Motivo da rejeição...',
+    rejectReasonRequired: 'O motivo da rejeição é obrigatório',
+    approving: 'Aprovando...',
+    rejecting: 'Rejeitando...',
+
+    // Status labels
+    statusDraft: 'Rascunho',
+    statusPendingApproval: 'Aguardando Aprovação',
+    statusInApproval: 'Em Aprovação',
+    statusApproved: 'Aprovado',
+    statusRejected: 'Rejeitado',
+    statusSyncing: 'Sincronizando',
+    statusSynced: 'Sincronizado',
+    statusSyncFailed: 'Falha na Sincronização',
+
+    // Approval action labels
+    actionPending: 'Pendente',
+    actionApproved: 'Aprovado',
+    actionRejected: 'Rejeitado',
+
+    // Table headers
+    tableType: 'Tipo',
+    tableDate: 'Data',
+    tableStatus: 'Status',
+    tableProtheus: 'Protheus',
+    tableActions: 'Ações',
+    tableRequester: 'Solicitante',
+    tableLevel: 'Nível',
+
+    // DynamicForm
+    formCancelButton: 'Cancelar',
+    formSubmitButton: 'Enviar para Aprovação',
+    formSubmitting: 'Enviando...',
+
+    // Success/Error messages
+    successApproved: 'Solicitação aprovada com sucesso!',
+    successRejected: 'Solicitação rejeitada',
+    successSyncStarted: 'Sincronização iniciada com sucesso!',
+    successSubmitted: 'Solicitação enviada para aprovação com sucesso!',
+    errorLoadTemplates: 'Erro ao carregar tipos de cadastro. Por favor, tente novamente.',
+    errorLoadRequests: 'Erro ao carregar solicitações. Por favor, tente novamente.',
+    errorLoadPending: 'Erro ao carregar aprovações pendentes. Por favor, tente novamente.',
+    errorApprove: 'Erro ao aprovar solicitação. Por favor, tente novamente.',
+    errorReject: 'Erro ao rejeitar solicitação. Por favor, tente novamente.',
+    errorRetrySync: 'Erro ao retentar sincronização. Por favor, tente novamente.',
+    errorSubmit: 'Erro ao enviar solicitação. Por favor, tente novamente.',
+    errorLoadForm: 'Erro ao carregar formulário. Por favor, tente novamente.',
+    errorTemplateNotFound: 'Template não encontrado',
+    errorSessionExpired: 'Sessão expirada. Faça login novamente.',
+    errorNoPermission: 'Você não tem permissão para acessar este recurso.',
+  },
   apiErrors: {
     errorConnectingCountries: 'Erro ao conectar com {{count}} {{countryWord}}',
     warningCountriesUnavailable: 'Aviso: {{count}} {{countryWord}} {{verbPhrase}} disponível{{plural}}',

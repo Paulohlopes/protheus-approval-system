@@ -80,7 +80,7 @@ export const DynamicFormPage = () => {
       setErrors({});
     } catch (error) {
       console.error('Error loading template:', error);
-      toast.error('Erro ao carregar formulário. Por favor, tente novamente.');
+      toast.error(t.registration.errorLoadForm);
     } finally {
       setLoading(false);
     }
@@ -275,11 +275,11 @@ export const DynamicFormPage = () => {
 
       await registrationService.submitRegistration(registration.id);
 
-      toast.success('Solicitação enviada para aprovação com sucesso!');
+      toast.success(t.registration.successSubmitted);
       navigate('/registration/my-requests');
     } catch (error) {
       console.error('Error submitting registration:', error);
-      toast.error('Erro ao enviar solicitação. Por favor, tente novamente.');
+      toast.error(t.registration.errorSubmit);
     } finally {
       setSubmitting(false);
     }
@@ -298,14 +298,14 @@ export const DynamicFormPage = () => {
   if (!template) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Alert severity="error">Template não encontrado</Alert>
+        <Alert severity="error">{t.registration.errorTemplateNotFound}</Alert>
       </Container>
     );
   }
 
   const groupedFields: Record<string, FormField[]> = {};
   fields.forEach((field) => {
-    const group = field.fieldGroup || 'Geral';
+    const group = field.fieldGroup || t.common.general;
     if (!groupedFields[group]) {
       groupedFields[group] = [];
     }
@@ -367,7 +367,7 @@ export const DynamicFormPage = () => {
             disabled={submitting}
             sx={{ borderRadius: 2, textTransform: 'none' }}
           >
-            Cancelar
+            {t.registration.formCancelButton}
           </Button>
           <Button
             type="submit"
@@ -376,7 +376,7 @@ export const DynamicFormPage = () => {
             disabled={submitting}
             sx={{ borderRadius: 2, textTransform: 'none' }}
           >
-            {submitting ? 'Enviando...' : 'Enviar para Aprovação'}
+            {submitting ? t.registration.formSubmitting : t.registration.formSubmitButton}
           </Button>
         </Stack>
       </Paper>

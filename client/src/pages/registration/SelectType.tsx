@@ -19,11 +19,13 @@ import {
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
+import { useLanguage } from '../../contexts/LanguageContext';
 import type { FormTemplate } from '../../types/registration';
 import { EmptyState } from '../../components/EmptyState';
 
 export const SelectRegistrationTypePage = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +40,7 @@ export const SelectRegistrationTypePage = () => {
       setTemplates(data.filter((t) => t.isActive));
     } catch (error) {
       console.error('Error loading templates:', error);
-      toast.error('Erro ao carregar tipos de cadastro. Por favor, tente novamente.');
+      toast.error(t.registration.errorLoadTemplates);
     } finally {
       setLoading(false);
     }
@@ -65,11 +67,11 @@ export const SelectRegistrationTypePage = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
           <AddBox fontSize="large" color="primary" />
           <Typography variant="h4" component="h1" fontWeight={600}>
-            Novo Cadastro
+            {t.registration.selectTypeTitle}
           </Typography>
         </Box>
         <Typography variant="body1" color="text.secondary">
-          Selecione o tipo de cadastro que deseja realizar
+          {t.registration.selectTypeSubtitle}
         </Typography>
       </Box>
 
@@ -77,8 +79,8 @@ export const SelectRegistrationTypePage = () => {
       {templates.length === 0 ? (
         <EmptyState
           type="empty-folder"
-          title="Nenhum tipo de cadastro disponível"
-          description="Não há tipos de cadastro configurados no momento. Entre em contato com o administrador."
+          title={t.registration.noTemplatesTitle}
+          description={t.registration.noTemplatesDesc}
         />
       ) : (
         <Grid container spacing={3}>
