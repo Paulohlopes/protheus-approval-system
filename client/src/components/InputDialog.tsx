@@ -1,4 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Typography,
+  Box,
+  CircularProgress,
+} from '@mui/material';
 
 interface InputDialogProps {
   open: boolean;
@@ -11,7 +22,8 @@ interface InputDialogProps {
   onCancel: () => void;
   confirmText?: string;
   cancelText?: string;
-  confirmColor?: 'blue' | 'green' | 'red';
+  confirmColor?: 'primary' | 'success' | 'error' | 'warning' | 'info';
+  loading?: boolean;
 }
 
 export const InputDialog: React.FC<InputDialogProps> = ({
@@ -25,7 +37,8 @@ export const InputDialog: React.FC<InputDialogProps> = ({
   onCancel,
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
-  confirmColor = 'blue',
+  confirmColor = 'primary',
+  loading = false,
 }) => {
   const [value, setValue] = useState('');
   const [error, setError] = useState('');
@@ -48,77 +61,74 @@ export const InputDialog: React.FC<InputDialogProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       onCancel();
-    } else if (e.key === 'Enter' && !multiline) {
+    } else if (e.key === 'Enter' && !multiline && !e.shiftKey) {
+      e.preventDefault();
       handleConfirm();
     }
   };
 
-  const colorClasses = {
-    blue: 'bg-blue-500 hover:bg-blue-600',
-    green: 'bg-green-500 hover:bg-green-600',
-    red: 'bg-red-500 hover:bg-red-600',
-  };
-
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={(e) => e.target === e.currentTarget && onCancel()}
-      onKeyDown={handleKeyDown}
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 2 } }}
     >
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-        <h2 className="text-lg font-semibold mb-2">{title}</h2>
-        {message && <p className="text-gray-600 mb-4">{message}</p>}
-
-        {multiline ? (
-          <textarea
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value);
-              if (error) setError('');
-            }}
-            placeholder={placeholder}
-            className={`w-full border rounded px-3 py-2 mb-1 focus:outline-none focus:ring-2 ${
-              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-            }`}
-            rows={4}
-            autoFocus
-          />
-        ) : (
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value);
-              if (error) setError('');
-            }}
-            placeholder={placeholder}
-            className={`w-full border rounded px-3 py-2 mb-1 focus:outline-none focus:ring-2 ${
-              error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-            }`}
-            autoFocus
-          />
+      <DialogTitle>
+        <Typography variant="h6" fontWeight={600}>
+          {title}
+        </Typography>
+      </DialogTitle>
+      <DialogContent>
+        {message && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {message}
+          </Typography>
         )}
-
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-
-        <div className="flex justify-end gap-3 mt-4">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={handleConfirm}
-            className={`px-4 py-2 text-white rounded ${colorClasses[confirmColor]}`}
-          >
-            {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
+        <TextField
+          fullWidth
+          multiline={multiline}
+          rows={multiline ? 4 : 1}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            if (error) setError('');
+          }}
+          onKeyDown={handleKeyDown}
+          error={!!error}
+          helperText={error}
+          required={required}
+          autoFocus
+          variant="outlined"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+            },
+          }}
+        />
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button
+          onClick={onCancel}
+          disabled={loading}
+          sx={{ textTransform: 'none' }}
+        >
+          {cancelText}
+        </Button>
+        <Button
+          onClick={handleConfirm}
+          variant="contained"
+          color={confirmColor}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : undefined}
+          sx={{ borderRadius: 2, textTransform: 'none' }}
+        >
+          {confirmText}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
@@ -130,7 +140,8 @@ interface ConfirmDialogProps {
   onCancel: () => void;
   confirmText?: string;
   cancelText?: string;
-  confirmColor?: 'blue' | 'green' | 'red';
+  confirmColor?: 'primary' | 'success' | 'error' | 'warning' | 'info';
+  loading?: boolean;
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -141,7 +152,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onCancel,
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
-  confirmColor = 'blue',
+  confirmColor = 'primary',
+  loading = false,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -157,38 +169,43 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, onConfirm, onCancel]);
 
-  const colorClasses = {
-    blue: 'bg-blue-500 hover:bg-blue-600',
-    green: 'bg-green-500 hover:bg-green-600',
-    red: 'bg-red-500 hover:bg-red-600',
-  };
-
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    <Dialog
+      open={open}
+      onClose={onCancel}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 2 } }}
     >
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-        <h2 className="text-lg font-semibold mb-2">{title}</h2>
-        <p className="text-gray-600 mb-6">{message}</p>
-
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`px-4 py-2 text-white rounded ${colorClasses[confirmColor]}`}
-          >
-            {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
+      <DialogTitle>
+        <Typography variant="h6" fontWeight={600}>
+          {title}
+        </Typography>
+      </DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary">
+          {message}
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, py: 2 }}>
+        <Button
+          onClick={onCancel}
+          disabled={loading}
+          sx={{ textTransform: 'none' }}
+        >
+          {cancelText}
+        </Button>
+        <Button
+          onClick={onConfirm}
+          variant="contained"
+          color={confirmColor}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={16} color="inherit" /> : undefined}
+          sx={{ borderRadius: 2, textTransform: 'none' }}
+        >
+          {confirmText}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };

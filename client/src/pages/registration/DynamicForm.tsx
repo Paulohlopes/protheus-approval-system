@@ -1,5 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  Paper,
+  Typography,
+  Button,
+  TextField,
+  FormControl,
+  FormLabel,
+  FormControlLabel,
+  Checkbox,
+  CircularProgress,
+  Divider,
+  Stack,
+  Alert,
+  Grid,
+} from '@mui/material';
+import {
+  Edit,
+  Send,
+  ArrowBack,
+} from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
 import type { FormTemplate, FormField } from '../../types/registration';
@@ -28,14 +50,12 @@ export const DynamicFormPage = () => {
       const data = await registrationService.getTemplate(templateId);
       setTemplate(data);
 
-      // Filter visible and enabled fields
       const visibleFields = (data.fields || [])
         .filter((f) => f.isVisible && f.isEnabled)
         .sort((a, b) => a.fieldOrder - b.fieldOrder);
 
       setFields(visibleFields);
 
-      // Initialize form data with appropriate default values based on field type
       const initialData: Record<string, FormValue> = {};
       visibleFields.forEach((field) => {
         switch (field.fieldType) {
@@ -64,7 +84,6 @@ export const DynamicFormPage = () => {
       ...prev,
       [fieldName]: value,
     }));
-    // Clear error when field is modified
     if (errors[fieldName]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -74,14 +93,12 @@ export const DynamicFormPage = () => {
     }
   };
 
-  // Validate form before submission
   const validateForm = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
 
     fields.forEach((field) => {
       const value = formData[field.sx3FieldName];
 
-      // Required field validation
       if (field.isRequired) {
         if (value === null || value === undefined || value === '') {
           newErrors[field.sx3FieldName] = `${field.label} é obrigatório`;
@@ -89,7 +106,6 @@ export const DynamicFormPage = () => {
         }
       }
 
-      // Type-specific validation
       if (value !== null && value !== undefined && value !== '') {
         switch (field.fieldType) {
           case 'number':
@@ -107,7 +123,6 @@ export const DynamicFormPage = () => {
             break;
         }
 
-        // Max length validation for strings
         if (field.metadata?.size && typeof value === 'string' && value.length > field.metadata.size) {
           newErrors[field.sx3FieldName] = `${field.label} deve ter no máximo ${field.metadata.size} caracteres`;
         }
@@ -127,74 +142,98 @@ export const DynamicFormPage = () => {
   const renderField = (field: FormField) => {
     const value = formData[field.sx3FieldName];
     const hasError = !!errors[field.sx3FieldName];
-
-    const commonProps = {
-      id: field.sx3FieldName,
-      name: field.sx3FieldName,
-      'aria-required': field.isRequired,
-      'aria-invalid': hasError,
-      'aria-describedby': hasError ? `${field.sx3FieldName}-error` : undefined,
-      className: `w-full border rounded px-3 py-2 ${
-        hasError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-      } focus:outline-none focus:ring-2`,
-    };
+    const errorMessage = errors[field.sx3FieldName];
 
     switch (field.fieldType) {
       case 'number':
         return (
-          <input
+          <TextField
+            fullWidth
             type="number"
+            label={field.label}
             value={value === null ? '' : String(value)}
             onChange={(e) => {
               const numValue = e.target.value === '' ? null : parseFloat(e.target.value);
               handleChange(field.sx3FieldName, numValue);
             }}
-            {...commonProps}
-            step={field.metadata?.decimals ? `0.${'0'.repeat(field.metadata.decimals - 1)}1` : '1'}
+            required={field.isRequired}
+            error={hasError}
+            helperText={errorMessage || (field.metadata?.mask ? `Formato: ${field.metadata.mask}` : undefined)}
+            inputProps={{
+              step: field.metadata?.decimals ? `0.${'0'.repeat(field.metadata.decimals - 1)}1` : '1',
+            }}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
         );
 
       case 'date':
         return (
-          <input
+          <TextField
+            fullWidth
             type="date"
+            label={field.label}
             value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
-            {...commonProps}
+            required={field.isRequired}
+            error={hasError}
+            helperText={errorMessage}
+            InputLabelProps={{ shrink: true }}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
         );
 
       case 'boolean':
         return (
-          <input
-            type="checkbox"
-            checked={value === true}
-            onChange={(e) => handleChange(field.sx3FieldName, e.target.checked)}
-            className={`w-5 h-5 ${hasError ? 'border-red-500' : ''}`}
-            aria-required={field.isRequired}
-            aria-invalid={hasError}
-          />
+          <FormControl error={hasError}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={value === true}
+                  onChange={(e) => handleChange(field.sx3FieldName, e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={field.label}
+            />
+            {hasError && (
+              <Typography variant="caption" color="error">
+                {errorMessage}
+              </Typography>
+            )}
+          </FormControl>
         );
 
       case 'text':
         return (
-          <textarea
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label={field.label}
             value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
-            {...commonProps}
-            rows={4}
+            required={field.isRequired}
+            error={hasError}
+            helperText={errorMessage}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
         );
 
       case 'string':
       default:
         return (
-          <input
-            type="text"
+          <TextField
+            fullWidth
+            label={field.label}
             value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
-            {...commonProps}
-            maxLength={field.metadata?.size || undefined}
+            required={field.isRequired}
+            error={hasError}
+            helperText={errorMessage || (field.metadata?.mask ? `Formato: ${field.metadata.mask}` : undefined)}
+            inputProps={{
+              maxLength: field.metadata?.size || undefined,
+            }}
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
         );
     }
@@ -205,7 +244,6 @@ export const DynamicFormPage = () => {
 
     if (!templateId) return;
 
-    // Validate form before submission
     if (!validateForm()) {
       return;
     }
@@ -213,7 +251,6 @@ export const DynamicFormPage = () => {
     try {
       setSubmitting(true);
 
-      // Prepare form data - convert types as needed
       const preparedData: Record<string, any> = {};
       fields.forEach((field) => {
         const value = formData[field.sx3FieldName];
@@ -222,13 +259,11 @@ export const DynamicFormPage = () => {
         }
       });
 
-      // Create registration
       const registration = await registrationService.createRegistration({
         templateId,
         formData: preparedData,
       });
 
-      // Submit for approval
       await registrationService.submitRegistration(registration.id);
 
       toast.success('Solicitação enviada para aprovação com sucesso!');
@@ -242,14 +277,23 @@ export const DynamicFormPage = () => {
   };
 
   if (loading) {
-    return <div className="p-6">Carregando formulário...</div>;
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
   }
 
   if (!template) {
-    return <div className="p-6">Template não encontrado</div>;
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Alert severity="error">Template não encontrado</Alert>
+      </Container>
+    );
   }
 
-  // Group fields by fieldGroup
   const groupedFields: Record<string, FormField[]> = {};
   fields.forEach((field) => {
     const group = field.fieldGroup || 'Geral';
@@ -260,65 +304,73 @@ export const DynamicFormPage = () => {
   });
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">{template.label}</h1>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+          <Edit fontSize="large" color="primary" />
+          <Typography variant="h4" component="h1" fontWeight={600}>
+            {template.label}
+          </Typography>
+        </Box>
         {template.description && (
-          <p className="text-gray-600 mt-1">{template.description}</p>
+          <Typography variant="body1" color="text.secondary">
+            {template.description}
+          </Typography>
         )}
-      </div>
+      </Box>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
-        {Object.entries(groupedFields).map(([groupName, groupFields]) => (
-          <div key={groupName} className="mb-8">
-            <h2 className="text-lg font-semibold mb-4 pb-2 border-b">{groupName}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Form */}
+      <Paper
+        component="form"
+        onSubmit={handleSubmit}
+        elevation={0}
+        sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 3 }}
+      >
+        {Object.entries(groupedFields).map(([groupName, groupFields], groupIndex) => (
+          <Box key={groupName} sx={{ mb: groupIndex < Object.entries(groupedFields).length - 1 ? 4 : 0 }}>
+            <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+              {groupName}
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+            <Grid container spacing={3}>
               {groupFields.map((field) => (
-                <div
+                <Grid
+                  item
+                  xs={12}
+                  md={field.fieldType === 'text' || field.fieldType === 'boolean' ? 12 : 6}
                   key={field.id}
-                  className={field.fieldType === 'text' ? 'md:col-span-2' : ''}
                 >
-                  <label htmlFor={field.sx3FieldName} className="block text-sm font-medium mb-1">
-                    {field.label}
-                    {field.isRequired && <span className="text-red-500 ml-1">*</span>}
-                  </label>
                   {renderField(field)}
-                  {errors[field.sx3FieldName] && (
-                    <p
-                      id={`${field.sx3FieldName}-error`}
-                      className="text-xs text-red-500 mt-1"
-                      role="alert"
-                    >
-                      {errors[field.sx3FieldName]}
-                    </p>
-                  )}
-                  {field.metadata?.mask && !errors[field.sx3FieldName] && (
-                    <p className="text-xs text-gray-500 mt-1">Formato: {field.metadata.mask}</p>
-                  )}
-                </div>
+                </Grid>
               ))}
-            </div>
-          </div>
+            </Grid>
+          </Box>
         ))}
 
-        <div className="flex gap-3 justify-end pt-6 border-t">
-          <button
-            type="button"
+        <Divider sx={{ my: 3 }} />
+
+        <Stack direction="row" spacing={2} justifyContent="flex-end">
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBack />}
             onClick={() => navigate(-1)}
-            className="px-6 py-2 border border-gray-300 rounded hover:bg-gray-50"
             disabled={submitting}
+            sx={{ borderRadius: 2, textTransform: 'none' }}
           >
             Cancelar
-          </button>
-          <button
+          </Button>
+          <Button
             type="submit"
-            className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+            variant="contained"
+            startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <Send />}
             disabled={submitting}
+            sx={{ borderRadius: 2, textTransform: 'none' }}
           >
             {submitting ? 'Enviando...' : 'Enviar para Aprovação'}
-          </button>
-        </div>
-      </form>
-    </div>
+          </Button>
+        </Stack>
+      </Paper>
+    </Container>
   );
 };

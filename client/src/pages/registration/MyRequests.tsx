@@ -1,19 +1,74 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  Paper,
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Stack,
+  CircularProgress,
+  Tooltip,
+} from '@mui/material';
+import {
+  Add,
+  Assignment,
+  Visibility,
+  Refresh,
+  CheckCircle,
+  Error as ErrorIcon,
+  Schedule,
+  Sync,
+  SyncProblem,
+} from '@mui/icons-material';
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
-import type { RegistrationRequest } from '../../types/registration';
-import { RegistrationStatus } from '../../types/registration';
-import { ConfirmDialog } from '../../components/InputDialog';
+import type { RegistrationRequest, RegistrationApproval } from '../../types/registration';
+import { RegistrationStatus, ApprovalAction } from '../../types/registration';
+import { EmptyState } from '../../components/EmptyState';
+
+type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+
+const statusConfig: Record<RegistrationStatus, { label: string; color: ChipColor; icon: React.ReactNode }> = {
+  DRAFT: { label: 'Rascunho', color: 'default', icon: <Schedule fontSize="small" /> },
+  PENDING_APPROVAL: { label: 'Aguardando Aprovação', color: 'warning', icon: <Schedule fontSize="small" /> },
+  IN_APPROVAL: { label: 'Em Aprovação', color: 'info', icon: <Schedule fontSize="small" /> },
+  APPROVED: { label: 'Aprovado', color: 'success', icon: <CheckCircle fontSize="small" /> },
+  REJECTED: { label: 'Rejeitado', color: 'error', icon: <ErrorIcon fontSize="small" /> },
+  SYNCING_TO_PROTHEUS: { label: 'Sincronizando', color: 'info', icon: <Sync fontSize="small" /> },
+  SYNCED: { label: 'Sincronizado', color: 'success', icon: <CheckCircle fontSize="small" /> },
+  SYNC_FAILED: { label: 'Falha na Sincronização', color: 'error', icon: <SyncProblem fontSize="small" /> },
+};
+
+const approvalActionLabels: Record<string, string> = {
+  PENDING: 'Pendente',
+  APPROVED: 'Aprovado',
+  REJECTED: 'Rejeitado',
+};
 
 export const MyRequestsPage = () => {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
   const [retrySyncDialogOpen, setRetrySyncDialogOpen] = useState(false);
   const [requestIdToRetry, setRequestIdToRetry] = useState<string | null>(null);
+  const [retryLoading, setRetryLoading] = useState(false);
 
   useEffect(() => {
     loadMyRequests();
@@ -29,7 +84,6 @@ export const MyRequestsPage = () => {
         return;
       }
 
-      // Use backend filter for better performance and security
       const data = await registrationService.getRegistrations({
         requestedById: user.id,
       });
@@ -37,7 +91,6 @@ export const MyRequestsPage = () => {
     } catch (error: any) {
       console.error('Error loading requests:', error);
 
-      // Better error handling
       if (error.response?.status === 401) {
         toast.error('Sessão expirada. Faça login novamente.');
       } else if (error.response?.status === 403) {
@@ -58,237 +111,346 @@ export const MyRequestsPage = () => {
   const handleRetrySync = async () => {
     if (!requestIdToRetry) return;
 
-    setRetrySyncDialogOpen(false);
-
     try {
+      setRetryLoading(true);
       await registrationService.retrySync(requestIdToRetry);
       toast.success('Sincronização iniciada com sucesso!');
+      setRetrySyncDialogOpen(false);
       await loadMyRequests();
     } catch (error) {
       console.error('Error retrying sync:', error);
       toast.error('Erro ao retentar sincronização. Por favor, tente novamente.');
     } finally {
+      setRetryLoading(false);
       setRequestIdToRetry(null);
     }
   };
 
-  const getStatusBadge = (status: RegistrationStatus) => {
-    const colors: Record<RegistrationStatus, string> = {
-      DRAFT: 'bg-gray-100 text-gray-800',
-      PENDING_APPROVAL: 'bg-yellow-100 text-yellow-800',
-      IN_APPROVAL: 'bg-blue-100 text-blue-800',
-      APPROVED: 'bg-green-100 text-green-800',
-      REJECTED: 'bg-red-100 text-red-800',
-      SYNCING_TO_PROTHEUS: 'bg-purple-100 text-purple-800',
-      SYNCED: 'bg-green-100 text-green-800',
-      SYNC_FAILED: 'bg-red-100 text-red-800',
-    };
-
-    const labels: Record<RegistrationStatus, string> = {
-      DRAFT: 'Rascunho',
-      PENDING_APPROVAL: 'Aguardando Aprovação',
-      IN_APPROVAL: 'Em Aprovação',
-      APPROVED: 'Aprovado',
-      REJECTED: 'Rejeitado',
-      SYNCING_TO_PROTHEUS: 'Sincronizando',
-      SYNCED: 'Sincronizado',
-      SYNC_FAILED: 'Falha na Sincronização',
-    };
-
+  const getStatusChip = (status: RegistrationStatus) => {
+    const config = statusConfig[status];
     return (
-      <span className={`inline-block px-2 py-1 text-xs rounded ${colors[status]}`}>
-        {labels[status]}
-      </span>
+      <Chip
+        icon={config.icon as React.ReactElement}
+        label={config.label}
+        color={config.color}
+        size="small"
+        variant="outlined"
+        sx={{ borderRadius: 2, fontWeight: 500 }}
+      />
     );
   };
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>;
+    return (
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Minhas Solicitações</h1>
-        <Link
-          to="/registration/new"
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          Nova Solicitação
-        </Link>
-      </div>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      {/* Header */}
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Assignment fontSize="large" color="primary" />
+            <Typography variant="h4" component="h1" fontWeight={600}>
+              Minhas Solicitações
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => navigate('/registration/new')}
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+          >
+            Nova Solicitação
+          </Button>
+        </Box>
+        <Typography variant="body1" color="text.secondary">
+          Acompanhe o status das suas solicitações de cadastro
+        </Typography>
+      </Box>
 
-      <div className="bg-white rounded-lg shadow">
+      {/* Content */}
+      <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         {requests.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            Você ainda não tem solicitações. Crie uma nova solicitação para começar.
-          </div>
+          <EmptyState
+            type="no-results"
+            title="Nenhuma solicitação encontrada"
+            description="Você ainda não tem solicitações. Crie uma nova solicitação para começar."
+            action={{
+              label: 'Nova Solicitação',
+              onClick: () => navigate('/registration/new'),
+            }}
+          />
         ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Tipo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Data
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Protheus
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {requests.map((request) => (
-                <tr key={request.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium">
-                        {request.template?.label || request.tableName}
-                      </div>
-                      <div className="text-sm text-gray-500">Nível {request.currentLevel}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {new Date(request.requestedAt).toLocaleDateString('pt-BR')}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(request.status)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {request.protheusRecno ? (
-                      <span className="text-green-600">RECNO: {request.protheusRecno}</span>
-                    ) : request.status === RegistrationStatus.SYNC_FAILED ? (
-                      <button
-                        onClick={() => handleRetrySyncClick(request.id)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Retentar
-                      </button>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button
-                      onClick={() => setSelectedRequest(request)}
-                      className="text-blue-500 hover:text-blue-700 text-sm font-medium"
-                    >
-                      Detalhes
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Details Modal */}
-      {selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Detalhes da Solicitação</h2>
-
-            <div className="mb-4">
-              <div className="bg-gray-50 p-4 rounded space-y-2">
-                <p className="text-sm">
-                  <span className="font-medium">Tipo:</span>{' '}
-                  {selectedRequest.template?.label || selectedRequest.tableName}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Data:</span>{' '}
-                  {new Date(selectedRequest.requestedAt).toLocaleString('pt-BR')}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Status:</span> {getStatusBadge(selectedRequest.status)}
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Nível Atual:</span> {selectedRequest.currentLevel}
-                </p>
-                {selectedRequest.protheusRecno && (
-                  <p className="text-sm">
-                    <span className="font-medium">RECNO Protheus:</span> {selectedRequest.protheusRecno}
-                  </p>
-                )}
-                {selectedRequest.syncError && (
-                  <p className="text-sm text-red-600">
-                    <span className="font-medium">Erro:</span> {selectedRequest.syncError}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {selectedRequest.approvals && selectedRequest.approvals.length > 0 && (
-              <div className="mb-4">
-                <h3 className="font-semibold mb-2">Histórico de Aprovações</h3>
-                <div className="space-y-2">
-                  {selectedRequest.approvals.map((approval) => (
-                    <div key={approval.id} className="bg-gray-50 p-3 rounded text-sm">
-                      <p>
-                        <span className="font-medium">Nível {approval.level}:</span>{' '}
-                        {approval.approver?.name || approval.approverEmail}
-                      </p>
-                      <p>
-                        <span className="font-medium">Ação:</span> {approval.action}
-                      </p>
-                      {approval.comments && (
-                        <p>
-                          <span className="font-medium">Comentários:</span> {approval.comments}
-                        </p>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ bgcolor: 'grey.50' }}>
+                  <TableCell sx={{ fontWeight: 600 }}>Tipo</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Data</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Protheus</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }} align="right">Ações</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {requests.map((request) => (
+                  <TableRow
+                    key={request.id}
+                    hover
+                    sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                  >
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {request.template?.label || request.tableName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Nível {request.currentLevel}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {new Date(request.requestedAt).toLocaleDateString('pt-BR')}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>{getStatusChip(request.status)}</TableCell>
+                    <TableCell>
+                      {request.protheusRecno ? (
+                        <Chip
+                          label={`RECNO: ${request.protheusRecno}`}
+                          color="success"
+                          size="small"
+                          variant="outlined"
+                          sx={{ borderRadius: 2 }}
+                        />
+                      ) : request.status === RegistrationStatus.SYNC_FAILED ? (
+                        <Tooltip title="Retentar sincronização">
+                          <Button
+                            size="small"
+                            color="error"
+                            startIcon={<Refresh />}
+                            onClick={() => handleRetrySyncClick(request.id)}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            Retentar
+                          </Button>
+                        </Tooltip>
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">
+                          —
+                        </Typography>
                       )}
-                      {approval.actionAt && (
-                        <p className="text-gray-500">
-                          {new Date(approval.actionAt).toLocaleString('pt-BR')}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mb-4">
-              <h3 className="font-semibold mb-2">Dados do Formulário</h3>
-              <div className="bg-gray-50 p-4 rounded space-y-2">
-                {Object.entries(selectedRequest.formData).map(([key, value]) => (
-                  <div key={key} className="text-sm">
-                    <span className="font-medium">{key}:</span> {String(value)}
-                  </div>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Ver detalhes">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => setSelectedRequest(request)}
+                        >
+                          <Visibility />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </div>
-            </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Paper>
 
-            <div className="flex justify-end">
-              <button
+      {/* Details Dialog */}
+      <Dialog
+        open={!!selectedRequest}
+        onClose={() => setSelectedRequest(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        {selectedRequest && (
+          <>
+            <DialogTitle sx={{ pb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Assignment color="primary" />
+                <Typography variant="h6" fontWeight={600}>
+                  Detalhes da Solicitação
+                </Typography>
+              </Box>
+            </DialogTitle>
+            <DialogContent dividers>
+              {/* Request Info */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Informações Gerais
+                </Typography>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Stack spacing={1.5}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Tipo:</Typography>
+                      <Typography variant="body2" fontWeight={500}>
+                        {selectedRequest.template?.label || selectedRequest.tableName}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Data:</Typography>
+                      <Typography variant="body2">
+                        {new Date(selectedRequest.requestedAt).toLocaleString('pt-BR')}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography variant="body2" color="text.secondary">Status:</Typography>
+                      {getStatusChip(selectedRequest.status)}
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">Nível Atual:</Typography>
+                      <Typography variant="body2">{selectedRequest.currentLevel}</Typography>
+                    </Box>
+                    {selectedRequest.protheusRecno && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="text.secondary">RECNO Protheus:</Typography>
+                        <Typography variant="body2" color="success.main" fontWeight={500}>
+                          {selectedRequest.protheusRecno}
+                        </Typography>
+                      </Box>
+                    )}
+                    {selectedRequest.syncError && (
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="text.secondary">Erro:</Typography>
+                        <Typography variant="body2" color="error.main">
+                          {selectedRequest.syncError}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </Paper>
+              </Box>
+
+              {/* Approval History */}
+              {selectedRequest.approvals && selectedRequest.approvals.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    Histórico de Aprovações
+                  </Typography>
+                  <Stack spacing={1}>
+                    {selectedRequest.approvals.map((approval: RegistrationApproval) => (
+                      <Paper key={approval.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                          <Typography variant="body2" fontWeight={500}>
+                            Nível {approval.level}: {approval.approver?.name || approval.approverEmail}
+                          </Typography>
+                          <Chip
+                            label={approvalActionLabels[approval.action] || approval.action}
+                            size="small"
+                            color={
+                              approval.action === ApprovalAction.APPROVED
+                                ? 'success'
+                                : approval.action === ApprovalAction.REJECTED
+                                ? 'error'
+                                : 'default'
+                            }
+                            variant="outlined"
+                            sx={{ borderRadius: 1 }}
+                          />
+                        </Box>
+                        {approval.comments && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            {approval.comments}
+                          </Typography>
+                        )}
+                        {approval.actionAt && (
+                          <Typography variant="caption" color="text.disabled">
+                            {new Date(approval.actionAt).toLocaleString('pt-BR')}
+                          </Typography>
+                        )}
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {/* Form Data */}
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                  Dados do Formulário
+                </Typography>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                  <Stack spacing={1}>
+                    {Object.entries(selectedRequest.formData).map(([key, value]) => (
+                      <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="text.secondary">{key}:</Typography>
+                        <Typography variant="body2">{String(value)}</Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Paper>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, py: 2 }}>
+              <Button
                 onClick={() => setSelectedRequest(null)}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                variant="outlined"
+                sx={{ borderRadius: 2, textTransform: 'none' }}
               >
                 Fechar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
 
       {/* Retry Sync Confirmation Dialog */}
-      <ConfirmDialog
+      <Dialog
         open={retrySyncDialogOpen}
-        title="Retentar Sincronização"
-        message="Deseja retentar a sincronização com o Protheus?"
-        onConfirm={handleRetrySync}
-        onCancel={() => {
+        onClose={() => {
           setRetrySyncDialogOpen(false);
           setRequestIdToRetry(null);
         }}
-        confirmText="Retentar"
-        cancelText="Cancelar"
-        confirmColor="blue"
-      />
-    </div>
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Refresh color="primary" />
+            <Typography variant="h6">Retentar Sincronização</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Deseja retentar a sincronização com o Protheus?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={() => {
+              setRetrySyncDialogOpen(false);
+              setRequestIdToRetry(null);
+            }}
+            disabled={retryLoading}
+            sx={{ textTransform: 'none' }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleRetrySync}
+            variant="contained"
+            disabled={retryLoading}
+            startIcon={retryLoading ? <CircularProgress size={16} /> : <Refresh />}
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+          >
+            {retryLoading ? 'Retentando...' : 'Retentar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 };

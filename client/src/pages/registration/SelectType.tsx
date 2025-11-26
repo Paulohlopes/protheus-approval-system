@@ -1,8 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  CardActionArea,
+  Grid,
+  Avatar,
+  CircularProgress,
+  Chip,
+} from '@mui/material';
+import {
+  AddBox,
+  Description,
+  ArrowForward,
+} from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
 import type { FormTemplate } from '../../types/registration';
+import { EmptyState } from '../../components/EmptyState';
 
 export const SelectRegistrationTypePage = () => {
   const navigate = useNavigate();
@@ -17,7 +35,6 @@ export const SelectRegistrationTypePage = () => {
     try {
       setLoading(true);
       const data = await registrationService.getTemplates(false);
-      // Only show active templates
       setTemplates(data.filter((t) => t.isActive));
     } catch (error) {
       console.error('Error loading templates:', error);
@@ -32,42 +49,111 @@ export const SelectRegistrationTypePage = () => {
   };
 
   if (loading) {
-    return <div className="p-6">Carregando...</div>;
+    return (
+      <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-2">Novo Cadastro</h1>
-      <p className="text-gray-600 mb-6">
-        Selecione o tipo de cadastro que deseja realizar
-      </p>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+          <AddBox fontSize="large" color="primary" />
+          <Typography variant="h4" component="h1" fontWeight={600}>
+            Novo Cadastro
+          </Typography>
+        </Box>
+        <Typography variant="body1" color="text.secondary">
+          Selecione o tipo de cadastro que deseja realizar
+        </Typography>
+      </Box>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {templates.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            Nenhum tipo de cadastro disponível no momento.
-          </div>
-        ) : (
-          templates.map((template) => (
-            <div
-              key={template.id}
-              onClick={() => handleSelectTemplate(template.id)}
-              className="bg-white p-6 rounded-lg shadow border border-gray-200 cursor-pointer hover:shadow-lg hover:border-blue-500 transition-all"
-            >
-              <div className="flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                <span className="text-2xl font-bold text-blue-600">
-                  {template.tableName.substring(0, 2)}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">{template.label}</h3>
-              <p className="text-sm text-gray-600">Tabela: {template.tableName}</p>
-              {template.description && (
-                <p className="text-sm text-gray-500 mt-2">{template.description}</p>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+      {/* Templates Grid */}
+      {templates.length === 0 ? (
+        <EmptyState
+          type="empty-folder"
+          title="Nenhum tipo de cadastro disponível"
+          description="Não há tipos de cadastro configurados no momento. Entre em contato com o administrador."
+        />
+      ) : (
+        <Grid container spacing={3}>
+          {templates.map((template) => (
+            <Grid item xs={12} sm={6} md={4} key={template.id}>
+              <Card
+                elevation={0}
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 3,
+                  height: '100%',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    boxShadow: 3,
+                    transform: 'translateY(-4px)',
+                  },
+                }}
+              >
+                <CardActionArea
+                  onClick={() => handleSelectTemplate(template.id)}
+                  sx={{ height: '100%', p: 1 }}
+                >
+                  <CardContent sx={{ height: '100%' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                      <Avatar
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          bgcolor: 'primary.main',
+                          fontSize: '1.25rem',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {template.tableName.substring(0, 2).toUpperCase()}
+                      </Avatar>
+                      <Box sx={{ ml: 'auto' }}>
+                        <ArrowForward color="action" />
+                      </Box>
+                    </Box>
+
+                    <Typography variant="h6" fontWeight={600} gutterBottom>
+                      {template.label}
+                    </Typography>
+
+                    <Chip
+                      icon={<Description sx={{ fontSize: 16 }} />}
+                      label={template.tableName}
+                      size="small"
+                      variant="outlined"
+                      sx={{ mb: 1.5, borderRadius: 1 }}
+                    />
+
+                    {template.description && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {template.description}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
+    </Container>
   );
 };
