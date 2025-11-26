@@ -111,7 +111,7 @@ export const adminService = {
    * Create a new workflow
    */
   async createWorkflow(data: CreateWorkflowDto): Promise<Workflow> {
-    const response = await backendApi.post('/registration/workflows', data);
+    const response = await backendApi.post('/registrations/workflows', data);
     return response.data;
   },
 
@@ -119,7 +119,7 @@ export const adminService = {
    * Get active workflow for a template
    */
   async getActiveWorkflow(templateId: string): Promise<Workflow> {
-    const response = await backendApi.get(`/registration/workflows/template/${templateId}`);
+    const response = await backendApi.get(`/registrations/workflows/template/${templateId}`);
     return response.data;
   },
 
