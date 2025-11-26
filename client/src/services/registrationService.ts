@@ -1,10 +1,10 @@
 import axios from 'axios';
-import {
+import type {
   FormTemplate,
   RegistrationRequest,
   RegistrationWorkflow,
-  RegistrationStatus,
 } from '../types/registration';
+import { RegistrationStatus } from '../types/registration';
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api';
 

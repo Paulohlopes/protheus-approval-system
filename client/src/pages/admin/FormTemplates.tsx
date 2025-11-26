@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { registrationService } from '../../services/registrationService';
-import { FormTemplate } from '../../types/registration';
+import type { FormTemplate } from '../../types/registration';
 
 export const FormTemplatesPage = () => {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);

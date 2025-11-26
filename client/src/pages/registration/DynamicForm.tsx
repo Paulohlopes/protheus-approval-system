@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { registrationService } from '../../services/registrationService';
-import { FormTemplate, FormField } from '../../types/registration';
+import type { FormTemplate, FormField } from '../../types/registration';
 
 export const DynamicFormPage = () => {
   const { templateId } = useParams<{ templateId: string }>();

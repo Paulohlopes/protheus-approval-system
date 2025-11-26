@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registrationService } from '../../services/registrationService';
-import { FormTemplate } from '../../types/registration';
+import type { FormTemplate } from '../../types/registration';
 
 export const SelectRegistrationTypePage = () => {
   const navigate = useNavigate();
