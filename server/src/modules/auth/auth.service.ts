@@ -75,7 +75,7 @@ export class AuthService {
         throw new UnauthorizedException('User is inactive');
       }
 
-      // Build user info
+      // Build user info (initially with Protheus ID)
       const user: UserInfo = {
         id: userDetails.id || userId,
         username: userDetails.userName,
@@ -87,8 +87,13 @@ export class AuthService {
         protheusUserId: userId,
       };
 
-      // Sync user to PostgreSQL (JIT User Provisioning)
-      await this.syncUserToPostgres(user);
+      // Sync user to PostgreSQL (JIT User Provisioning) and get DB user ID
+      const dbUserId = await this.syncUserToPostgres(user);
+
+      // Update user.id with database ID if sync succeeded
+      if (dbUserId) {
+        user.id = dbUserId;
+      }
 
       // Build auth response
       const response: AuthResponse = {
@@ -204,10 +209,11 @@ export class AuthService {
   /**
    * Sync user from Protheus to PostgreSQL
    * Creates user if doesn't exist, updates if exists
+   * Returns the database user ID
    */
-  private async syncUserToPostgres(user: UserInfo): Promise<void> {
+  private async syncUserToPostgres(user: UserInfo): Promise<string | null> {
     try {
-      await this.prisma.user.upsert({
+      const dbUser = await this.prisma.user.upsert({
         where: { email: user.email },
         update: {
           username: user.username,
@@ -226,10 +232,12 @@ export class AuthService {
         },
       });
 
-      this.logger.log(`User synced to PostgreSQL: ${user.email}`);
+      this.logger.log(`User synced to PostgreSQL: ${user.email} with id ${dbUser.id}`);
+      return dbUser.id;
     } catch (error) {
       this.logger.error(`Failed to sync user to PostgreSQL: ${user.email}`, error);
       // Don't throw - allow login to continue even if sync fails
+      return null;
     }
   }
 

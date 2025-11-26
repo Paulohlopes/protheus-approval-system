@@ -33,7 +33,6 @@ import {
   Sync,
   SyncProblem,
 } from '@mui/icons-material';
-import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
 import type { RegistrationRequest, RegistrationApproval } from '../../types/registration';
@@ -61,7 +60,6 @@ const approvalActionLabels: Record<string, string> = {
 
 export const MyRequestsPage = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
@@ -77,15 +75,8 @@ export const MyRequestsPage = () => {
     try {
       setLoading(true);
 
-      if (!user?.id) {
-        toast.error('Usuário não autenticado');
-        setRequests([]);
-        return;
-      }
-
-      const data = await registrationService.getRegistrations({
-        requestedById: user.id,
-      });
+      // Use the new endpoint that gets user ID from the token
+      const data = await registrationService.getMyRequests();
       setRequests(data);
     } catch (error: any) {
       console.error('Error loading requests:', error);

@@ -172,6 +172,15 @@ export const registrationService = {
   },
 
   /**
+   * Get my requests (uses authenticated user from token)
+   * More secure than passing requestedById from frontend
+   */
+  async getMyRequests(): Promise<RegistrationRequest[]> {
+    const response = await backendApi.get('/registrations/my-requests');
+    return response.data;
+  },
+
+  /**
    * Get registration by ID
    */
   async getRegistration(id: string): Promise<RegistrationRequest> {

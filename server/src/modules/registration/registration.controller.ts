@@ -70,6 +70,17 @@ export class RegistrationController {
   }
 
   /**
+   * Get my requests (uses authenticated user's ID from token)
+   */
+  @Get('my-requests')
+  getMyRequests(@CurrentUser() user: UserInfo) {
+    if (!user?.id) {
+      throw new UnauthorizedException('User not authenticated properly');
+    }
+    return this.registrationService.findAll({ requestedById: user.id });
+  }
+
+  /**
    * Get pending approvals for current user
    */
   @Get('pending-approval')
