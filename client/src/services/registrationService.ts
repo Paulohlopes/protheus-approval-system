@@ -4,7 +4,7 @@ import type {
   RegistrationRequest,
   RegistrationWorkflow,
 } from '../types/registration';
-import { RegistrationStatus } from '../types/registration';
+import type { RegistrationStatus } from '../types/registration';
 
 // Use the centralized backendApi instance with proper auth handling
 

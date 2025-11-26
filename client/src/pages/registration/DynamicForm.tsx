@@ -6,11 +6,6 @@ import type { FormTemplate, FormField } from '../../types/registration';
 
 type FormValue = string | number | boolean | null;
 
-interface ValidationError {
-  field: string;
-  message: string;
-}
-
 export const DynamicFormPage = () => {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();

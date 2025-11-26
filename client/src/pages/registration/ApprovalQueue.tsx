@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
-import { RegistrationRequest, RegistrationStatus } from '../../types/registration';
+import type { RegistrationRequest } from '../../types/registration';
+import { RegistrationStatus } from '../../types/registration';
 import { InputDialog } from '../../components/InputDialog';
 
 type ActionDialogType = 'approve' | 'reject' | null;

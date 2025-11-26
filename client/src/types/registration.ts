@@ -1,19 +1,23 @@
-export enum RegistrationStatus {
-  DRAFT = 'DRAFT',
-  PENDING_APPROVAL = 'PENDING_APPROVAL',
-  IN_APPROVAL = 'IN_APPROVAL',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  SYNCING_TO_PROTHEUS = 'SYNCING_TO_PROTHEUS',
-  SYNCED = 'SYNCED',
-  SYNC_FAILED = 'SYNC_FAILED',
-}
+export const RegistrationStatus = {
+  DRAFT: 'DRAFT',
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  IN_APPROVAL: 'IN_APPROVAL',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  SYNCING_TO_PROTHEUS: 'SYNCING_TO_PROTHEUS',
+  SYNCED: 'SYNCED',
+  SYNC_FAILED: 'SYNC_FAILED',
+} as const;
 
-export enum ApprovalAction {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-}
+export type RegistrationStatus = (typeof RegistrationStatus)[keyof typeof RegistrationStatus];
+
+export const ApprovalAction = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+} as const;
+
+export type ApprovalAction = (typeof ApprovalAction)[keyof typeof ApprovalAction];
 
 export interface FormTemplate {
   id: string;

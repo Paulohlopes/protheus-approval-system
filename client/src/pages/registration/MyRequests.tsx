@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
-import { RegistrationRequest, RegistrationStatus } from '../../types/registration';
+import type { RegistrationRequest } from '../../types/registration';
+import { RegistrationStatus } from '../../types/registration';
 import { ConfirmDialog } from '../../components/InputDialog';
 
 export const MyRequestsPage = () => {
