@@ -15,6 +15,8 @@ import { ApproveRegistrationDto } from './dto/approve-registration.dto';
 import { RejectRegistrationDto } from './dto/reject-registration.dto';
 import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
 import { RegistrationStatus } from '@prisma/client';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { UserInfo } from '../auth/interfaces/auth.interface';
 
 @Controller('registrations')
 export class RegistrationController {
@@ -42,10 +44,8 @@ export class RegistrationController {
    * Create draft registration
    */
   @Post()
-  create(@Body() dto: CreateRegistrationDto) {
-    // TODO: Get user email from JWT
-    const userEmail = 'user@example.com';
-    return this.registrationService.create(dto, userEmail);
+  create(@Body() dto: CreateRegistrationDto, @CurrentUser() user: UserInfo) {
+    return this.registrationService.create(dto, user.email);
   }
 
   /**
@@ -68,9 +68,8 @@ export class RegistrationController {
    * Get pending approvals for current user
    */
   @Get('pending-approval')
-  getPendingApprovals(@Query('approverId') approverId: string) {
-    // TODO: Get approverId from JWT
-    return this.registrationService.getPendingApprovals(approverId);
+  getPendingApprovals(@CurrentUser() user: UserInfo) {
+    return this.registrationService.getPendingApprovals(user.id);
   }
 
   /**
@@ -113,9 +112,12 @@ export class RegistrationController {
    * Approve registration
    */
   @Post(':id/approve')
-  approve(@Param('id') id: string, @Body() dto: ApproveRegistrationDto) {
-    // TODO: Get approverId from JWT
-    dto.approverId = dto.approverId || 'user-id-from-jwt';
+  approve(
+    @Param('id') id: string,
+    @Body() dto: ApproveRegistrationDto,
+    @CurrentUser() user: UserInfo,
+  ) {
+    dto.approverId = user.id;
     return this.registrationService.approve(id, dto);
   }
 
@@ -123,9 +125,12 @@ export class RegistrationController {
    * Reject registration
    */
   @Post(':id/reject')
-  reject(@Param('id') id: string, @Body() dto: RejectRegistrationDto) {
-    // TODO: Get approverId from JWT
-    dto.approverId = dto.approverId || 'user-id-from-jwt';
+  reject(
+    @Param('id') id: string,
+    @Body() dto: RejectRegistrationDto,
+    @CurrentUser() user: UserInfo,
+  ) {
+    dto.approverId = user.id;
     return this.registrationService.reject(id, dto);
   }
 

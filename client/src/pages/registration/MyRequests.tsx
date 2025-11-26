@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
 import { RegistrationRequest, RegistrationStatus } from '../../types/registration';
 
 export const MyRequestsPage = () => {
+  const { user } = useAuthStore();
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
@@ -14,10 +17,13 @@ export const MyRequestsPage = () => {
   const loadMyRequests = async () => {
     try {
       setLoading(true);
-      // TODO: Get user ID from auth context
-      // For now, get all requests (in production, filter by requestedById)
+      // Filtrar por usuário autenticado
       const data = await registrationService.getRegistrations();
-      setRequests(data);
+      // Filter client-side if backend doesn't support filtering by user
+      const userRequests = user?.id
+        ? data.filter(req => req.requestedById === user.id)
+        : data;
+      setRequests(userRequests);
     } catch (error) {
       console.error('Error loading requests:', error);
       alert('Erro ao carregar solicitações');
@@ -79,12 +85,12 @@ export const MyRequestsPage = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Minhas Solicitações</h1>
-        <a
-          href="/registration/new"
+        <Link
+          to="/registration/new"
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
         >
           Nova Solicitação
-        </a>
+        </Link>
       </div>
 
       <div className="bg-white rounded-lg shadow">

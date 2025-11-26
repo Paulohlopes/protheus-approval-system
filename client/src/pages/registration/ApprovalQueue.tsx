@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
 import { RegistrationRequest, RegistrationStatus } from '../../types/registration';
 
 export const ApprovalQueuePage = () => {
+  const { user } = useAuthStore();
   const [requests, setRequests] = useState<RegistrationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
@@ -15,9 +17,12 @@ export const ApprovalQueuePage = () => {
   const loadPendingApprovals = async () => {
     try {
       setLoading(true);
-      // TODO: Get user ID from auth context
-      const userId = 'current-user-id';
-      const data = await registrationService.getPendingApprovals(userId);
+      if (!user?.id) {
+        console.error('User not authenticated');
+        setRequests([]);
+        return;
+      }
+      const data = await registrationService.getPendingApprovals(user.id);
       setRequests(data);
     } catch (error) {
       console.error('Error loading pending approvals:', error);

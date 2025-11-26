@@ -12,8 +12,8 @@ const DocumentsTablePage = lazy(() => import('./pages/DocumentsTablePage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const SelectRegistrationTypePage = lazy(() => import('./pages/registration/SelectType').then(m => ({ default: m.SelectRegistrationTypePage })));
 const MyRequestsPage = lazy(() => import('./pages/registration/MyRequests').then(m => ({ default: m.MyRequestsPage })));
-const DynamicFormPage = lazy(() => import('./pages/registration/DynamicForm'));
-const ApprovalQueuePage = lazy(() => import('./pages/registration/ApprovalQueue'));
+const DynamicFormPage = lazy(() => import('./pages/registration/DynamicForm').then(m => ({ default: m.DynamicFormPage })));
+const ApprovalQueuePage = lazy(() => import('./pages/registration/ApprovalQueue').then(m => ({ default: m.ApprovalQueuePage })));
 
 // Componente de loading para Suspense
 const LoadingFallback = () => (
