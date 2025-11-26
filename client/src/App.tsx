@@ -10,6 +10,10 @@ const MainLayout = lazy(() => import('./components/MainLayout'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const DocumentsTablePage = lazy(() => import('./pages/DocumentsTablePage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
+const SelectRegistrationTypePage = lazy(() => import('./pages/registration/SelectType').then(m => ({ default: m.SelectRegistrationTypePage })));
+const MyRequestsPage = lazy(() => import('./pages/registration/MyRequests').then(m => ({ default: m.MyRequestsPage })));
+const DynamicFormPage = lazy(() => import('./pages/registration/DynamicForm'));
+const ApprovalQueuePage = lazy(() => import('./pages/registration/ApprovalQueue'));
 
 // Componente de loading para Suspense
 const LoadingFallback = () => (
@@ -64,6 +68,59 @@ function App() {
                     <ProtectedRoute>
                       <MainLayout>
                         <AdminPage />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+
+              {/* Registration routes */}
+              <Route
+                path="/registration/new"
+                element={
+                  <ErrorBoundary level="page">
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <SelectRegistrationTypePage />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+
+              <Route
+                path="/registration/new/:templateId"
+                element={
+                  <ErrorBoundary level="page">
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <DynamicFormPage />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+
+              <Route
+                path="/registration/my-requests"
+                element={
+                  <ErrorBoundary level="page">
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <MyRequestsPage />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+
+              <Route
+                path="/registration/approvals"
+                element={
+                  <ErrorBoundary level="page">
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <ApprovalQueuePage />
                       </MainLayout>
                     </ProtectedRoute>
                   </ErrorBoundary>

@@ -57,6 +57,7 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [approvalMenuOpen, setApprovalMenuOpen] = useState(true);
+  const [registrationMenuOpen, setRegistrationMenuOpen] = useState(true);
   const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -105,11 +106,30 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       disabled: true,
     },
     {
-      id: 'registration-flow',
-      title: t?.menu?.registrationFlow || 'Fluxo de Cadastros',
+      id: 'registrations',
+      title: 'Cadastros',
       icon: <AccountTree />,
-      path: '/registration-flow',
-      disabled: true,
+      expandable: true,
+      submenu: [
+        {
+          id: 'new-registration',
+          title: 'Novo Cadastro',
+          icon: <Assignment />,
+          path: '/registration/new',
+        },
+        {
+          id: 'my-requests',
+          title: 'Minhas Solicitações',
+          icon: <ViewList />,
+          path: '/registration/my-requests',
+        },
+        {
+          id: 'approval-queue',
+          title: 'Fila de Aprovação',
+          icon: <CheckCircle />,
+          path: '/registration/approvals',
+        },
+      ],
     },
     {
       id: 'admin',
@@ -211,7 +231,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <>
                   <ListItem disablePadding sx={{ mb: 0.5 }}>
                     <ListItemButton
-                      onClick={() => setApprovalMenuOpen(!approvalMenuOpen)}
+                      onClick={() => {
+                        if (item.id === 'approvals') {
+                          setApprovalMenuOpen(!approvalMenuOpen);
+                        } else if (item.id === 'registrations') {
+                          setRegistrationMenuOpen(!registrationMenuOpen);
+                        }
+                      }}
                       sx={{
                         borderRadius: '8px',
                         py: 0.75,
@@ -233,10 +259,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                           fontSize: '0.9rem',
                         }}
                       />
-                      {approvalMenuOpen ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                      {(item.id === 'approvals' ? approvalMenuOpen : registrationMenuOpen) ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
                     </ListItemButton>
                   </ListItem>
-                  <Collapse in={approvalMenuOpen} timeout="auto" unmountOnExit>
+                  <Collapse in={item.id === 'approvals' ? approvalMenuOpen : registrationMenuOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
                       {item.submenu?.map((subItem) => (
                         <ListItem key={subItem.id} disablePadding sx={{ mb: 0.5 }}>
