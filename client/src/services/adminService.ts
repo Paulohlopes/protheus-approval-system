@@ -1,4 +1,4 @@
-import api from './api';
+import { backendApi } from './api';
 import type {
   FormTemplate,
   CreateFormTemplateDto,
@@ -17,7 +17,7 @@ export const adminService = {
    * Get all form templates
    */
   async getTemplates(includeFields = true): Promise<FormTemplate[]> {
-    const response = await api.get('/form-template', {
+    const response = await backendApi.get('/form-template', {
       params: { includeFields },
     });
     return response.data;
@@ -27,7 +27,7 @@ export const adminService = {
    * Get a single template by ID
    */
   async getTemplate(id: string): Promise<FormTemplate> {
-    const response = await api.get(`/form-template/${id}`);
+    const response = await backendApi.get(`/form-template/${id}`);
     return response.data;
   },
 
@@ -35,7 +35,7 @@ export const adminService = {
    * Get template by table name
    */
   async getTemplateByTable(tableName: string): Promise<FormTemplate> {
-    const response = await api.get(`/form-template/by-table/${tableName}`);
+    const response = await backendApi.get(`/form-template/by-table/${tableName}`);
     return response.data;
   },
 
@@ -43,7 +43,7 @@ export const adminService = {
    * Create a new form template
    */
   async createTemplate(data: CreateFormTemplateDto): Promise<FormTemplate> {
-    const response = await api.post('/form-template', data);
+    const response = await backendApi.post('/form-template', data);
     return response.data;
   },
 
@@ -51,7 +51,7 @@ export const adminService = {
    * Update a form template
    */
   async updateTemplate(id: string, data: UpdateFormTemplateDto): Promise<FormTemplate> {
-    const response = await api.put(`/form-template/${id}`, data);
+    const response = await backendApi.put(`/form-template/${id}`, data);
     return response.data;
   },
 
@@ -59,7 +59,7 @@ export const adminService = {
    * Delete a form template
    */
   async deleteTemplate(id: string): Promise<void> {
-    await api.delete(`/form-template/${id}`);
+    await backendApi.delete(`/form-template/${id}`);
   },
 
   /**
@@ -75,7 +75,7 @@ export const adminService = {
       validationRules?: any;
     }
   ): Promise<FormTemplate> {
-    const response = await api.put(`/form-template/${templateId}/fields/${fieldId}`, data);
+    const response = await backendApi.put(`/form-template/${templateId}/fields/${fieldId}`, data);
     return response.data;
   },
 
@@ -83,7 +83,7 @@ export const adminService = {
    * Reorder fields in a template
    */
   async reorderTemplateFields(templateId: string, data: ReorderFieldsDto): Promise<FormTemplate> {
-    const response = await api.post(`/form-template/${templateId}/reorder`, data);
+    const response = await backendApi.post(`/form-template/${templateId}/reorder`, data);
     return response.data;
   },
 
@@ -91,7 +91,7 @@ export const adminService = {
    * Get visible fields only
    */
   async getVisibleFields(templateId: string): Promise<any[]> {
-    const response = await api.get(`/form-template/${templateId}/visible-fields`);
+    const response = await backendApi.get(`/form-template/${templateId}/visible-fields`);
     return response.data;
   },
 
@@ -99,7 +99,7 @@ export const adminService = {
    * Sync template with SX3 (Protheus metadata)
    */
   async syncTemplateWithSx3(templateId: string): Promise<FormTemplate> {
-    const response = await api.post(`/form-template/${templateId}/sync`);
+    const response = await backendApi.post(`/form-template/${templateId}/sync`);
     return response.data;
   },
 
@@ -111,7 +111,7 @@ export const adminService = {
    * Create a new workflow
    */
   async createWorkflow(data: CreateWorkflowDto): Promise<Workflow> {
-    const response = await api.post('/registration/workflows', data);
+    const response = await backendApi.post('/registration/workflows', data);
     return response.data;
   },
 
@@ -119,7 +119,7 @@ export const adminService = {
    * Get active workflow for a template
    */
   async getActiveWorkflow(templateId: string): Promise<Workflow> {
-    const response = await api.get(`/registration/workflows/template/${templateId}`);
+    const response = await backendApi.get(`/registration/workflows/template/${templateId}`);
     return response.data;
   },
 
@@ -131,7 +131,7 @@ export const adminService = {
    * Get table structure from SX3
    */
   async getTableStructure(tableName: string): Promise<any> {
-    const response = await api.get(`/sx3/table/${tableName}`);
+    const response = await backendApi.get(`/sx3/table/${tableName}`);
     return response.data;
   },
 
@@ -139,7 +139,7 @@ export const adminService = {
    * Get all available tables from SX3
    */
   async getAllTables(): Promise<string[]> {
-    const response = await api.get('/sx3/tables');
+    const response = await backendApi.get('/sx3/tables');
     return response.data;
   },
 };
