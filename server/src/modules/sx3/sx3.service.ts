@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Sx3 } from './entities/sx3.entity';
 import { Sx3FieldDto, TableStructureDto } from './dto/sx3-field.dto';
@@ -35,7 +35,7 @@ export class Sx3Service {
     const sx3Records = await this.sx3Repository.find({
       where: {
         x3Arquivo: tableName,
-        deleted: In(['', ' ']), // Not deleted
+        deleted: '', // Not deleted (empty string only, matching Protheus convention)
       },
       order: {
         x3Ordem: 'ASC',
@@ -68,7 +68,7 @@ export class Sx3Service {
     const result = await this.sx3Repository
       .createQueryBuilder('sx3')
       .select('DISTINCT sx3.x3Arquivo', 'tableName')
-      .where("sx3.deleted IN ('', ' ')")
+      .where("sx3.deleted = ''")
       .getRawMany();
 
     return result.map((r) => r.tableName).sort();

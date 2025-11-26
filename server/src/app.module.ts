@@ -10,6 +10,7 @@ import { RegistrationModule } from './modules/registration/registration.module';
 import { ProtheusIntegrationModule } from './modules/protheus-integration/protheus-integration.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ProtheusJwtAuthGuard } from './modules/auth/guards/protheus-jwt-auth.guard';
+import { Sx3 } from './modules/sx3/entities/sx3.entity';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { ProtheusJwtAuthGuard } from './modules/auth/guards/protheus-jwt-auth.gu
         username: configService.get('PROTHEUS_DB_USERNAME'),
         password: configService.get('PROTHEUS_DB_PASSWORD'),
         database: configService.get('PROTHEUS_DB_DATABASE'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        entities: [Sx3], // Explicitly list entities instead of using glob pattern
         synchronize: false, // NEVER sync with Protheus database!
         logging: configService.get('NODE_ENV') === 'development',
         options: {
