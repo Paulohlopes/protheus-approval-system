@@ -51,7 +51,7 @@ export interface FormField {
   updatedAt: string;
 }
 
-export interface RegistrationRequest {
+export type RegistrationRequest = {
   id: string;
   templateId: string;
   template?: FormTemplate;
@@ -75,9 +75,9 @@ export interface RegistrationRequest {
   syncLog?: any;
   createdAt: string;
   updatedAt: string;
-}
+};
 
-export interface RegistrationApproval {
+export type RegistrationApproval = {
   id: string;
   requestId: string;
   level: number;
@@ -93,9 +93,9 @@ export interface RegistrationApproval {
   actionAt?: string;
   createdAt: string;
   updatedAt: string;
-}
+};
 
-export interface RegistrationWorkflow {
+export type RegistrationWorkflow = {
   id: string;
   templateId: string;
   name: string;
@@ -105,9 +105,9 @@ export interface RegistrationWorkflow {
   levels: WorkflowLevel[];
   createdAt: string;
   updatedAt: string;
-}
+};
 
-export interface WorkflowLevel {
+export type WorkflowLevel = {
   id: string;
   workflowId: string;
   levelOrder: number;
@@ -117,4 +117,4 @@ export interface WorkflowLevel {
   conditions?: any;
   createdAt: string;
   updatedAt: string;
-}
+};
