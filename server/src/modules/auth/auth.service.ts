@@ -15,13 +15,17 @@ import {
   AuthResponse,
   UserInfo,
 } from './interfaces/auth.interface';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly protheusOAuthUrl: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private prisma: PrismaService,
+  ) {
     this.protheusOAuthUrl = this.configService.get<string>(
       'PROTHEUS_OAUTH_URL',
     );
@@ -82,6 +86,9 @@ export class AuthService {
         isAdmin,
         protheusUserId: userId,
       };
+
+      // Sync user to PostgreSQL (JIT User Provisioning)
+      await this.syncUserToPostgres(user);
 
       // Build auth response
       const response: AuthResponse = {
@@ -191,6 +198,38 @@ export class AuthService {
       return response.data;
     } catch (error) {
       this.handleProtheusError(error, 'Failed to get user details');
+    }
+  }
+
+  /**
+   * Sync user from Protheus to PostgreSQL
+   * Creates user if doesn't exist, updates if exists
+   */
+  private async syncUserToPostgres(user: UserInfo): Promise<void> {
+    try {
+      await this.prisma.user.upsert({
+        where: { email: user.email },
+        update: {
+          username: user.username,
+          name: user.name,
+          department: user.department,
+          isActive: user.isActive,
+          isAdmin: user.isAdmin,
+        },
+        create: {
+          username: user.username,
+          name: user.name,
+          email: user.email,
+          department: user.department,
+          isActive: user.isActive,
+          isAdmin: user.isAdmin,
+        },
+      });
+
+      this.logger.log(`User synced to PostgreSQL: ${user.email}`);
+    } catch (error) {
+      this.logger.error(`Failed to sync user to PostgreSQL: ${user.email}`, error);
+      // Don't throw - allow login to continue even if sync fails
     }
   }
 
