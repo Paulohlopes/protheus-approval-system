@@ -174,7 +174,12 @@ export class RegistrationService {
    * Create draft registration
    */
   async create(dto: CreateRegistrationDto, userId: string, userEmail: string) {
-    this.logger.log(`Creating registration draft for template ${dto.templateId}`);
+    this.logger.log(`Creating registration draft for template ${dto.templateId} by user ${userId}`);
+
+    // Validate user info from JWT
+    if (!userId || !userEmail) {
+      throw new BadRequestException('User information is missing. Please re-authenticate.');
+    }
 
     // Get template with fields for validation
     const template = await this.prisma.formTemplate.findUnique({

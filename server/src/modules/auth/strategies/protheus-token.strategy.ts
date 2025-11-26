@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-custom';
@@ -8,6 +8,7 @@ import {
   ProtheusUserDetailsResponse,
   UserInfo,
 } from '../interfaces/auth.interface';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class ProtheusTokenStrategy extends PassportStrategy(
@@ -15,8 +16,12 @@ export class ProtheusTokenStrategy extends PassportStrategy(
   'protheus-token',
 ) {
   private readonly protheusOAuthUrl: string;
+  private readonly logger = new Logger(ProtheusTokenStrategy.name);
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private prisma: PrismaService,
+  ) {
     super();
     this.protheusOAuthUrl = this.configService.get<string>(
       'PROTHEUS_OAUTH_URL',
@@ -36,9 +41,13 @@ export class ProtheusTokenStrategy extends PassportStrategy(
       // Validate token and get user info from Protheus
       const userInfo = await this.validateTokenWithProtheus(token);
 
-      // Return user info to be attached to request
+      // Sync user to local database (upsert) and get the DB user ID
+      const dbUserId = await this.syncUserToDatabase(userInfo);
+
+      // Return user info with the correct database ID
       return {
         ...userInfo,
+        id: dbUserId, // Use the database ID, not Protheus ID
         protheusToken: token,
       };
     } catch (error) {
@@ -51,6 +60,42 @@ export class ProtheusTokenStrategy extends PassportStrategy(
         );
       }
       throw new UnauthorizedException('Authentication failed');
+    }
+  }
+
+  /**
+   * Sync user to local database (create or update)
+   * Returns the database user ID
+   */
+  private async syncUserToDatabase(userInfo: UserInfo): Promise<string> {
+    try {
+      // Use email as unique identifier for upsert since id might not exist
+      const dbUser = await this.prisma.user.upsert({
+        where: { email: userInfo.email },
+        update: {
+          name: userInfo.name,
+          department: userInfo.department,
+          isActive: userInfo.isActive,
+          isAdmin: userInfo.isAdmin,
+          updatedAt: new Date(),
+        },
+        create: {
+          id: userInfo.id,
+          username: userInfo.username || userInfo.email.split('@')[0],
+          email: userInfo.email,
+          name: userInfo.name,
+          department: userInfo.department,
+          isActive: userInfo.isActive,
+          isAdmin: userInfo.isAdmin,
+        },
+      });
+      this.logger.debug(`User ${userInfo.email} synced to local database with id ${dbUser.id}`);
+      return dbUser.id;
+    } catch (error) {
+      // Log error but don't fail authentication
+      this.logger.error(`Failed to sync user to database: ${error.message}`);
+      // Re-throw to prevent creating registrations with non-existent user
+      throw new UnauthorizedException('Failed to sync user. Please try again.');
     }
   }
 

@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { RegistrationService } from './registration.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
@@ -45,6 +46,10 @@ export class RegistrationController {
    */
   @Post()
   create(@Body() dto: CreateRegistrationDto, @CurrentUser() user: UserInfo) {
+    // Ensure user is authenticated
+    if (!user?.id || !user?.email) {
+      throw new UnauthorizedException('User not authenticated properly');
+    }
     return this.registrationService.create(dto, user.id, user.email);
   }
 
