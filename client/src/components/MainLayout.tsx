@@ -107,25 +107,25 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     },
     {
       id: 'registrations',
-      title: 'Cadastros',
+      title: t?.menu?.registrations || 'Cadastros',
       icon: <AccountTree />,
       expandable: true,
       submenu: [
         {
           id: 'new-registration',
-          title: 'Novo Cadastro',
+          title: t?.menu?.newRegistration || 'Novo Cadastro',
           icon: <Assignment />,
           path: '/registration/new',
         },
         {
           id: 'my-requests',
-          title: 'Minhas Solicitações',
+          title: t?.menu?.myRequests || 'Minhas Solicitações',
           icon: <ViewList />,
           path: '/registration/my-requests',
         },
         {
           id: 'approval-queue',
-          title: 'Fila de Aprovação',
+          title: t?.menu?.approvalQueue || 'Fila de Aprovação',
           icon: <CheckCircle />,
           path: '/registration/approvals',
         },
@@ -133,7 +133,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     },
     {
       id: 'admin',
-      title: 'Administração',
+      title: t?.menu?.admin || 'Administração',
       icon: <Settings />,
       path: '/admin',
       adminOnly: true,
@@ -311,7 +311,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                             />
                             {subItem.disabled && (
                               <Chip
-                                label="Em breve"
+                                label={t?.menu?.comingSoon || 'Em breve'}
                                 size="small"
                                 sx={{
                                   height: 18,
@@ -374,7 +374,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     />
                     {item.disabled && (
                       <Chip
-                        label="Em breve"
+                        label={t?.menu?.comingSoon || 'Em breve'}
                         size="small"
                         sx={{
                           height: 18,
@@ -549,7 +549,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Person fontSize="small" color="action" />
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Usuário
+                    {t?.profile?.user || 'Usuário'}
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
                     {user.username}
@@ -563,7 +563,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Work fontSize="small" color="action" />
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Cargo
+                    {t?.profile?.role || 'Cargo'}
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
                     {user.role}
@@ -577,7 +577,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Business fontSize="small" color="action" />
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    Departamento
+                    {t?.profile?.department || 'Departamento'}
                   </Typography>
                   <Typography variant="body2" fontWeight={500}>
                     {user.department}
@@ -591,7 +591,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 <Group fontSize="small" color="action" sx={{ mt: 0.5 }} />
                 <Box sx={{ flexGrow: 1 }}>
                   <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-                    Grupos
+                    {t?.profile?.groups || 'Grupos'}
                   </Typography>
                   <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
                     {user.groups.slice(0, 3).map((group, index) => (
