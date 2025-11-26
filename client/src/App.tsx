@@ -9,6 +9,7 @@ const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
 const MainLayout = lazy(() => import('./components/MainLayout'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const DocumentsTablePage = lazy(() => import('./pages/DocumentsTablePage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
 
 // Componente de loading para Suspense
 const LoadingFallback = () => (
@@ -50,6 +51,19 @@ function App() {
                     <ProtectedRoute>
                       <MainLayout>
                         <DocumentsTablePage />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+
+              <Route
+                path="/admin"
+                element={
+                  <ErrorBoundary level="page">
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <AdminPage />
                       </MainLayout>
                     </ProtectedRoute>
                   </ErrorBoundary>

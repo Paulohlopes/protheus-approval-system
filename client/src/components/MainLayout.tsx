@@ -75,7 +75,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     }
   };
 
-  const menuItems = [
+  const allMenuItems = [
     {
       id: 'approvals',
       title: t?.menu?.approvals || 'Aprovações',
@@ -111,7 +111,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       path: '/registration-flow',
       disabled: true,
     },
+    {
+      id: 'admin',
+      title: 'Administração',
+      icon: <Settings />,
+      path: '/admin',
+      adminOnly: true,
+    },
   ];
+
+  // Filter menu items based on user permissions
+  const menuItems = allMenuItems.filter(item => {
+    if (item.adminOnly && !user?.isAdmin) {
+      return false;
+    }
+    return true;
+  });
 
   const isPathActive = (path: string) => {
     return location.pathname === path;
