@@ -39,7 +39,7 @@ export interface FormTemplate {
 }
 
 export interface CreateFormTemplateDto {
-  name: string;
+  label: string;
   description?: string;
   tableName: string;
   isActive?: boolean;

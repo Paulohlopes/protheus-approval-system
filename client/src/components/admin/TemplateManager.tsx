@@ -55,7 +55,7 @@ const TemplateManager: React.FC = () => {
 
   // Form state for create/edit
   const [formData, setFormData] = useState<CreateFormTemplateDto>({
-    name: '',
+    label: '',
     description: '',
     tableName: '',
     isActive: true,
@@ -140,7 +140,7 @@ const TemplateManager: React.FC = () => {
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      label: '',
       description: '',
       tableName: '',
       isActive: true,
@@ -356,8 +356,8 @@ const TemplateManager: React.FC = () => {
               label="Nome"
               fullWidth
               required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.label}
+              onChange={(e) => setFormData({ ...formData, label: e.target.value })}
             />
             <TextField
               label="Nome da Tabela SX3"
@@ -391,7 +391,7 @@ const TemplateManager: React.FC = () => {
           <Button
             variant="contained"
             onClick={handleCreateTemplate}
-            disabled={!formData.name || !formData.tableName}
+            disabled={!formData.label || !formData.tableName}
           >
             Criar Template
           </Button>
