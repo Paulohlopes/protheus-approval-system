@@ -714,10 +714,9 @@ export class RegistrationService {
     // LOG-04: Use transaction for atomic submit operation
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent submissions
-      // Cast text parameter to uuid in the query
-      const registrations = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM registration_requests WHERE id = CAST($1 AS uuid) FOR UPDATE`,
-        id
+      // Use Prisma.sql for type-safe UUID handling
+      const registrations = await tx.$queryRaw<any[]>(
+        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${id}::uuid FOR UPDATE`
       );
       const registration = registrations[0];
 
@@ -860,9 +859,8 @@ export class RegistrationService {
     // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
-      const registrations = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM registration_requests WHERE id = CAST($1 AS uuid) FOR UPDATE`,
-        id
+      const registrations = await tx.$queryRaw<any[]>(
+        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${id}::uuid FOR UPDATE`
       );
       const registration = registrations[0];
 
@@ -1159,9 +1157,8 @@ export class RegistrationService {
     // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
-      const registrations = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM registration_requests WHERE id = CAST($1 AS uuid) FOR UPDATE`,
-        id
+      const registrations = await tx.$queryRaw<any[]>(
+        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${id}::uuid FOR UPDATE`
       );
       const registration = registrations[0];
 
@@ -1597,9 +1594,8 @@ export class RegistrationService {
 
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration
-      const registrations = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM registration_requests WHERE id = CAST($1 AS uuid) FOR UPDATE`,
-        registrationId
+      const registrations = await tx.$queryRaw<any[]>(
+        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${registrationId}::uuid FOR UPDATE`
       );
       const registration = registrations[0];
 
