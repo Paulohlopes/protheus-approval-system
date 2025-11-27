@@ -143,7 +143,7 @@ const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
         </AlertTitle>
 
         <Box sx={{ mt: 1 }}>
-          <Typography variant="body2" sx={{ mb: 2, opacity: 0.95 }}>
+          <Box component="div" sx={{ mb: 2, opacity: 0.95, typography: 'body2' }}>
             {successfulCountries && successfulCountries.length > 0 ? (
               <>
                 {t.apiErrors.documentsDisplayedFrom} {' '}
@@ -170,7 +170,7 @@ const ApiErrorAlert: React.FC<ApiErrorAlertProps> = ({
             ) : (
               t.apiErrors.noCountryAvailable
             )}
-          </Typography>
+          </Box>
 
           <List dense sx={{ bgcolor: 'rgba(0, 0, 0, 0.1)', borderRadius: 1, py: 0.5 }}>
             {errors.map((error, index) => (

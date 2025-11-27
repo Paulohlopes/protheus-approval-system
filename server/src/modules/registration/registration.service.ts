@@ -696,14 +696,19 @@ export class RegistrationService {
         throw new NotFoundException(`Registration ${id} not found`);
       }
 
+      // Note: Raw query returns snake_case column names from PostgreSQL
+      const requestedById = registration.requested_by_id || registration.requestedById;
+      const templateId = registration.template_id || registration.templateId;
+      const currentStatus = registration.status as RegistrationStatus;
+
       // Ownership check - only owner can submit
-      if (registration.requestedById !== userId) {
+      if (requestedById !== userId) {
         throw new ForbiddenException('You can only submit your own registrations');
       }
 
       // LOG-08: Validate state transition
       validateStatusTransition(
-        registration.status as RegistrationStatus,
+        currentStatus,
         RegistrationStatus.PENDING_APPROVAL,
         'submit'
       );
@@ -711,7 +716,7 @@ export class RegistrationService {
       // Get active workflow
       const workflow = await tx.registrationWorkflow.findFirst({
         where: {
-          templateId: registration.templateId,
+          templateId: templateId,
           isActive: true,
         },
         include: {
@@ -835,13 +840,19 @@ export class RegistrationService {
         throw new NotFoundException(`Registration ${id} not found`);
       }
 
+      // Note: Raw query returns snake_case column names from PostgreSQL
+      const requestedById = registration.requested_by_id || registration.requestedById;
+      const currentLevel = registration.current_level ?? registration.currentLevel;
+      const currentStatus = registration.status as RegistrationStatus;
+      const workflowSnapshot = registration.workflow_snapshot || registration.workflowSnapshot;
+      const formData = registration.form_data || registration.formData;
+
       // LOG-01: Prevent self-approval - user cannot approve their own request
-      if (registration.requestedById === approverId) {
+      if (requestedById === approverId) {
         throw new ForbiddenException('You cannot approve your own registration request');
       }
 
       // LOG-08: Validate status allows approval
-      const currentStatus = registration.status as RegistrationStatus;
       if (
         currentStatus !== RegistrationStatus.PENDING_APPROVAL &&
         currentStatus !== RegistrationStatus.IN_APPROVAL
@@ -854,7 +865,7 @@ export class RegistrationService {
         where: {
           requestId: id,
           approverId,
-          level: registration.currentLevel,
+          level: currentLevel,
           action: ApprovalAction.PENDING,
         },
       });
@@ -864,21 +875,20 @@ export class RegistrationService {
       }
 
       // Process field changes if provided
-      const workflowSnapshot = registration.workflowSnapshot as any;
       if (dto.fieldChanges && Object.keys(dto.fieldChanges).length > 0) {
         const editableFields = this.getEditableFieldsForLevel(
           workflowSnapshot,
-          registration.currentLevel,
+          currentLevel,
         );
 
         const updatedFormData = await this.applyFieldChangesInTransaction(
           tx,
           id,
-          registration.formData as Record<string, any>,
+          formData as Record<string, any>,
           dto.fieldChanges,
           editableFields,
           approverId,
-          registration.currentLevel,
+          currentLevel,
         );
 
         // Update registration with new form data
@@ -902,17 +912,23 @@ export class RegistrationService {
       const pendingCount = await tx.registrationApproval.count({
         where: {
           requestId: id,
-          level: registration.currentLevel,
+          level: currentLevel,
           action: ApprovalAction.PENDING,
         },
       });
       const levelComplete = pendingCount === 0;
 
       if (levelComplete) {
-        await this.advanceToNextLevelInTransaction(tx, id, registration, workflowSnapshot);
+        // Pass normalized registration object for advanceToNextLevelInTransaction
+        const normalizedRegistration = {
+          ...registration,
+          currentLevel,
+          status: currentStatus,
+        };
+        await this.advanceToNextLevelInTransaction(tx, id, normalizedRegistration, workflowSnapshot);
       } else {
         // Update status to IN_APPROVAL if not already
-        if (registration.status !== RegistrationStatus.IN_APPROVAL) {
+        if (currentStatus !== RegistrationStatus.IN_APPROVAL) {
           await tx.registrationRequest.update({
             where: { id },
             data: { status: RegistrationStatus.IN_APPROVAL },
@@ -1123,13 +1139,17 @@ export class RegistrationService {
         throw new NotFoundException(`Registration ${id} not found`);
       }
 
+      // Note: Raw query returns snake_case column names from PostgreSQL
+      const requestedById = registration.requested_by_id || registration.requestedById;
+      const currentLevel = registration.current_level ?? registration.currentLevel;
+      const currentStatus = registration.status as RegistrationStatus;
+
       // LOG-01: Prevent self-rejection - user cannot reject their own request
-      if (registration.requestedById === approverId) {
+      if (requestedById === approverId) {
         throw new ForbiddenException('You cannot reject your own registration request');
       }
 
       // LOG-08: Validate status allows rejection
-      const currentStatus = registration.status as RegistrationStatus;
       if (
         currentStatus !== RegistrationStatus.PENDING_APPROVAL &&
         currentStatus !== RegistrationStatus.IN_APPROVAL
@@ -1145,7 +1165,7 @@ export class RegistrationService {
         where: {
           requestId: id,
           approverId,
-          level: registration.currentLevel,
+          level: currentLevel,
           action: ApprovalAction.PENDING,
         },
       });
@@ -1557,7 +1577,11 @@ export class RegistrationService {
         throw new NotFoundException(`Registration ${registrationId} not found`);
       }
 
+      // Note: Raw query returns snake_case column names from PostgreSQL
+      const currentLevel = registration.current_level ?? registration.currentLevel;
       const currentStatus = registration.status as RegistrationStatus;
+      const workflowSnapshot = registration.workflow_snapshot || registration.workflowSnapshot;
+
       if (
         currentStatus !== RegistrationStatus.PENDING_APPROVAL &&
         currentStatus !== RegistrationStatus.IN_APPROVAL
@@ -1567,13 +1591,11 @@ export class RegistrationService {
         );
       }
 
-      const workflowSnapshot = registration.workflowSnapshot as any;
-
       // Mark all pending approvals at current level as admin-overridden
       await tx.registrationApproval.updateMany({
         where: {
           requestId: registrationId,
-          level: registration.currentLevel,
+          level: currentLevel,
           action: ApprovalAction.PENDING,
         },
         data: {
@@ -1590,7 +1612,7 @@ export class RegistrationService {
           fieldName: '__ADMIN_OVERRIDE__',
           previousValue: JSON.stringify({
             action,
-            level: registration.currentLevel,
+            level: currentLevel,
             status: currentStatus,
           }),
           newValue: JSON.stringify({
@@ -1599,15 +1621,22 @@ export class RegistrationService {
             comments,
           }),
           changedById: adminId,
-          approvalLevel: registration.currentLevel,
+          approvalLevel: currentLevel,
         },
       });
+
+      // Pass normalized registration object for advanceToNextLevelInTransaction
+      const normalizedRegistration = {
+        ...registration,
+        currentLevel,
+        status: currentStatus,
+      };
 
       // Advance to next level (reusing existing logic)
       await this.advanceToNextLevelInTransaction(
         tx,
         registrationId,
-        registration,
+        normalizedRegistration,
         workflowSnapshot,
         0, // iteration count
       );
