@@ -203,6 +203,7 @@ enum RegistrationStatus {
   IN_APPROVAL
   APPROVED
   REJECTED
+  RETURNED              // Sent back for revision (to requester or previous level)
   SYNCING_TO_PROTHEUS
   SYNCED
   SYNC_FAILED
@@ -253,6 +254,7 @@ enum ApprovalAction {
   PENDING
   APPROVED
   REJECTED
+  SENT_BACK             // Returned to previous level or requester
 }
 
 model RegistrationApproval {
