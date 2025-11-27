@@ -13,11 +13,13 @@ import {
   Settings,
   Description,
   AccountTree,
+  Group,
 } from '@mui/icons-material';
 import { useAuthStore } from '../stores/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
 import TemplateManager from '../components/admin/TemplateManager';
 import WorkflowManager from '../components/admin/WorkflowManager';
+import ApprovalGroupManager from '../components/admin/ApprovalGroupManager';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -109,6 +111,13 @@ const AdminPage: React.FC = () => {
             id="admin-tab-1"
             aria-controls="admin-tabpanel-1"
           />
+          <Tab
+            icon={<Group />}
+            iconPosition="start"
+            label="Grupos de Aprovação"
+            id="admin-tab-2"
+            aria-controls="admin-tabpanel-2"
+          />
         </Tabs>
       </Paper>
 
@@ -119,6 +128,10 @@ const AdminPage: React.FC = () => {
 
       <TabPanel value={currentTab} index={1}>
         <WorkflowManager />
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={2}>
+        <ApprovalGroupManager />
       </TabPanel>
     </Container>
   );

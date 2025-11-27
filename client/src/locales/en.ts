@@ -431,6 +431,64 @@ export const en = {
     errorTemplateNotFound: 'Template not found',
     errorSessionExpired: 'Session expired. Please log in again.',
     errorNoPermission: 'You do not have permission to access this resource.',
+
+    // Field editing during approval
+    changeHistory: 'Change History',
+    editableFieldsHint: 'You can edit the highlighted fields below before approving.',
+    editableField: 'Editable field',
+    changesWillBeApplied: 'Changes will be applied upon approval:',
+    noChangesRecorded: 'No changes recorded',
+  },
+  admin: {
+    // Page title
+    title: 'Administration',
+    subtitle: 'Manage form templates, approval workflows and system settings',
+    accessDenied: 'Access Denied',
+    accessDeniedDesc: 'You do not have permission to access this page. Only administrators can manage system settings.',
+
+    // Tabs
+    tabTemplates: 'Form Templates',
+    tabWorkflows: 'Approval Workflows',
+    tabGroups: 'Approval Groups',
+
+    // Approval Groups
+    approvalGroups: 'Approval Groups',
+    newGroup: 'New Group',
+    createGroup: 'Create New Group',
+    editGroup: 'Edit Group',
+    groupName: 'Group Name',
+    groupDescription: 'Description',
+    groupStatus: 'Status',
+    groupActive: 'Active',
+    groupInactive: 'Inactive',
+    groupMembers: 'Members',
+    noGroups: 'No groups registered',
+    manageMembers: 'Manage Members',
+    addMember: 'Add Member',
+    addUser: 'Add User',
+    removeMember: 'Remove Member',
+    currentMembers: 'Current Members',
+    noMembers: 'No members',
+    addUsersToGroup: 'Add users to the group',
+    deactivateGroup: 'Deactivate',
+    confirmDeactivateGroup: 'Are you sure you want to deactivate this group?',
+    confirmRemoveMember: 'Are you sure you want to remove this member?',
+
+    // Success messages
+    groupCreated: 'Group created successfully',
+    groupUpdated: 'Group updated successfully',
+    groupDeactivated: 'Group deactivated successfully',
+    memberAdded: 'Member added successfully',
+    memberRemoved: 'Member removed successfully',
+
+    // Error messages
+    errorLoadGroups: 'Error loading groups',
+    errorLoadMembers: 'Error loading members',
+    errorCreateGroup: 'Error creating group',
+    errorUpdateGroup: 'Error updating group',
+    errorDeactivateGroup: 'Error deactivating group',
+    errorAddMember: 'Error adding member',
+    errorRemoveMember: 'Error removing member',
   },
   apiErrors: {
     errorConnectingCountries: 'Error connecting to {{count}} {{countryWord}}',

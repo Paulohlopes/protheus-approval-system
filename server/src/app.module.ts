@@ -9,6 +9,7 @@ import { FormTemplateModule } from './modules/form-template/form-template.module
 import { RegistrationModule } from './modules/registration/registration.module';
 import { ProtheusIntegrationModule } from './modules/protheus-integration/protheus-integration.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ApprovalGroupsModule } from './modules/approval-groups/approval-groups.module';
 import { ProtheusJwtAuthGuard } from './modules/auth/guards/protheus-jwt-auth.guard';
 import { Sx3 } from './modules/sx3/entities/sx3.entity';
 
@@ -58,6 +59,7 @@ import { Sx3 } from './modules/sx3/entities/sx3.entity';
     FormTemplateModule,
     ProtheusIntegrationModule,
     RegistrationModule,
+    ApprovalGroupsModule,
   ],
   controllers: [],
   providers: [

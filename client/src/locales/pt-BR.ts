@@ -431,6 +431,64 @@ export const ptBR = {
     errorTemplateNotFound: 'Template não encontrado',
     errorSessionExpired: 'Sessão expirada. Faça login novamente.',
     errorNoPermission: 'Você não tem permissão para acessar este recurso.',
+
+    // Field editing during approval
+    changeHistory: 'Histórico de Alterações',
+    editableFieldsHint: 'Você pode editar os campos destacados abaixo antes de aprovar.',
+    editableField: 'Campo editável',
+    changesWillBeApplied: 'Alterações serão aplicadas ao aprovar:',
+    noChangesRecorded: 'Nenhuma alteração registrada',
+  },
+  admin: {
+    // Page title
+    title: 'Administração',
+    subtitle: 'Gerencie templates de formulários, workflows de aprovação e configurações do sistema',
+    accessDenied: 'Acesso Negado',
+    accessDeniedDesc: 'Você não tem permissão para acessar esta página. Apenas administradores podem gerenciar configurações do sistema.',
+
+    // Tabs
+    tabTemplates: 'Templates de Formulários',
+    tabWorkflows: 'Workflows de Aprovação',
+    tabGroups: 'Grupos de Aprovação',
+
+    // Approval Groups
+    approvalGroups: 'Grupos de Aprovação',
+    newGroup: 'Novo Grupo',
+    createGroup: 'Criar Novo Grupo',
+    editGroup: 'Editar Grupo',
+    groupName: 'Nome do Grupo',
+    groupDescription: 'Descrição',
+    groupStatus: 'Status',
+    groupActive: 'Ativo',
+    groupInactive: 'Inativo',
+    groupMembers: 'Membros',
+    noGroups: 'Nenhum grupo cadastrado',
+    manageMembers: 'Gerenciar Membros',
+    addMember: 'Adicionar Membro',
+    addUser: 'Adicionar Usuário',
+    removeMember: 'Remover Membro',
+    currentMembers: 'Membros Atuais',
+    noMembers: 'Nenhum membro',
+    addUsersToGroup: 'Adicione usuários ao grupo',
+    deactivateGroup: 'Desativar',
+    confirmDeactivateGroup: 'Tem certeza que deseja desativar este grupo?',
+    confirmRemoveMember: 'Tem certeza que deseja remover este membro?',
+
+    // Success messages
+    groupCreated: 'Grupo criado com sucesso',
+    groupUpdated: 'Grupo atualizado com sucesso',
+    groupDeactivated: 'Grupo desativado com sucesso',
+    memberAdded: 'Membro adicionado com sucesso',
+    memberRemoved: 'Membro removido com sucesso',
+
+    // Error messages
+    errorLoadGroups: 'Erro ao carregar grupos',
+    errorLoadMembers: 'Erro ao carregar membros',
+    errorCreateGroup: 'Erro ao criar grupo',
+    errorUpdateGroup: 'Erro ao atualizar grupo',
+    errorDeactivateGroup: 'Erro ao desativar grupo',
+    errorAddMember: 'Erro ao adicionar membro',
+    errorRemoveMember: 'Erro ao remover membro',
   },
   apiErrors: {
     errorConnectingCountries: 'Erro ao conectar com {{count}} {{countryWord}}',

@@ -204,10 +204,17 @@ export const registrationService = {
   },
 
   /**
-   * Approve registration
+   * Approve registration (with optional field changes)
    */
-  async approveRegistration(id: string, comments?: string): Promise<RegistrationRequest> {
-    const response = await backendApi.post(`/registrations/${id}/approve`, { comments });
+  async approveRegistration(
+    id: string,
+    comments?: string,
+    fieldChanges?: Record<string, any>,
+  ): Promise<RegistrationRequest> {
+    const response = await backendApi.post(`/registrations/${id}/approve`, {
+      comments,
+      fieldChanges,
+    });
     return response.data;
   },
 
@@ -263,4 +270,44 @@ export const registrationService = {
   async syncSx3Cache(): Promise<void> {
     await backendApi.post('/sx3/sync');
   },
+
+  // ==========================================
+  // FIELD CHANGE HISTORY
+  // ==========================================
+
+  /**
+   * Get field change history for a registration
+   */
+  async getFieldChangeHistory(registrationId: string): Promise<FieldChangeHistory[]> {
+    const response = await backendApi.get(`/registrations/${registrationId}/field-changes`);
+    return response.data;
+  },
+
+  /**
+   * Get editable fields info for current approval level
+   */
+  async getEditableFieldsInfo(registrationId: string): Promise<{
+    editableFields: string[];
+    currentLevel: number;
+  }> {
+    const response = await backendApi.get(`/registrations/${registrationId}/editable-fields`);
+    return response.data;
+  },
 };
+
+// Types for field change history
+export interface FieldChangeHistory {
+  id: string;
+  requestId: string;
+  fieldName: string;
+  previousValue?: string;
+  newValue?: string;
+  changedById: string;
+  changedAt: string;
+  approvalLevel: number;
+  changedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}

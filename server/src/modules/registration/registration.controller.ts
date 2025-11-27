@@ -161,4 +161,24 @@ export class RegistrationController {
   retrySync(@Param('id') id: string) {
     return this.registrationService.retrySync(id);
   }
+
+  // ==========================================
+  // FIELD CHANGE HISTORY
+  // ==========================================
+
+  /**
+   * Get field change history for a registration
+   */
+  @Get(':id/field-changes')
+  getFieldChangeHistory(@Param('id') id: string) {
+    return this.registrationService.getFieldChangeHistory(id);
+  }
+
+  /**
+   * Get editable fields info for current approval level
+   */
+  @Get(':id/editable-fields')
+  getEditableFieldsInfo(@Param('id') id: string) {
+    return this.registrationService.getEditableFieldsInfo(id);
+  }
 }

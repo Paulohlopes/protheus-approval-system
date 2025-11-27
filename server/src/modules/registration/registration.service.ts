@@ -8,6 +8,7 @@ import { RejectRegistrationDto } from './dto/reject-registration.dto';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
 import { ProtheusIntegrationService } from '../protheus-integration/protheus-integration.service';
+import { ApprovalGroupsService } from '../approval-groups/approval-groups.service';
 
 @Injectable()
 export class RegistrationService {
@@ -16,6 +17,7 @@ export class RegistrationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly protheusIntegrationService: ProtheusIntegrationService,
+    private readonly approvalGroupsService: ApprovalGroupsService,
   ) {}
 
   // ==========================================
@@ -415,6 +417,22 @@ export class RegistrationService {
   // ==========================================
 
   /**
+   * Resolve all approver IDs for a workflow level (individual + group members)
+   */
+  private async resolveApproversForLevel(level: { approverIds: string[]; approverGroupIds?: string[] }): Promise<string[]> {
+    // Start with individual approvers
+    const allApprovers = new Set<string>(level.approverIds || []);
+
+    // Add group members if groups are configured
+    if (level.approverGroupIds && level.approverGroupIds.length > 0) {
+      const groupMemberIds = await this.approvalGroupsService.getUserIdsFromGroups(level.approverGroupIds);
+      groupMemberIds.forEach(id => allApprovers.add(id));
+    }
+
+    return [...allApprovers];
+  }
+
+  /**
    * Submit registration for approval
    * DRAFT → PENDING_APPROVAL
    */
@@ -443,6 +461,13 @@ export class RegistrationService {
       throw new BadRequestException('Workflow has no levels configured');
     }
 
+    // Resolve all approvers (individual + group members)
+    const approverIds = await this.resolveApproversForLevel(firstLevel);
+
+    if (approverIds.length === 0) {
+      throw new BadRequestException('No approvers configured for first level');
+    }
+
     // Update registration status and create approval records
     const updated = await this.prisma.registrationRequest.update({
       where: { id },
@@ -451,7 +476,7 @@ export class RegistrationService {
         currentLevel: 1,
         workflowSnapshot: workflow as any,
         approvals: {
-          create: firstLevel.approverIds.map((approverId) => ({
+          create: approverIds.map((approverId) => ({
             level: 1,
             approverId,
             approverEmail: '', // TODO: Get from user
@@ -469,6 +494,70 @@ export class RegistrationService {
     // TODO: Send email notifications to approvers
 
     return updated;
+  }
+
+  /**
+   * Validate and apply field changes during approval
+   */
+  private async applyFieldChanges(
+    registrationId: string,
+    formData: Record<string, any>,
+    changes: Record<string, any>,
+    editableFields: string[],
+    userId: string,
+    approvalLevel: number,
+  ): Promise<Record<string, any>> {
+    const updatedFormData = { ...formData };
+    const changeHistory: Array<{
+      requestId: string;
+      fieldName: string;
+      previousValue: string | null;
+      newValue: string | null;
+      changedById: string;
+      approvalLevel: number;
+    }> = [];
+
+    for (const [fieldName, newValue] of Object.entries(changes)) {
+      // Validate field is editable at this level
+      if (!editableFields.includes(fieldName)) {
+        throw new BadRequestException(`Field "${fieldName}" is not editable at this approval level`);
+      }
+
+      const previousValue = formData[fieldName];
+
+      // Only record change if value is different
+      if (JSON.stringify(previousValue) !== JSON.stringify(newValue)) {
+        changeHistory.push({
+          requestId: registrationId,
+          fieldName,
+          previousValue: previousValue !== undefined ? JSON.stringify(previousValue) : null,
+          newValue: newValue !== undefined ? JSON.stringify(newValue) : null,
+          changedById: userId,
+          approvalLevel,
+        });
+
+        updatedFormData[fieldName] = newValue;
+      }
+    }
+
+    // Save change history
+    if (changeHistory.length > 0) {
+      await this.prisma.fieldChangeHistory.createMany({
+        data: changeHistory,
+      });
+
+      this.logger.log(`Recorded ${changeHistory.length} field changes for registration ${registrationId}`);
+    }
+
+    return updatedFormData;
+  }
+
+  /**
+   * Get editable fields for current level from workflow snapshot
+   */
+  private getEditableFieldsForLevel(workflowSnapshot: any, levelOrder: number): string[] {
+    const level = workflowSnapshot?.levels?.find((l: any) => l.levelOrder === levelOrder);
+    return level?.editableFields || [];
   }
 
   /**
@@ -496,6 +585,29 @@ export class RegistrationService {
 
     if (!approval) {
       throw new BadRequestException('No pending approval found for this user at current level');
+    }
+
+    // Process field changes if provided
+    if (dto.fieldChanges && Object.keys(dto.fieldChanges).length > 0) {
+      const editableFields = this.getEditableFieldsForLevel(
+        registration.workflowSnapshot,
+        registration.currentLevel,
+      );
+
+      const updatedFormData = await this.applyFieldChanges(
+        id,
+        registration.formData as Record<string, any>,
+        dto.fieldChanges,
+        editableFields,
+        approverId,
+        registration.currentLevel,
+      );
+
+      // Update registration with new form data
+      await this.prisma.registrationRequest.update({
+        where: { id },
+        data: { formData: updatedFormData },
+      });
     }
 
     // Mark as approved
@@ -607,8 +719,20 @@ export class RegistrationService {
     );
 
     if (nextLevel) {
-      // Has next level - create approval records
+      // Has next level - resolve all approvers (individual + group members)
       this.logger.log(`Advancing registration ${id} to level ${nextLevel.levelOrder}`);
+
+      const approverIds = await this.resolveApproversForLevel(nextLevel);
+
+      if (approverIds.length === 0) {
+        this.logger.warn(`No approvers for level ${nextLevel.levelOrder}, skipping to next`);
+        // Recursively advance if no approvers at this level
+        await this.prisma.registrationRequest.update({
+          where: { id },
+          data: { currentLevel: nextLevel.levelOrder },
+        });
+        return this.advanceToNextLevel(id);
+      }
 
       await this.prisma.registrationRequest.update({
         where: { id },
@@ -616,7 +740,7 @@ export class RegistrationService {
           currentLevel: nextLevel.levelOrder,
           status: RegistrationStatus.IN_APPROVAL,
           approvals: {
-            create: nextLevel.approverIds.map((approverId: string) => ({
+            create: approverIds.map((approverId: string) => ({
               level: nextLevel.levelOrder,
               approverId,
               approverEmail: '', // TODO: Get from user
@@ -702,5 +826,63 @@ export class RegistrationService {
     await this.protheusIntegrationService.syncToProtheus(id);
 
     return this.findOne(id);
+  }
+
+  // ==========================================
+  // FIELD CHANGE HISTORY
+  // ==========================================
+
+  /**
+   * Get field change history for a registration
+   */
+  async getFieldChangeHistory(registrationId: string) {
+    const registration = await this.prisma.registrationRequest.findUnique({
+      where: { id: registrationId },
+    });
+
+    if (!registration) {
+      throw new NotFoundException(`Registration ${registrationId} not found`);
+    }
+
+    return this.prisma.fieldChangeHistory.findMany({
+      where: { requestId: registrationId },
+      include: {
+        changedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: [
+        { approvalLevel: 'asc' },
+        { changedAt: 'asc' },
+      ],
+    });
+  }
+
+  /**
+   * Get editable fields info for a registration at its current level
+   */
+  async getEditableFieldsInfo(registrationId: string) {
+    const registration = await this.findOne(registrationId);
+
+    if (
+      registration.status !== RegistrationStatus.PENDING_APPROVAL &&
+      registration.status !== RegistrationStatus.IN_APPROVAL
+    ) {
+      return { editableFields: [], currentLevel: registration.currentLevel };
+    }
+
+    const editableFields = this.getEditableFieldsForLevel(
+      registration.workflowSnapshot,
+      registration.currentLevel,
+    );
+
+    return {
+      editableFields,
+      currentLevel: registration.currentLevel,
+    };
   }
 }

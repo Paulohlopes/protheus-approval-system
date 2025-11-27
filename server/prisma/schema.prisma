@@ -32,8 +32,47 @@ model User {
   // Relations
   registrationRequests RegistrationRequest[]
   approvals            RegistrationApproval[]
+  groupMemberships     ApprovalGroupMember[]
+  fieldChanges         FieldChangeHistory[]
 
   @@map("users")
+}
+
+// ==========================================
+// APPROVAL GROUPS
+// ==========================================
+
+model ApprovalGroup {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  members     ApprovalGroupMember[]
+
+  @@map("approval_groups")
+}
+
+model ApprovalGroupMember {
+  id        String   @id @default(uuid())
+  groupId   String
+  userId    String
+  addedAt   DateTime @default(now())
+  addedById String?
+
+  // Relations
+  group     ApprovalGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("approval_group_members")
+  @@index([groupId])
+  @@index([userId])
 }
 
 // ==========================================
@@ -132,7 +171,9 @@ model WorkflowLevel {
 
   levelOrder  Int
   levelName   String?               // "Gerente", "Diretor", etc
-  approverIds String[]              // Array of user IDs
+  approverIds String[]              // Array of user IDs (individual approvers)
+  approverGroupIds String[]         // Array of approval group IDs
+  editableFields   String[]         // Fields that can be edited at this level
   isParallel  Boolean               @default(false)  // All must approve?
   conditions  Json?                 // Conditional rules (e.g., value > 10000)
 
@@ -192,6 +233,7 @@ model RegistrationRequest {
 
   // Relations
   approvals       RegistrationApproval[]
+  fieldChanges    FieldChangeHistory[]
 
   @@map("registration_requests")
   @@index([templateId])
@@ -229,4 +271,28 @@ model RegistrationApproval {
   @@index([approverId])
   @@index([level])
   @@unique([requestId, approverId, level])
+}
+
+// ==========================================
+// FIELD CHANGE HISTORY (AUDIT TRAIL)
+// ==========================================
+
+model FieldChangeHistory {
+  id            String              @id @default(uuid())
+  requestId     String
+  request       RegistrationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  fieldName     String              // SX3 field name (e.g., B1_DESC)
+  previousValue String?             // Value before change (JSON stringified for complex types)
+  newValue      String?             // Value after change (JSON stringified for complex types)
+
+  changedById   String
+  changedBy     User                @relation(fields: [changedById], references: [id])
+  changedAt     DateTime            @default(now())
+  approvalLevel Int                 // Level at which the change was made
+
+  @@map("field_change_history")
+  @@index([requestId])
+  @@index([changedById])
+  @@index([fieldName])
 }

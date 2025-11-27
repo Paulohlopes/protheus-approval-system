@@ -22,6 +22,10 @@ import {
   Tooltip,
   TextField,
   Avatar,
+  Tabs,
+  Tab,
+  Divider,
+  Alert,
 } from '@mui/material';
 import {
   HowToReg,
@@ -34,6 +38,8 @@ import {
   Sync,
   SyncProblem,
   Person,
+  Edit,
+  History,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
@@ -42,6 +48,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import type { RegistrationRequest } from '../../types/registration';
 import { RegistrationStatus } from '../../types/registration';
 import { EmptyState } from '../../components/EmptyState';
+import FieldChangeHistory from '../../components/FieldChangeHistory';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 type ActionDialogType = 'approve' | 'reject' | null;
@@ -57,6 +64,12 @@ export const ApprovalQueuePage = () => {
   const [actionInput, setActionInput] = useState('');
   const [actionError, setActionError] = useState('');
 
+  // Editable fields state
+  const [reviewTab, setReviewTab] = useState(0);
+  const [editableFields, setEditableFields] = useState<string[]>([]);
+  const [fieldChanges, setFieldChanges] = useState<Record<string, any>>({});
+  const [loadingEditableFields, setLoadingEditableFields] = useState(false);
+
   const statusConfig: Record<RegistrationStatus, { label: string; color: ChipColor; icon: React.ReactNode }> = {
     DRAFT: { label: t.registration.statusDraft, color: 'default', icon: <Schedule fontSize="small" /> },
     PENDING_APPROVAL: { label: t.registration.statusPendingApproval, color: 'warning', icon: <Schedule fontSize="small" /> },
@@ -71,6 +84,31 @@ export const ApprovalQueuePage = () => {
   useEffect(() => {
     loadPendingApprovals();
   }, []);
+
+  // Load editable fields when a request is selected
+  useEffect(() => {
+    if (selectedRequest) {
+      loadEditableFields(selectedRequest.id);
+      setReviewTab(0);
+      setFieldChanges({});
+    } else {
+      setEditableFields([]);
+      setFieldChanges({});
+    }
+  }, [selectedRequest?.id]);
+
+  const loadEditableFields = async (registrationId: string) => {
+    try {
+      setLoadingEditableFields(true);
+      const { editableFields: fields } = await registrationService.getEditableFieldsInfo(registrationId);
+      setEditableFields(fields || []);
+    } catch (error) {
+      console.error('Error loading editable fields:', error);
+      setEditableFields([]);
+    } finally {
+      setLoadingEditableFields(false);
+    }
+  };
 
   const loadPendingApprovals = async () => {
     try {
@@ -90,6 +128,28 @@ export const ApprovalQueuePage = () => {
     }
   };
 
+  const handleFieldChange = (fieldName: string, value: any) => {
+    setFieldChanges(prev => ({
+      ...prev,
+      [fieldName]: value,
+    }));
+  };
+
+  const isFieldEditable = (fieldName: string): boolean => {
+    return editableFields.includes(fieldName);
+  };
+
+  const getFieldValue = (fieldName: string): any => {
+    if (fieldName in fieldChanges) {
+      return fieldChanges[fieldName];
+    }
+    return selectedRequest?.formData?.[fieldName] ?? '';
+  };
+
+  const hasFieldChanges = (): boolean => {
+    return Object.keys(fieldChanges).length > 0;
+  };
+
   const handleOpenActionDialog = (type: ActionDialogType) => {
     setActionDialog(type);
     setActionInput('');
@@ -107,10 +167,13 @@ export const ApprovalQueuePage = () => {
 
     try {
       setActionLoading(true);
-      await registrationService.approveRegistration(selectedRequest.id, actionInput || undefined);
+      // Pass field changes if any were made
+      const changes = hasFieldChanges() ? fieldChanges : undefined;
+      await registrationService.approveRegistration(selectedRequest.id, actionInput || undefined, changes);
       toast.success(t.registration.successApproved);
       handleCloseActionDialog();
       setSelectedRequest(null);
+      setFieldChanges({});
       await loadPendingApprovals();
     } catch (error) {
       console.error('Error approving request:', error);
@@ -291,66 +354,162 @@ export const ApprovalQueuePage = () => {
                 </IconButton>
               </Box>
             </DialogTitle>
-            <DialogContent dividers>
-              {/* Request Info */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  {t.registration.generalInfo}
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                  <Stack spacing={1.5}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">{t.registration.tableType}:</Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        {selectedRequest.template?.label || selectedRequest.tableName}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">{t.registration.requester}:</Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
-                          <Person sx={{ fontSize: 14 }} />
-                        </Avatar>
-                        <Typography variant="body2">
-                          {selectedRequest.requestedBy?.name || selectedRequest.requestedByEmail}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">{t.registration.tableDate}:</Typography>
-                      <Typography variant="body2">
-                        {formatDateTime(selectedRequest.requestedAt)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">{t.registration.currentLevel}:</Typography>
-                      <Chip
-                        label={`${t.registration.level} ${selectedRequest.currentLevel}`}
-                        size="small"
-                        variant="outlined"
-                        sx={{ borderRadius: 1 }}
-                      />
-                    </Box>
-                  </Stack>
-                </Paper>
-              </Box>
+            <DialogContent dividers sx={{ p: 0 }}>
+              {/* Tabs */}
+              <Tabs
+                value={reviewTab}
+                onChange={(_, v) => setReviewTab(v)}
+                sx={{ px: 3, borderBottom: 1, borderColor: 'divider' }}
+              >
+                <Tab
+                  icon={<Edit sx={{ fontSize: 18 }} />}
+                  iconPosition="start"
+                  label={t.registration.formData}
+                  sx={{ textTransform: 'none' }}
+                />
+                <Tab
+                  icon={<History sx={{ fontSize: 18 }} />}
+                  iconPosition="start"
+                  label={t.registration.changeHistory || 'Historico'}
+                  sx={{ textTransform: 'none' }}
+                />
+              </Tabs>
 
-              {/* Form Data */}
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  {t.registration.formData}
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                  <Stack spacing={1}>
-                    {Object.entries(selectedRequest.formData).map(([key, value]) => (
-                      <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">{key}:</Typography>
-                        <Typography variant="body2" fontWeight={500}>{String(value)}</Typography>
+              {/* Tab Panel: Form Data */}
+              {reviewTab === 0 && (
+                <Box sx={{ p: 3 }}>
+                  {/* Request Info */}
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      {t.registration.generalInfo}
+                    </Typography>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                      <Stack spacing={1.5}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">{t.registration.tableType}:</Typography>
+                          <Typography variant="body2" fontWeight={500}>
+                            {selectedRequest.template?.label || selectedRequest.tableName}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="body2" color="text.secondary">{t.registration.requester}:</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>
+                              <Person sx={{ fontSize: 14 }} />
+                            </Avatar>
+                            <Typography variant="body2">
+                              {selectedRequest.requestedBy?.name || selectedRequest.requestedByEmail}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">{t.registration.tableDate}:</Typography>
+                          <Typography variant="body2">
+                            {formatDateTime(selectedRequest.requestedAt)}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">{t.registration.currentLevel}:</Typography>
+                          <Chip
+                            label={`${t.registration.level} ${selectedRequest.currentLevel}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ borderRadius: 1 }}
+                          />
+                        </Box>
+                      </Stack>
+                    </Paper>
+                  </Box>
+
+                  {/* Editable Fields Alert */}
+                  {editableFields.length > 0 && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      {t.registration.editableFieldsHint || 'Voce pode editar os campos destacados abaixo antes de aprovar.'}
+                    </Alert>
+                  )}
+
+                  {/* Form Data */}
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      {t.registration.formData}
+                    </Typography>
+                    {loadingEditableFields ? (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                        <CircularProgress size={24} />
                       </Box>
-                    ))}
-                  </Stack>
-                </Paper>
-              </Box>
+                    ) : (
+                      <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                        <Stack spacing={2}>
+                          {Object.entries(selectedRequest.formData).map(([key, value]) => {
+                            const editable = isFieldEditable(key);
+                            const currentValue = getFieldValue(key);
+                            const wasChanged = key in fieldChanges;
+
+                            return (
+                              <Box key={key}>
+                                {editable ? (
+                                  <TextField
+                                    label={key}
+                                    value={currentValue}
+                                    onChange={(e) => handleFieldChange(key, e.target.value)}
+                                    fullWidth
+                                    size="small"
+                                    sx={{
+                                      '& .MuiOutlinedInput-root': {
+                                        bgcolor: wasChanged ? 'warning.lighter' : 'primary.lighter',
+                                        '& fieldset': {
+                                          borderColor: wasChanged ? 'warning.main' : 'primary.main',
+                                        },
+                                      },
+                                    }}
+                                    InputProps={{
+                                      endAdornment: (
+                                        <Tooltip title={t.registration.editableField || 'Campo editavel'}>
+                                          <Edit sx={{ fontSize: 16, color: 'primary.main', ml: 1 }} />
+                                        </Tooltip>
+                                      ),
+                                    }}
+                                  />
+                                ) : (
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
+                                    <Typography variant="body2" color="text.secondary">{key}:</Typography>
+                                    <Typography variant="body2" fontWeight={500}>{String(value)}</Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                            );
+                          })}
+                        </Stack>
+                      </Paper>
+                    )}
+                  </Box>
+
+                  {/* Field Changes Summary */}
+                  {hasFieldChanges() && (
+                    <Alert severity="warning" sx={{ mt: 2 }}>
+                      <Typography variant="body2" fontWeight={500}>
+                        {t.registration.changesWillBeApplied || 'Alteracoes serao aplicadas ao aprovar:'}
+                      </Typography>
+                      <Box component="ul" sx={{ m: 0, pl: 2, mt: 1 }}>
+                        {Object.entries(fieldChanges).map(([key, newValue]) => (
+                          <li key={key}>
+                            <Typography variant="body2">
+                              <strong>{key}:</strong> {String(selectedRequest.formData[key])} → {String(newValue)}
+                            </Typography>
+                          </li>
+                        ))}
+                      </Box>
+                    </Alert>
+                  )}
+                </Box>
+              )}
+
+              {/* Tab Panel: History */}
+              {reviewTab === 1 && (
+                <Box sx={{ p: 3 }}>
+                  <FieldChangeHistory registrationId={selectedRequest.id} />
+                </Box>
+              )}
             </DialogContent>
             <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
               <Button
