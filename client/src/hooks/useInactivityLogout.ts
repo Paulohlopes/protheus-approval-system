@@ -85,11 +85,6 @@ export const useInactivityLogout = (options: UseInactivityLogoutOptions = {}) =>
     inactivityTimer.current = setTimeout(() => {
       handleLogout();
     }, timeout);
-
-    console.log('useInactivityLogout - Timers reset', {
-      timeoutMinutes: Math.round(timeout / 60000),
-      warningInMinutes: Math.round(warningDelay / 60000),
-    });
   }, [enabled, isAuthenticated, timeout, warningTime, clearTimers, showWarning, handleLogout]);
 
   useEffect(() => {
