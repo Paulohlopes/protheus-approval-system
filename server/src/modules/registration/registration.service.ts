@@ -216,8 +216,12 @@ export class RegistrationService {
 
   /**
    * Enrich workflow with approver and group names for snapshot storage
+   * @param workflow - The workflow to enrich
+   * @param prismaClient - Optional Prisma client (use for transactions)
    */
-  private async enrichWorkflowWithNames(workflow: any) {
+  private async enrichWorkflowWithNames(workflow: any, prismaClient?: any) {
+    const db = prismaClient || this.prisma;
+
     // Collect all unique approver IDs and group IDs
     const allApproverIds = new Set<string>();
     const allGroupIds = new Set<string>();
@@ -233,14 +237,14 @@ export class RegistrationService {
 
     // Fetch all users and groups in batch
     const users = allApproverIds.size > 0
-      ? await this.prisma.user.findMany({
+      ? await db.user.findMany({
           where: { id: { in: Array.from(allApproverIds) } },
           select: { id: true, name: true, email: true },
         })
       : [];
 
     const groups = allGroupIds.size > 0
-      ? await this.prisma.approvalGroup.findMany({
+      ? await db.approvalGroup.findMany({
           where: { id: { in: Array.from(allGroupIds) } },
           select: {
             id: true,
@@ -257,9 +261,16 @@ export class RegistrationService {
         })
       : [];
 
-    // Create lookup maps
-    const userMap = new Map(users.map((u) => [u.id, u] as const));
-    const groupMap = new Map(groups.map((g) => [g.id, g] as const));
+    // Create lookup maps with proper typing
+    const userMap = new Map<string, { id: string; name: string; email: string }>(
+      users.map((u) => [u.id, u])
+    );
+    const groupMap = new Map<string, {
+      id: string;
+      name: string;
+      description: string | null;
+      members: { user: { id: string; name: string; email: string } }[];
+    }>(groups.map((g) => [g.id, g]));
 
     // Enrich levels with names
     const enrichedLevels = workflow.levels.map((level: any) => ({
@@ -660,15 +671,32 @@ export class RegistrationService {
 
   /**
    * Resolve all approver IDs for a workflow level (individual + group members)
+   * @param level - The workflow level
+   * @param prismaClient - Optional Prisma client (use for transactions)
    */
-  private async resolveApproversForLevel(level: { approverIds: string[]; approverGroupIds?: string[] }): Promise<string[]> {
+  private async resolveApproversForLevel(
+    level: { approverIds: string[]; approverGroupIds?: string[] },
+    prismaClient?: any
+  ): Promise<string[]> {
+    const db = prismaClient || this.prisma;
+
     // Start with individual approvers
     const allApprovers = new Set<string>(level.approverIds || []);
 
     // Add group members if groups are configured
     if (level.approverGroupIds && level.approverGroupIds.length > 0) {
-      const groupMemberIds = await this.approvalGroupsService.getUserIdsFromGroups(level.approverGroupIds);
-      groupMemberIds.forEach(id => allApprovers.add(id));
+      // Query group members directly instead of using service (to support transactions)
+      const members = await db.approvalGroupMember.findMany({
+        where: {
+          groupId: { in: level.approverGroupIds },
+          group: { isActive: true },
+          user: { isActive: true },
+        },
+        select: {
+          userId: true,
+        },
+      });
+      members.forEach((m: { userId: string }) => allApprovers.add(m.userId));
     }
 
     return [...allApprovers];
@@ -727,12 +755,12 @@ export class RegistrationService {
       });
 
       if (!workflow) {
-        throw new NotFoundException(`No active workflow found for template ${registration.templateId}`);
+        throw new NotFoundException(`No active workflow found for template ${templateId}`);
       }
 
       // LOG-05: Validate all levels have at least 1 approver
       for (const level of workflow.levels) {
-        const approverIds = await this.resolveApproversForLevel(level);
+        const approverIds = await this.resolveApproversForLevel(level, tx);
         if (approverIds.length === 0) {
           throw new BadRequestException(
             `Workflow level ${level.levelOrder} (${level.levelName || 'Unnamed'}) has no approvers configured. ` +
@@ -742,7 +770,8 @@ export class RegistrationService {
       }
 
       // Enrich workflow with approver and group names for the snapshot
-      const enrichedWorkflow = await this.enrichWorkflowWithNames(workflow);
+      // Pass tx to use the same transaction
+      const enrichedWorkflow = await this.enrichWorkflowWithNames(workflow, tx);
 
       // Debug: log workflow being saved as snapshot
       this.logger.log(`Saving workflow snapshot with ${enrichedWorkflow.levels.length} levels:`,
@@ -762,7 +791,7 @@ export class RegistrationService {
       }
 
       // Resolve all approvers for first level (individual + group members)
-      const firstLevelApproverIds = await this.resolveApproversForLevel(firstLevel);
+      const firstLevelApproverIds = await this.resolveApproversForLevel(firstLevel, tx);
 
       // Update registration status
       await tx.registrationRequest.update({
@@ -1071,7 +1100,7 @@ export class RegistrationService {
       // Has next level - resolve all approvers (individual + group members)
       this.logger.log(`Advancing registration ${id} to level ${nextLevel.levelOrder}`);
 
-      const approverIds = await this.resolveApproversForLevel(nextLevel);
+      const approverIds = await this.resolveApproversForLevel(nextLevel, tx);
 
       if (approverIds.length === 0) {
         this.logger.warn(`No approvers for level ${nextLevel.levelOrder}, skipping to next`);
