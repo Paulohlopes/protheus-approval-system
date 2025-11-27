@@ -236,30 +236,40 @@ export class RegistrationService {
     }
 
     // Fetch all users and groups in batch
-    const users = allApproverIds.size > 0
-      ? await db.user.findMany({
-          where: { id: { in: Array.from(allApproverIds) } },
-          select: { id: true, name: true, email: true },
-        })
-      : [];
+    // Use raw queries with explicit UUID casting for Prisma v4+ compatibility
+    let users: { id: string; name: string; email: string }[] = [];
+    if (allApproverIds.size > 0) {
+      const userUuids = Array.from(allApproverIds).map((uid: string) => Prisma.sql`${uid}::uuid`);
+      users = await db.$queryRaw(
+        Prisma.sql`SELECT id, name, email FROM users WHERE id IN (${Prisma.join(userUuids)})`
+      );
+    }
 
-    const groups = allGroupIds.size > 0
-      ? await db.approvalGroup.findMany({
-          where: { id: { in: Array.from(allGroupIds) } },
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            members: {
-              select: {
-                user: {
-                  select: { id: true, name: true, email: true }
-                }
-              }
-            }
-          },
-        })
-      : [];
+    let groups: { id: string; name: string; description: string | null }[] = [];
+    if (allGroupIds.size > 0) {
+      const groupUuids = Array.from(allGroupIds).map((gid: string) => Prisma.sql`${gid}::uuid`);
+      groups = await db.$queryRaw(
+        Prisma.sql`SELECT id, name, description FROM approval_groups WHERE id IN (${Prisma.join(groupUuids)})`
+      );
+
+      // Fetch group members separately
+      const groupMembersRaw: { groupId: string; userId: string; userName: string; userEmail: string }[] = await db.$queryRaw(
+        Prisma.sql`
+          SELECT agm."groupId", u.id as "userId", u.name as "userName", u.email as "userEmail"
+          FROM approval_group_members agm
+          INNER JOIN users u ON agm."userId" = u.id
+          WHERE agm."groupId" IN (${Prisma.join(groupUuids)})
+        `
+      );
+
+      // Attach members to groups
+      groups = groups.map(g => ({
+        ...g,
+        members: groupMembersRaw
+          .filter(m => m.groupId === g.id)
+          .map(m => ({ user: { id: m.userId, name: m.userName, email: m.userEmail } }))
+      })) as any;
+    }
 
     // Create lookup maps with proper typing
     const userMap = new Map<string, { id: string; name: string; email: string }>(
@@ -270,7 +280,7 @@ export class RegistrationService {
       name: string;
       description: string | null;
       members: { user: { id: string; name: string; email: string } }[];
-    }>(groups.map((g) => [g.id, g]));
+    }>(groups.map((g: any) => [g.id, g]));
 
     // Enrich levels with names
     const enrichedLevels = workflow.levels.map((level: any) => ({
@@ -687,13 +697,15 @@ export class RegistrationService {
     if (level.approverGroupIds && level.approverGroupIds.length > 0) {
       // Use raw query with explicit UUID array casting to avoid PostgreSQL type mismatch
       // when approverGroupIds come from JSON (stored as text) but groupId column is UUID
+      // For Prisma v4+, we need to map each UUID with explicit casting using Prisma.join
+      const uuidArray = level.approverGroupIds.map((gid: string) => Prisma.sql`${gid}::uuid`);
       const members: { userId: string }[] = await db.$queryRaw(
         Prisma.sql`
           SELECT DISTINCT agm."userId"
           FROM approval_group_members agm
           INNER JOIN approval_groups ag ON agm."groupId" = ag.id
           INNER JOIN users u ON agm."userId" = u.id
-          WHERE agm."groupId" = ANY(${level.approverGroupIds}::uuid[])
+          WHERE agm."groupId" IN (${Prisma.join(uuidArray)})
             AND ag."isActive" = true
             AND u."isActive" = true
         `
@@ -716,9 +728,10 @@ export class RegistrationService {
     // LOG-04: Use transaction for atomic submit operation
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent submissions
-      // Use Prisma.sql for type-safe UUID handling
+      // Use Prisma.sql with explicit UUID casting for Prisma v4+ compatibility
+      const uuidId = Prisma.sql`${id}::uuid`;
       const registrations = await tx.$queryRaw<any[]>(
-        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${id}::uuid FOR UPDATE`
+        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${uuidId} FOR UPDATE`
       );
       const registration = registrations[0];
 
@@ -861,8 +874,10 @@ export class RegistrationService {
     // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
+      // Use Prisma.sql with explicit UUID casting for Prisma v4+ compatibility
+      const uuidId = Prisma.sql`${id}::uuid`;
       const registrations = await tx.$queryRaw<any[]>(
-        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${id}::uuid FOR UPDATE`
+        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${uuidId} FOR UPDATE`
       );
       const registration = registrations[0];
 
@@ -1159,8 +1174,10 @@ export class RegistrationService {
     // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
+      // Use Prisma.sql with explicit UUID casting for Prisma v4+ compatibility
+      const uuidId = Prisma.sql`${id}::uuid`;
       const registrations = await tx.$queryRaw<any[]>(
-        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${id}::uuid FOR UPDATE`
+        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${uuidId} FOR UPDATE`
       );
       const registration = registrations[0];
 
@@ -1596,8 +1613,10 @@ export class RegistrationService {
 
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration
+      // Use Prisma.sql with explicit UUID casting for Prisma v4+ compatibility
+      const uuidId = Prisma.sql`${registrationId}::uuid`;
       const registrations = await tx.$queryRaw<any[]>(
-        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${registrationId}::uuid FOR UPDATE`
+        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${uuidId} FOR UPDATE`
       );
       const registration = registrations[0];
 
