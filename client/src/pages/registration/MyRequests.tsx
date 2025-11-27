@@ -394,10 +394,10 @@ export const MyRequestsPage = () => {
                     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                       <Stack spacing={1}>
                         {(() => {
-                          // Create a map of fieldName -> label from template fields
+                          // Create a map of sx3FieldName -> label from template fields
                           const fieldLabels: Record<string, string> = {};
                           selectedRequest.template?.fields?.forEach((field: any) => {
-                            fieldLabels[field.fieldName] = field.label || field.fieldName;
+                            fieldLabels[field.sx3FieldName] = field.label || field.sx3FieldName;
                           });
 
                           return Object.entries(selectedRequest.formData).map(([key, value]) => (
