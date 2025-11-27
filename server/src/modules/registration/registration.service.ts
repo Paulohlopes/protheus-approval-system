@@ -199,35 +199,34 @@ export class RegistrationService {
     }
 
     // Fetch all users and groups in batch
-    const [users, groups] = await Promise.all([
-      allApproverIds.size > 0
-        ? this.prisma.user.findMany({
-            where: { id: { in: Array.from(allApproverIds) } },
-            select: { id: true, name: true, email: true },
-          })
-        : [],
-      allGroupIds.size > 0
-        ? this.prisma.approvalGroup.findMany({
-            where: { id: { in: Array.from(allGroupIds) } },
-            select: {
-              id: true,
-              name: true,
-              description: true,
-              members: {
-                select: {
-                  user: {
-                    select: { id: true, name: true, email: true }
-                  }
+    const users = allApproverIds.size > 0
+      ? await this.prisma.user.findMany({
+          where: { id: { in: Array.from(allApproverIds) } },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
+
+    const groups = allGroupIds.size > 0
+      ? await this.prisma.approvalGroup.findMany({
+          where: { id: { in: Array.from(allGroupIds) } },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            members: {
+              select: {
+                user: {
+                  select: { id: true, name: true, email: true }
                 }
               }
-            },
-          })
-        : [],
-    ]);
+            }
+          },
+        })
+      : [];
 
     // Create lookup maps
-    const userMap = new Map(users.map((u) => [u.id, u]));
-    const groupMap = new Map(groups.map((g) => [g.id, g]));
+    const userMap = new Map(users.map((u) => [u.id, u] as const));
+    const groupMap = new Map(groups.map((g) => [g.id, g] as const));
 
     // Enrich levels with names
     const enrichedLevels = workflow.levels.map((level: any) => ({
