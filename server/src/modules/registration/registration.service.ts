@@ -714,8 +714,9 @@ export class RegistrationService {
     // LOG-04: Use transaction for atomic submit operation
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent submissions
+      // Cast text parameter to uuid in the query
       const registrations = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM registration_requests WHERE id = $1::uuid FOR UPDATE`,
+        `SELECT * FROM registration_requests WHERE id = CAST($1 AS uuid) FOR UPDATE`,
         id
       );
       const registration = registrations[0];
@@ -860,7 +861,7 @@ export class RegistrationService {
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
       const registrations = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM registration_requests WHERE id = $1::uuid FOR UPDATE`,
+        `SELECT * FROM registration_requests WHERE id = CAST($1 AS uuid) FOR UPDATE`,
         id
       );
       const registration = registrations[0];
@@ -1159,7 +1160,7 @@ export class RegistrationService {
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
       const registrations = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM registration_requests WHERE id = $1::uuid FOR UPDATE`,
+        `SELECT * FROM registration_requests WHERE id = CAST($1 AS uuid) FOR UPDATE`,
         id
       );
       const registration = registrations[0];
@@ -1597,7 +1598,7 @@ export class RegistrationService {
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration
       const registrations = await tx.$queryRawUnsafe<any[]>(
-        `SELECT * FROM registration_requests WHERE id = $1::uuid FOR UPDATE`,
+        `SELECT * FROM registration_requests WHERE id = CAST($1 AS uuid) FOR UPDATE`,
         registrationId
       );
       const registration = registrations[0];
