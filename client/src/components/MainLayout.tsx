@@ -89,13 +89,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           icon: <TableChart />,
           path: '/documents',
         },
-        {
-          id: 'documents-cards',
-          title: t?.menu?.cardView || 'Visão em Cards',
-          icon: <ViewList />,
-          path: '/documents-cards',
-          disabled: true,
-        },
       ],
     },
     {
