@@ -43,6 +43,9 @@ import {
   ExpandMore,
   ExpandLess,
   AddCircleOutline,
+  KeyboardArrowUp,
+  KeyboardArrowDown,
+  VerticalAlignTop,
 } from '@mui/icons-material';
 import { adminService } from '../../services/adminService';
 import type { FormTemplate, FormField } from '../../types/registration';
@@ -234,6 +237,53 @@ const TemplateManager: React.FC = () => {
     }
   };
 
+  const handleMoveField = async (templateId: string, fieldId: string, direction: 'up' | 'down') => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template?.fields) return;
+
+    const sortedFields = [...template.fields].sort((a, b) => a.fieldOrder - b.fieldOrder);
+    const currentIndex = sortedFields.findIndex(f => f.id === fieldId);
+
+    if (direction === 'up' && currentIndex > 0) {
+      const newOrder = [
+        ...sortedFields.slice(0, currentIndex - 1),
+        sortedFields[currentIndex],
+        sortedFields[currentIndex - 1],
+        ...sortedFields.slice(currentIndex + 1),
+      ];
+      await saveFieldOrder(templateId, newOrder.map(f => f.id));
+    } else if (direction === 'down' && currentIndex < sortedFields.length - 1) {
+      const newOrder = [
+        ...sortedFields.slice(0, currentIndex),
+        sortedFields[currentIndex + 1],
+        sortedFields[currentIndex],
+        ...sortedFields.slice(currentIndex + 2),
+      ];
+      await saveFieldOrder(templateId, newOrder.map(f => f.id));
+    }
+  };
+
+  const handleMoveVisibleFieldsToTop = async (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template?.fields) return;
+
+    const sortedFields = [...template.fields].sort((a, b) => a.fieldOrder - b.fieldOrder);
+    const visibleFields = sortedFields.filter(f => f.isVisible);
+    const hiddenFields = sortedFields.filter(f => !f.isVisible);
+    const newOrder = [...visibleFields, ...hiddenFields];
+
+    await saveFieldOrder(templateId, newOrder.map(f => f.id));
+  };
+
+  const saveFieldOrder = async (templateId: string, fieldIds: string[]) => {
+    try {
+      await adminService.reorderTemplateFields(templateId, { fieldIds });
+      await loadTemplates();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao reordenar campos');
+    }
+  };
+
   const toggleExpandTemplate = (templateId: string) => {
     const newExpanded = new Set(expandedTemplates);
     if (newExpanded.has(templateId)) {
@@ -380,15 +430,27 @@ const TemplateManager: React.FC = () => {
                         <Box sx={{ p: 2, bgcolor: 'grey.50' }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                             <Typography variant="subtitle2">
-                              Campos do Template
+                              Campos do Template ({template.fields?.filter(f => f.isVisible).length || 0} visíveis de {template.fields?.length || 0})
                             </Typography>
-                            <Button
-                              size="small"
-                              startIcon={<AddCircleOutline />}
-                              onClick={() => handleOpenCustomFieldDialog(template)}
-                            >
-                              Adicionar Campo
-                            </Button>
+                            <Stack direction="row" spacing={1}>
+                              <Tooltip title="Mover campos visíveis para o topo">
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<VerticalAlignTop />}
+                                  onClick={() => handleMoveVisibleFieldsToTop(template.id)}
+                                >
+                                  Agrupar Visíveis
+                                </Button>
+                              </Tooltip>
+                              <Button
+                                size="small"
+                                startIcon={<AddCircleOutline />}
+                                onClick={() => handleOpenCustomFieldDialog(template)}
+                              >
+                                Adicionar Campo
+                              </Button>
+                            </Stack>
                           </Box>
                           {template.fields && template.fields.length > 0 ? (
                             <List dense>
@@ -405,7 +467,23 @@ const TemplateManager: React.FC = () => {
                                       borderColor: 'primary.light',
                                     }}
                                     secondaryAction={
-                                      <Stack direction="row" spacing={1} alignItems="center">
+                                      <Stack direction="row" spacing={0.5} alignItems="center">
+                                        <Tooltip title="Mover para cima">
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleMoveField(template.id, field.id, 'up')}
+                                          >
+                                            <KeyboardArrowUp fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Mover para baixo">
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleMoveField(template.id, field.id, 'down')}
+                                          >
+                                            <KeyboardArrowDown fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
                                         <FormControlLabel
                                           control={
                                             <Switch
