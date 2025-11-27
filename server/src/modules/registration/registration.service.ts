@@ -468,6 +468,17 @@ export class RegistrationService {
     // Get active workflow
     const workflow = await this.getActiveWorkflow(registration.templateId);
 
+    // Debug: log workflow being saved as snapshot
+    this.logger.log(`Saving workflow snapshot with ${workflow.levels.length} levels:`,
+      workflow.levels.map(l => ({
+        levelOrder: l.levelOrder,
+        levelName: l.levelName,
+        editableFields: l.editableFields,
+        approverIds: l.approverIds?.length || 0,
+        approverGroupIds: l.approverGroupIds?.length || 0
+      }))
+    );
+
     // Get first level approvers
     const firstLevel = workflow.levels.find((l) => l.levelOrder === 1);
     if (!firstLevel) {
@@ -569,7 +580,15 @@ export class RegistrationService {
    * Get editable fields for current level from workflow snapshot
    */
   private getEditableFieldsForLevel(workflowSnapshot: any, levelOrder: number): string[] {
+    this.logger.debug(`Looking for level ${levelOrder} in workflow snapshot. Available levels:`,
+      workflowSnapshot?.levels?.map((l: any) => ({
+        levelOrder: l.levelOrder,
+        levelName: l.levelName,
+        editableFields: l.editableFields
+      }))
+    );
     const level = workflowSnapshot?.levels?.find((l: any) => l.levelOrder === levelOrder);
+    this.logger.debug(`Found level:`, level);
     return level?.editableFields || [];
   }
 
@@ -892,6 +911,13 @@ export class RegistrationService {
       registration.workflowSnapshot,
       registration.currentLevel,
     );
+
+    // Debug log to identify issue with editable fields
+    this.logger.debug(`getEditableFieldsInfo for registration ${registrationId}:`, {
+      currentLevel: registration.currentLevel,
+      workflowSnapshot: JSON.stringify(registration.workflowSnapshot),
+      editableFields,
+    });
 
     return {
       editableFields,
