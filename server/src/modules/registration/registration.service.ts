@@ -888,8 +888,11 @@ export class RegistrationService {
       const workflowSnapshot = registration.workflow_snapshot || registration.workflowSnapshot;
       const formData = registration.form_data || registration.formData;
 
+      this.logger.debug(`Approval check - requestedById: ${requestedById}, approverId: ${approverId}, currentLevel: ${currentLevel}, status: ${currentStatus}`);
+
       // LOG-01: Prevent self-approval - user cannot approve their own request
       if (requestedById === approverId) {
+        this.logger.warn(`Self-approval blocked: requestedById=${requestedById}, approverId=${approverId}`);
         throw new ForbiddenException('You cannot approve your own registration request');
       }
 
@@ -902,6 +905,7 @@ export class RegistrationService {
       }
 
       // Find pending approval for this user at current level
+      this.logger.debug(`Looking for pending approval - requestId: ${id}, approverId: ${approverId}, level: ${currentLevel}`);
       const approval = await tx.registrationApproval.findFirst({
         where: {
           requestId: id,
@@ -911,7 +915,15 @@ export class RegistrationService {
         },
       });
 
+      this.logger.debug(`Found approval: ${approval ? approval.id : 'none'}`);
+
       if (!approval) {
+        // List all approvals for debugging
+        const allApprovals = await tx.registrationApproval.findMany({
+          where: { requestId: id },
+          select: { id: true, approverId: true, level: true, action: true },
+        });
+        this.logger.warn(`No pending approval found. All approvals for request: ${JSON.stringify(allApprovals)}`);
         throw new BadRequestException('No pending approval found for this user at current level');
       }
 
