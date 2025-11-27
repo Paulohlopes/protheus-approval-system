@@ -687,7 +687,7 @@ export class RegistrationService {
     if (level.approverGroupIds && level.approverGroupIds.length > 0) {
       // Use raw query with explicit UUID array casting to avoid PostgreSQL type mismatch
       // when approverGroupIds come from JSON (stored as text) but groupId column is UUID
-      const members = await db.$queryRaw<{ userId: string }[]>(
+      const members: { userId: string }[] = await db.$queryRaw(
         Prisma.sql`
           SELECT DISTINCT agm."userId"
           FROM approval_group_members agm
