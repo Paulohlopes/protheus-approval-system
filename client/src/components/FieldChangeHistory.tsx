@@ -3,13 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  TimelineOppositeContent,
   Chip,
   CircularProgress,
   Alert,
@@ -23,7 +16,72 @@ import {
   History,
 } from '@mui/icons-material';
 import { registrationService, type FieldChangeHistory as FieldChangeHistoryType } from '../services/registrationService';
-import { useLanguage } from '../contexts/LanguageContext';
+
+// Custom Timeline components since @mui/lab Timeline requires MUI v7
+const Timeline: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', pl: 2 }}>
+    {children}
+  </Box>
+);
+
+interface TimelineItemProps {
+  children: React.ReactNode;
+  isLast?: boolean;
+}
+
+const TimelineItem: React.FC<TimelineItemProps> = ({ children, isLast }) => (
+  <Box sx={{ display: 'flex', position: 'relative', pb: isLast ? 0 : 3 }}>
+    {children}
+  </Box>
+);
+
+const TimelineSeparator: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mr: 2 }}>
+    {children}
+  </Box>
+);
+
+const TimelineDot: React.FC<{ children?: React.ReactNode; color?: 'primary' | 'secondary' }> = ({ children, color = 'primary' }) => (
+  <Box
+    sx={{
+      width: 32,
+      height: 32,
+      borderRadius: '50%',
+      border: 2,
+      borderColor: `${color}.main`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      bgcolor: 'background.paper',
+      zIndex: 1,
+    }}
+  >
+    {children}
+  </Box>
+);
+
+const TimelineConnector: React.FC = () => (
+  <Box
+    sx={{
+      width: 2,
+      flexGrow: 1,
+      bgcolor: 'grey.300',
+      mt: 0.5,
+    }}
+  />
+);
+
+const TimelineContent: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Box sx={{ flexGrow: 1, pt: 0.5 }}>
+    {children}
+  </Box>
+);
+
+const TimelineOppositeContent: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Box sx={{ minWidth: 120, mr: 2, pt: 0.5, textAlign: 'right' }}>
+    {children}
+  </Box>
+);
 
 interface FieldChangeHistoryProps {
   registrationId: string;
@@ -34,7 +92,6 @@ const FieldChangeHistory: React.FC<FieldChangeHistoryProps> = ({
   registrationId,
   fieldLabels = {},
 }) => {
-  const { t } = useLanguage();
   const [history, setHistory] = useState<FieldChangeHistoryType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,17 +208,17 @@ const FieldChangeHistory: React.FC<FieldChangeHistoryProps> = ({
             </Box>
           </AccordionSummary>
           <AccordionDetails>
-            <Timeline position="right" sx={{ m: 0, p: 0 }}>
+            <Timeline>
               {changes.map((change, index) => (
-                <TimelineItem key={change.id}>
-                  <TimelineOppositeContent sx={{ flex: 0.3, minWidth: 120 }}>
+                <TimelineItem key={change.id} isLast={index === changes.length - 1}>
+                  <TimelineOppositeContent>
                     <Typography variant="caption" color="text.secondary">
                       {formatDate(change.changedAt)}
                     </Typography>
                   </TimelineOppositeContent>
                   <TimelineSeparator>
-                    <TimelineDot color="primary" variant="outlined">
-                      <Edit sx={{ fontSize: 16 }} />
+                    <TimelineDot color="primary">
+                      <Edit sx={{ fontSize: 16, color: 'primary.main' }} />
                     </TimelineDot>
                     {index < changes.length - 1 && <TimelineConnector />}
                   </TimelineSeparator>

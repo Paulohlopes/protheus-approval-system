@@ -19,7 +19,7 @@ import {
   ExpandLess
 } from '@mui/icons-material';
 import { config, logger, isDevelopment } from '../config/environment';
-import { useLanguage, LanguageContext } from '../contexts/LanguageContext';
+import { LanguageContext } from '../contexts/LanguageContext';
 
 interface Props {
   children?: ReactNode;
@@ -166,39 +166,39 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private renderErrorDetails = () => {
     const { error, errorInfo, errorId } = this.state;
-    
+
     if (!error || !errorInfo) return null;
 
     return (
       <Collapse in={this.state.showDetails}>
-        <Paper 
-          variant="outlined" 
-          sx={{ 
-            p: 2, 
-            mt: 2, 
+        <Paper
+          variant="outlined"
+          sx={{
+            p: 2,
+            mt: 2,
             bgcolor: 'grey.50',
             border: '1px solid',
             borderColor: 'grey.300'
           }}
         >
           <Typography variant="subtitle2" gutterBottom>
-            {t?.errorBoundary?.errorDetails || 'Error Details'}
+            Detalhes do Erro
           </Typography>
-          
+
           <Box sx={{ mb: 2 }}>
             <Typography variant="caption" color="text.secondary">
-              {t?.errorBoundary?.errorId || 'Error ID'}: {errorId}
+              Error ID: {errorId}
             </Typography>
           </Box>
 
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" fontWeight="medium" gutterBottom>
-              {t?.errorBoundary?.message || 'Message'}:
+              Mensagem:
             </Typography>
-            <Typography 
-              variant="body2" 
-              component="pre" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              component="pre"
+              sx={{
                 fontSize: '0.75rem',
                 fontFamily: 'monospace',
                 whiteSpace: 'pre-wrap',
@@ -215,12 +215,12 @@ export class ErrorBoundary extends Component<Props, State> {
           {isDevelopment && error.stack && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="body2" fontWeight="medium" gutterBottom>
-                {t?.errorBoundary?.stackTrace || 'Stack Trace'}:
+                Stack Trace:
               </Typography>
-              <Typography 
-                variant="body2" 
-                component="pre" 
-                sx={{ 
+              <Typography
+                variant="body2"
+                component="pre"
+                sx={{
                   fontSize: '0.65rem',
                   fontFamily: 'monospace',
                   whiteSpace: 'pre-wrap',
@@ -240,7 +240,7 @@ export class ErrorBoundary extends Component<Props, State> {
           {isDevelopment && errorInfo.componentStack && (
             <Box>
               <Typography variant="body2" fontWeight="medium" gutterBottom>
-                {t?.errorBoundary?.componentStack || 'Component Stack'}:
+                Component Stack:
               </Typography>
               <Typography 
                 variant="body2" 
