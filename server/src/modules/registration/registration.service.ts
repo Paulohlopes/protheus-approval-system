@@ -475,6 +475,22 @@ export class RegistrationService {
       throw new NotFoundException(`Registration ${id} not found`);
     }
 
+    // Enrich workflow snapshot if it doesn't have approver names (for old registrations)
+    if (registration.workflowSnapshot) {
+      const snapshot = registration.workflowSnapshot as any;
+      const needsEnrichment = snapshot.levels?.some(
+        (level: any) => !level.approvers || level.approvers.length === 0
+      );
+
+      if (needsEnrichment) {
+        const enrichedSnapshot = await this.enrichWorkflowWithNames(snapshot);
+        return {
+          ...registration,
+          workflowSnapshot: enrichedSnapshot,
+        };
+      }
+    }
+
     return registration;
   }
 
