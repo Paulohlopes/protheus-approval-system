@@ -454,17 +454,24 @@ export const ApprovalQueuePage = () => {
                             const formDataKeys = Object.keys(selectedRequest.formData || {});
                             const allKeys = [...new Set([...formDataKeys, ...editableFields])];
 
+                            // Create a map of fieldName -> label from template fields
+                            const fieldLabels: Record<string, string> = {};
+                            selectedRequest.template?.fields?.forEach((field: any) => {
+                              fieldLabels[field.fieldName] = field.label || field.fieldName;
+                            });
+
                             return allKeys.map((key) => {
                               const value = selectedRequest.formData?.[key];
                               const editable = isFieldEditable(key);
                               const currentValue = getFieldValue(key);
                               const wasChanged = key in fieldChanges;
+                              const fieldLabel = fieldLabels[key] || key;
 
                               return (
                                 <Box key={key}>
                                   {editable ? (
                                     <TextField
-                                      label={key}
+                                      label={fieldLabel}
                                       value={currentValue}
                                       onChange={(e) => handleFieldChange(key, e.target.value)}
                                       fullWidth
@@ -487,7 +494,7 @@ export const ApprovalQueuePage = () => {
                                     />
                                   ) : (
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
-                                      <Typography variant="body2" color="text.secondary">{key}:</Typography>
+                                      <Typography variant="body2" color="text.secondary">{fieldLabel}:</Typography>
                                       <Typography variant="body2" fontWeight={500}>{String(value ?? '')}</Typography>
                                     </Box>
                                   )}
@@ -507,13 +514,21 @@ export const ApprovalQueuePage = () => {
                         {t.registration.changesWillBeApplied || 'Alteracoes serao aplicadas ao aprovar:'}
                       </Typography>
                       <Box component="ul" sx={{ m: 0, pl: 2, mt: 1 }}>
-                        {Object.entries(fieldChanges).map(([key, newValue]) => (
-                          <li key={key}>
-                            <Typography variant="body2">
-                              <strong>{key}:</strong> {String(selectedRequest.formData[key])} → {String(newValue)}
-                            </Typography>
-                          </li>
-                        ))}
+                        {(() => {
+                          // Create a map of fieldName -> label from template fields
+                          const fieldLabels: Record<string, string> = {};
+                          selectedRequest.template?.fields?.forEach((field: any) => {
+                            fieldLabels[field.fieldName] = field.label || field.fieldName;
+                          });
+
+                          return Object.entries(fieldChanges).map(([key, newValue]) => (
+                            <li key={key}>
+                              <Typography variant="body2">
+                                <strong>{fieldLabels[key] || key}:</strong> {String(selectedRequest.formData[key])} → {String(newValue)}
+                              </Typography>
+                            </li>
+                          ));
+                        })()}
                       </Box>
                     </Alert>
                   )}

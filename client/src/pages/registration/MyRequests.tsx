@@ -393,12 +393,20 @@ export const MyRequestsPage = () => {
                     </Typography>
                     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                       <Stack spacing={1}>
-                        {Object.entries(selectedRequest.formData).map(([key, value]) => (
-                          <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body2" color="text.secondary">{key}:</Typography>
-                            <Typography variant="body2">{String(value)}</Typography>
-                          </Box>
-                        ))}
+                        {(() => {
+                          // Create a map of fieldName -> label from template fields
+                          const fieldLabels: Record<string, string> = {};
+                          selectedRequest.template?.fields?.forEach((field: any) => {
+                            fieldLabels[field.fieldName] = field.label || field.fieldName;
+                          });
+
+                          return Object.entries(selectedRequest.formData).map(([key, value]) => (
+                            <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" color="text.secondary">{fieldLabels[key] || key}:</Typography>
+                              <Typography variant="body2">{String(value)}</Typography>
+                            </Box>
+                          ));
+                        })()}
                       </Stack>
                     </Paper>
                   </Box>
