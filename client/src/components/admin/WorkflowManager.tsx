@@ -25,13 +25,7 @@ import {
   Divider,
   Grid,
   Autocomplete,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  OutlinedInput,
   Checkbox,
-  ListItemIcon,
   Tooltip,
 } from '@mui/material';
 import {
@@ -215,8 +209,8 @@ const WorkflowManager: React.FC = () => {
     return selectedTemplate.fields
       .filter((f) => f.isVisible)
       .map((f) => ({
-        name: f.fieldName,
-        label: f.label || f.fieldName,
+        name: f.sx3FieldName,
+        label: f.label || f.sx3FieldName,
       }));
   };
 
@@ -583,40 +577,45 @@ const WorkflowManager: React.FC = () => {
                       </Grid>
 
                       <Grid item xs={12} md={6}>
-                        <FormControl fullWidth>
-                          <InputLabel>Campos Editaveis</InputLabel>
-                          <Select
-                            multiple
-                            value={level.editableFields}
-                            onChange={(e) => {
-                              const value = e.target.value as string[];
-                              handleUpdateLevel(index, 'editableFields', value);
-                            }}
-                            input={<OutlinedInput label="Campos Editaveis" />}
-                            renderValue={(selected) => (
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {selected.map((fieldName) => {
-                                  const field = getTemplateFields().find((f) => f.name === fieldName);
-                                  return (
-                                    <Chip
-                                      key={fieldName}
-                                      label={field?.label || fieldName}
-                                      size="small"
-                                      icon={<EditIcon fontSize="small" />}
-                                    />
-                                  );
-                                })}
+                        <Autocomplete
+                          multiple
+                          options={getTemplateFields()}
+                          getOptionLabel={(option) => option.label}
+                          value={getTemplateFields().filter((f) => level.editableFields.includes(f.name))}
+                          onChange={(_, newValue) => {
+                            handleUpdateLevel(index, 'editableFields', newValue.map((f) => f.name));
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Campos Editaveis"
+                              placeholder="Selecione campos..."
+                            />
+                          )}
+                          renderOption={(props, option, { selected }) => (
+                            <li {...props}>
+                              <Checkbox checked={selected} sx={{ mr: 1 }} />
+                              <Box>
+                                <Typography variant="body2">{option.label}</Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {option.name}
+                                </Typography>
                               </Box>
-                            )}
-                          >
-                            {getTemplateFields().map((field) => (
-                              <MenuItem key={field.name} value={field.name}>
-                                <Checkbox checked={level.editableFields.includes(field.name)} />
-                                <ListItemText primary={field.label} secondary={field.name} />
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
+                            </li>
+                          )}
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, i) => (
+                              <Chip
+                                {...getTagProps({ index: i })}
+                                key={option.name}
+                                label={option.label}
+                                size="small"
+                                icon={<EditIcon fontSize="small" />}
+                              />
+                            ))
+                          }
+                          disableCloseOnSelect
+                        />
                       </Grid>
                     </Grid>
 
