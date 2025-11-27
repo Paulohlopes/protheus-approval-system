@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Paper,
   Table,
@@ -11,25 +11,17 @@ import {
   Typography,
   Box,
   TextField,
-  Grid,
   Button,
   Chip,
   IconButton,
   Tooltip,
-  useMediaQuery,
-  useTheme,
-  ToggleButtonGroup,
-  ToggleButton,
   CircularProgress,
   Stack
 } from '@mui/material';
-import { 
-  Search, 
-  Refresh, 
-  Visibility, 
-  ViewList, 
-  ViewModule,
-  FilterList,
+import {
+  Search,
+  Refresh,
+  Visibility,
   Clear
 } from '@mui/icons-material';
 import { EmptyState } from './EmptyState';
@@ -56,13 +48,10 @@ interface DocumentListViewProps<T> {
   // Dados
   items: T[];
   columns: DocumentColumn<T>[];
-  
+
   // Identificação única
   getItemKey: (item: T, index: number) => string;
-  
-  // Componente Card para visualização em cards
-  CardComponent: React.ComponentType<{ item: T; onViewDetails?: (item: T) => void }>;
-  
+
   // Estados e controle
   loading?: boolean;
   title?: string;
@@ -89,17 +78,13 @@ interface DocumentListViewProps<T> {
   emptyStateSubtitle?: string;
   
   // Configurações
-  defaultViewMode?: 'table' | 'cards';
-  showViewToggle?: boolean;
   showFilters?: boolean;
-  cardGridSizes?: { xs: number; sm?: number; md?: number; lg?: number; xl?: number };
 }
 
 export function DocumentListView<T>({
   items,
   columns,
   getItemKey,
-  CardComponent,
   loading = false,
   title,
   subtitle,
@@ -115,30 +100,10 @@ export function DocumentListView<T>({
   emptyStateType = 'no-results',
   emptyStateTitle = 'Nenhum item encontrado',
   emptyStateSubtitle = 'Não há itens disponíveis no momento',
-  defaultViewMode = 'table',
-  showViewToggle = true,
   showFilters = true,
-  cardGridSizes = { xs: 12, md: 6, lg: 4 }
 }: DocumentListViewProps<T>) {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>(() => {
-    // Se for mobile, sempre usar cards
-    // Se não for mobile, usar o defaultViewMode passado como prop
-    return isMobile ? 'cards' : defaultViewMode;
-  });
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
   const [localSearch, setLocalSearch] = useState('');
-
-  // Atualizar viewMode apenas quando o breakpoint mudar (não quando o usuário faz toggle)
-  useEffect(() => {
-    if (isMobile && viewMode === 'table') {
-      // Forçar cards quando estiver em mobile
-      setViewMode('cards');
-    }
-    // Removido: não forçar de volta para table quando sair do mobile
-    // O usuário deve poder escolher o modo de visualização
-  }, [isMobile]);
 
   // Aplicar filtros locais
   const filteredItems = useMemo(() => {
@@ -265,27 +230,6 @@ export function DocumentListView<T>({
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* View Mode Toggle */}
-            {showViewToggle && !isMobile && (
-              <ToggleButtonGroup
-                value={viewMode}
-                exclusive
-                onChange={(_, newMode) => newMode && setViewMode(newMode)}
-                size="small"
-              >
-                <ToggleButton value="table" aria-label="visualização em tabela">
-                  <Tooltip title="Visualização em tabela">
-                    <ViewList />
-                  </Tooltip>
-                </ToggleButton>
-                <ToggleButton value="cards" aria-label="visualização em cards">
-                  <Tooltip title="Visualização em cards">
-                    <ViewModule />
-                  </Tooltip>
-                </ToggleButton>
-              </ToggleButtonGroup>
-            )}
-            
             {/* Limpar filtros */}
             {hasActiveFilters && (
               <Tooltip title="Limpar filtros">
@@ -361,28 +305,6 @@ export function DocumentListView<T>({
               onClick: handleClearFilters,
             } : undefined}
           />
-        </Box>
-      ) : (isMobile || viewMode === 'cards') ? (
-        // Cards View
-        <Box sx={{ p: 3 }}>
-          <Grid container spacing={2}>
-            {filteredItems.map((item, index) => (
-              <Grid 
-                item 
-                key={getItemKey(item, index)}
-                xs={cardGridSizes.xs}
-                sm={cardGridSizes.sm}
-                md={cardGridSizes.md}
-                lg={cardGridSizes.lg}
-                xl={cardGridSizes.xl}
-              >
-                <CardComponent
-                  item={item}
-                  onViewDetails={onViewDetails}
-                />
-              </Grid>
-            ))}
-          </Grid>
         </Box>
       ) : (
         // Table View
