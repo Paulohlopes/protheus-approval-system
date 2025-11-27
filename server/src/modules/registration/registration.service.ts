@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RegistrationStatus, ApprovalAction } from '@prisma/client';
+import { RegistrationStatus, ApprovalAction, Prisma } from '@prisma/client';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { UpdateRegistrationDto } from './dto/update-registration.dto';
 import { ApproveRegistrationDto } from './dto/approve-registration.dto';
@@ -714,11 +714,11 @@ export class RegistrationService {
     // LOG-04: Use transaction for atomic submit operation
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent submissions
-      const [registration] = await tx.$queryRaw<any[]>`
-        SELECT * FROM registration_requests
-        WHERE id = ${id}::uuid
-        FOR UPDATE
-      `;
+      const registrations = await tx.$queryRawUnsafe<any[]>(
+        `SELECT * FROM registration_requests WHERE id = $1::uuid FOR UPDATE`,
+        id
+      );
+      const registration = registrations[0];
 
       if (!registration) {
         throw new NotFoundException(`Registration ${id} not found`);
@@ -859,11 +859,11 @@ export class RegistrationService {
     // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
-      const [registration] = await tx.$queryRaw<any[]>`
-        SELECT * FROM registration_requests
-        WHERE id = ${id}::uuid
-        FOR UPDATE
-      `;
+      const registrations = await tx.$queryRawUnsafe<any[]>(
+        `SELECT * FROM registration_requests WHERE id = $1::uuid FOR UPDATE`,
+        id
+      );
+      const registration = registrations[0];
 
       if (!registration) {
         throw new NotFoundException(`Registration ${id} not found`);
@@ -1158,11 +1158,11 @@ export class RegistrationService {
     // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
-      const [registration] = await tx.$queryRaw<any[]>`
-        SELECT * FROM registration_requests
-        WHERE id = ${id}::uuid
-        FOR UPDATE
-      `;
+      const registrations = await tx.$queryRawUnsafe<any[]>(
+        `SELECT * FROM registration_requests WHERE id = $1::uuid FOR UPDATE`,
+        id
+      );
+      const registration = registrations[0];
 
       if (!registration) {
         throw new NotFoundException(`Registration ${id} not found`);
@@ -1596,11 +1596,11 @@ export class RegistrationService {
 
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration
-      const [registration] = await tx.$queryRaw<any[]>`
-        SELECT * FROM registration_requests
-        WHERE id = ${registrationId}::uuid
-        FOR UPDATE
-      `;
+      const registrations = await tx.$queryRawUnsafe<any[]>(
+        `SELECT * FROM registration_requests WHERE id = $1::uuid FOR UPDATE`,
+        registrationId
+      );
+      const registration = registrations[0];
 
       if (!registration) {
         throw new NotFoundException(`Registration ${registrationId} not found`);
