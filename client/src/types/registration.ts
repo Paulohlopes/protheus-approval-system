@@ -154,6 +154,8 @@ export type WorkflowLevel = {
   levelOrder: number;
   levelName?: string;
   approverIds: string[];
+  approverGroupIds?: string[];
+  editableFields?: string[];
   isParallel: boolean;
   conditions?: any;
   createdAt: string;

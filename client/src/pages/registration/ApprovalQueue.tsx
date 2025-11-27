@@ -40,13 +40,16 @@ import {
   Person,
   Edit,
   History,
+  AccountTree,
+  Group,
+  ArrowDownward,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
 import { useLanguage } from '../../contexts/LanguageContext';
-import type { RegistrationRequest } from '../../types/registration';
-import { RegistrationStatus } from '../../types/registration';
+import type { RegistrationRequest, RegistrationApproval, WorkflowLevel } from '../../types/registration';
+import { RegistrationStatus, ApprovalAction } from '../../types/registration';
 import { EmptyState } from '../../components/EmptyState';
 import FieldChangeHistory from '../../components/FieldChangeHistory';
 
@@ -368,6 +371,12 @@ export const ApprovalQueuePage = () => {
                   sx={{ textTransform: 'none' }}
                 />
                 <Tab
+                  icon={<AccountTree sx={{ fontSize: 18 }} />}
+                  iconPosition="start"
+                  label={t.registration.workflowTab || 'Fluxo'}
+                  sx={{ textTransform: 'none' }}
+                />
+                <Tab
                   icon={<History sx={{ fontSize: 18 }} />}
                   iconPosition="start"
                   label={t.registration.changeHistory || 'Historico'}
@@ -511,8 +520,221 @@ export const ApprovalQueuePage = () => {
                 </Box>
               )}
 
-              {/* Tab Panel: History */}
+              {/* Tab Panel: Workflow */}
               {reviewTab === 1 && (
+                <Box sx={{ p: 3 }}>
+                  {(() => {
+                    const workflow = selectedRequest.workflowSnapshot;
+                    const approvals = selectedRequest.approvals || [];
+                    const levels: WorkflowLevel[] = workflow?.levels || [];
+
+                    const getApprovalsForLevel = (levelOrder: number): RegistrationApproval[] => {
+                      return approvals.filter(a => a.level === levelOrder);
+                    };
+
+                    const getLevelStatus = (levelOrder: number): 'pending' | 'current' | 'completed' | 'rejected' => {
+                      const levelApprovals = getApprovalsForLevel(levelOrder);
+                      if (levelApprovals.length === 0) return 'pending';
+
+                      const hasRejected = levelApprovals.some(a => a.action === ApprovalAction.REJECTED);
+                      if (hasRejected) return 'rejected';
+
+                      const allApproved = levelApprovals.every(a => a.action === ApprovalAction.APPROVED);
+                      if (allApproved) return 'completed';
+
+                      const hasPending = levelApprovals.some(a => a.action === ApprovalAction.PENDING);
+                      if (hasPending && levelOrder === selectedRequest.currentLevel) return 'current';
+
+                      return 'pending';
+                    };
+
+                    const getStatusColor = (status: string): ChipColor => {
+                      switch (status) {
+                        case 'completed': return 'success';
+                        case 'current': return 'warning';
+                        case 'rejected': return 'error';
+                        default: return 'default';
+                      }
+                    };
+
+                    const getStatusLabel = (status: string): string => {
+                      switch (status) {
+                        case 'completed': return t.registration.statusApproved || 'Aprovado';
+                        case 'current': return t.registration.statusPendingApproval || 'Aguardando';
+                        case 'rejected': return t.registration.statusRejected || 'Rejeitado';
+                        default: return t.registration.statusPending || 'Pendente';
+                      }
+                    };
+
+                    if (!workflow || levels.length === 0) {
+                      return (
+                        <Alert severity="info">
+                          {t.registration.noWorkflowInfo || 'Informacoes do fluxo nao disponiveis'}
+                        </Alert>
+                      );
+                    }
+
+                    return (
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          {t.registration.workflowTitle || 'Fluxo de Aprovacao'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                          {workflow.name} {workflow.description && `- ${workflow.description}`}
+                        </Typography>
+
+                        <Stack spacing={0}>
+                          {levels
+                            .sort((a, b) => a.levelOrder - b.levelOrder)
+                            .map((level, index) => {
+                              const status = getLevelStatus(level.levelOrder);
+                              const levelApprovals = getApprovalsForLevel(level.levelOrder);
+                              const isLast = index === levels.length - 1;
+
+                              return (
+                                <Box key={level.id || index}>
+                                  <Paper
+                                    variant="outlined"
+                                    sx={{
+                                      p: 2,
+                                      borderColor: status === 'current' ? 'warning.main' : status === 'completed' ? 'success.main' : status === 'rejected' ? 'error.main' : 'divider',
+                                      borderWidth: status === 'current' ? 2 : 1,
+                                      bgcolor: status === 'current' ? 'warning.lighter' : status === 'completed' ? 'success.lighter' : status === 'rejected' ? 'error.lighter' : 'background.paper',
+                                    }}
+                                  >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Chip
+                                          label={level.levelOrder}
+                                          size="small"
+                                          color={getStatusColor(status)}
+                                          sx={{ minWidth: 28, fontWeight: 600 }}
+                                        />
+                                        <Typography variant="subtitle2" fontWeight={600}>
+                                          {level.levelName || `${t.registration.level || 'Nivel'} ${level.levelOrder}`}
+                                        </Typography>
+                                      </Box>
+                                      <Chip
+                                        label={getStatusLabel(status)}
+                                        size="small"
+                                        color={getStatusColor(status)}
+                                        variant="outlined"
+                                      />
+                                    </Box>
+
+                                    {/* Approvers info */}
+                                    <Box sx={{ ml: 4.5 }}>
+                                      {level.approverGroupIds && level.approverGroupIds.length > 0 && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                          <Group fontSize="small" color="action" />
+                                          <Typography variant="caption" color="text.secondary">
+                                            {level.approverGroupIds.length} grupo(s) de aprovacao
+                                          </Typography>
+                                        </Box>
+                                      )}
+                                      {level.approverIds && level.approverIds.length > 0 && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                          <Person fontSize="small" color="action" />
+                                          <Typography variant="caption" color="text.secondary">
+                                            {level.approverIds.length} aprovador(es) individual(is)
+                                          </Typography>
+                                        </Box>
+                                      )}
+                                      {level.editableFields && level.editableFields.length > 0 && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                          <Edit fontSize="small" color="action" />
+                                          <Typography variant="caption" color="text.secondary">
+                                            {level.editableFields.length} campo(s) editavel(is): {level.editableFields.join(', ')}
+                                          </Typography>
+                                        </Box>
+                                      )}
+
+                                      {/* Approval actions */}
+                                      {levelApprovals.length > 0 && (
+                                        <Box sx={{ mt: 1.5 }}>
+                                          <Divider sx={{ mb: 1 }} />
+                                          <Typography variant="caption" fontWeight={600} color="text.secondary">
+                                            {t.registration.approvalActions || 'Acoes:'}
+                                          </Typography>
+                                          <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                            {levelApprovals.map((approval) => (
+                                              <Box
+                                                key={approval.id}
+                                                sx={{
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  gap: 1,
+                                                  p: 1,
+                                                  bgcolor: approval.action === ApprovalAction.APPROVED ? 'success.lighter' : approval.action === ApprovalAction.REJECTED ? 'error.lighter' : 'grey.100',
+                                                  borderRadius: 1,
+                                                }}
+                                              >
+                                                {approval.action === ApprovalAction.APPROVED ? (
+                                                  <CheckCircle fontSize="small" color="success" />
+                                                ) : approval.action === ApprovalAction.REJECTED ? (
+                                                  <Cancel fontSize="small" color="error" />
+                                                ) : (
+                                                  <Schedule fontSize="small" color="action" />
+                                                )}
+                                                <Box sx={{ flex: 1 }}>
+                                                  <Typography variant="body2">
+                                                    {approval.approver?.name || approval.approverEmail}
+                                                  </Typography>
+                                                  {approval.actionAt && (
+                                                    <Typography variant="caption" color="text.secondary">
+                                                      {formatDateTime(approval.actionAt)}
+                                                    </Typography>
+                                                  )}
+                                                  {approval.comments && (
+                                                    <Typography variant="caption" display="block" sx={{ fontStyle: 'italic', mt: 0.5 }}>
+                                                      "{approval.comments}"
+                                                    </Typography>
+                                                  )}
+                                                </Box>
+                                                <Chip
+                                                  label={
+                                                    approval.action === ApprovalAction.APPROVED
+                                                      ? t.common.approved || 'Aprovado'
+                                                      : approval.action === ApprovalAction.REJECTED
+                                                      ? t.common.rejected || 'Rejeitado'
+                                                      : t.common.pending || 'Pendente'
+                                                  }
+                                                  size="small"
+                                                  color={
+                                                    approval.action === ApprovalAction.APPROVED
+                                                      ? 'success'
+                                                      : approval.action === ApprovalAction.REJECTED
+                                                      ? 'error'
+                                                      : 'default'
+                                                  }
+                                                  variant="outlined"
+                                                />
+                                              </Box>
+                                            ))}
+                                          </Stack>
+                                        </Box>
+                                      )}
+                                    </Box>
+                                  </Paper>
+
+                                  {/* Connector arrow */}
+                                  {!isLast && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+                                      <ArrowDownward color="action" />
+                                    </Box>
+                                  )}
+                                </Box>
+                              );
+                            })}
+                        </Stack>
+                      </Box>
+                    );
+                  })()}
+                </Box>
+              )}
+
+              {/* Tab Panel: History */}
+              {reviewTab === 2 && (
                 <Box sx={{ p: 3 }}>
                   <FieldChangeHistory registrationId={selectedRequest.id} />
                 </Box>
