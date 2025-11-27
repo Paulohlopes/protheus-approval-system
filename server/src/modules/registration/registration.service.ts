@@ -115,6 +115,17 @@ export class RegistrationService {
       throw new NotFoundException(`Template ${dto.templateId} not found`);
     }
 
+    // Deactivate any existing active workflows for this template
+    await this.prisma.registrationWorkflow.updateMany({
+      where: {
+        templateId: dto.templateId,
+        isActive: true,
+      },
+      data: {
+        isActive: false,
+      },
+    });
+
     // Create workflow with levels
     const workflow = await this.prisma.registrationWorkflow.create({
       data: {
@@ -128,7 +139,9 @@ export class RegistrationService {
           create: dto.levels.map((level) => ({
             levelOrder: level.levelOrder,
             levelName: level.levelName,
-            approverIds: level.approverIds,
+            approverIds: level.approverIds || [],
+            approverGroupIds: level.approverGroupIds || [],
+            editableFields: level.editableFields || [],
             isParallel: level.isParallel ?? false,
             conditions: level.conditions,
           })),

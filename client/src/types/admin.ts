@@ -29,14 +29,16 @@ export interface ReorderFieldsDto {
 // WORKFLOWS
 // ==========================================
 
-export interface ApprovalStep {
+export interface WorkflowLevel {
   id: string;
   workflowId: string;
-  stepOrder: number;
-  approverEmail: string;
-  approverName?: string;
-  approverRole?: string;
-  isRequired: boolean;
+  levelOrder: number;
+  levelName?: string;
+  approverIds?: string[];
+  approverGroupIds?: string[];
+  editableFields?: string[];
+  isParallel?: boolean;
+  conditions?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,11 +49,20 @@ export interface Workflow {
   name: string;
   description?: string;
   isActive: boolean;
-  requiresSequentialApproval: boolean;
-  steps?: ApprovalStep[];
+  levels?: WorkflowLevel[];
   template?: FormTemplate;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WorkflowLevelDto {
+  levelOrder: number;
+  levelName?: string;
+  approverIds?: string[];
+  approverGroupIds?: string[];
+  editableFields?: string[];
+  isParallel?: boolean;
+  conditions?: any;
 }
 
 export interface CreateWorkflowDto {
@@ -59,14 +70,46 @@ export interface CreateWorkflowDto {
   name: string;
   description?: string;
   isActive?: boolean;
-  requiresSequentialApproval?: boolean;
-  steps: Array<{
-    stepOrder: number;
-    approverEmail: string;
-    approverName?: string;
-    approverRole?: string;
-    isRequired?: boolean;
-  }>;
+  levels: WorkflowLevelDto[];
+}
+
+// ==========================================
+// APPROVAL GROUPS
+// ==========================================
+
+export interface ApprovalGroup {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  members?: ApprovalGroupMember[];
+  _count?: {
+    members: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApprovalGroupMember {
+  id: string;
+  groupId: string;
+  userId: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    username: string;
+    department?: string;
+  };
+  addedAt: string;
+}
+
+export interface UserOption {
+  id: string;
+  name: string;
+  email: string;
+  username: string;
+  department?: string;
 }
 
 // ==========================================

@@ -355,4 +355,23 @@ export class ApprovalGroupsService {
       },
     });
   }
+
+  /**
+   * Get all users (for selection in approval groups)
+   */
+  async getAllUsers() {
+    return this.prisma.user.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        department: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
 }

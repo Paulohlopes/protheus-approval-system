@@ -22,33 +22,51 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   Divider,
-  MenuItem,
   Grid,
+  Autocomplete,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  OutlinedInput,
+  Checkbox,
+  ListItemIcon,
+  Tooltip,
 } from '@mui/material';
 import {
   Add,
   Delete,
   AccountTree,
-  Person,
   ArrowDownward,
+  Group,
+  Person,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import { adminService } from '../../services/adminService';
 import type { FormTemplate } from '../../types/registration';
-import type { CreateWorkflowDto, Workflow } from '../../types/admin';
+import type {
+  CreateWorkflowDto,
+  Workflow,
+  WorkflowLevelDto,
+  ApprovalGroup,
+  UserOption
+} from '../../types/admin';
 
-interface ApprovalStepForm {
-  stepOrder: number;
-  approverEmail: string;
-  approverName: string;
-  approverRole: string;
-  isRequired: boolean;
+interface LevelForm {
+  levelOrder: number;
+  levelName: string;
+  approverIds: string[];
+  approverGroupIds: string[];
+  editableFields: string[];
+  isParallel: boolean;
 }
 
 const WorkflowManager: React.FC = () => {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [workflows, setWorkflows] = useState<Map<string, Workflow>>(new Map());
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [groups, setGroups] = useState<ApprovalGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -59,20 +77,20 @@ const WorkflowManager: React.FC = () => {
     name: '',
     description: '',
     isActive: true,
-    requiresSequentialApproval: true,
   });
 
-  const [approvalSteps, setApprovalSteps] = useState<ApprovalStepForm[]>([
+  const [levels, setLevels] = useState<LevelForm[]>([
     {
-      stepOrder: 1,
-      approverEmail: '',
-      approverName: '',
-      approverRole: '',
-      isRequired: true,
+      levelOrder: 1,
+      levelName: '',
+      approverIds: [],
+      approverGroupIds: [],
+      editableFields: [],
+      isParallel: false,
     },
   ]);
 
-  // Load templates and workflows on mount
+  // Load templates, workflows, users, and groups on mount
   useEffect(() => {
     loadData();
   }, []);
@@ -82,9 +100,16 @@ const WorkflowManager: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Load templates
-      const templatesData = await adminService.getTemplates(false);
+      // Load all data in parallel
+      const [templatesData, usersData, groupsData] = await Promise.all([
+        adminService.getTemplates(true),
+        adminService.getUsers(),
+        adminService.getApprovalGroups(false),
+      ]);
+
       setTemplates(templatesData);
+      setUsers(usersData);
+      setGroups(groupsData);
 
       // Load workflows for each template
       const workflowsMap = new Map<string, Workflow>();
@@ -118,13 +143,14 @@ const WorkflowManager: React.FC = () => {
         name: workflowData.name,
         description: workflowData.description,
         isActive: workflowData.isActive,
-        requiresSequentialApproval: workflowData.requiresSequentialApproval,
-        steps: approvalSteps
-          .filter((step) => step.approverEmail.trim() !== '')
-          .map((step, index) => ({
-            ...step,
-            stepOrder: index + 1,
-          })),
+        levels: levels.map((level, index) => ({
+          levelOrder: index + 1,
+          levelName: level.levelName || `Nível ${index + 1}`,
+          approverIds: level.approverIds,
+          approverGroupIds: level.approverGroupIds,
+          editableFields: level.editableFields,
+          isParallel: level.isParallel,
+        })),
       };
 
       await adminService.createWorkflow(createDto);
@@ -136,32 +162,33 @@ const WorkflowManager: React.FC = () => {
     }
   };
 
-  const handleAddStep = () => {
-    setApprovalSteps([
-      ...approvalSteps,
+  const handleAddLevel = () => {
+    setLevels([
+      ...levels,
       {
-        stepOrder: approvalSteps.length + 1,
-        approverEmail: '',
-        approverName: '',
-        approverRole: '',
-        isRequired: true,
+        levelOrder: levels.length + 1,
+        levelName: '',
+        approverIds: [],
+        approverGroupIds: [],
+        editableFields: [],
+        isParallel: false,
       },
     ]);
   };
 
-  const handleRemoveStep = (index: number) => {
-    if (approvalSteps.length <= 1) {
-      alert('Deve haver pelo menos um aprovador no workflow');
+  const handleRemoveLevel = (index: number) => {
+    if (levels.length <= 1) {
+      alert('Deve haver pelo menos um nível no workflow');
       return;
     }
-    const newSteps = approvalSteps.filter((_, i) => i !== index);
-    setApprovalSteps(newSteps);
+    const newLevels = levels.filter((_, i) => i !== index);
+    setLevels(newLevels);
   };
 
-  const handleUpdateStep = (index: number, field: keyof ApprovalStepForm, value: any) => {
-    const newSteps = [...approvalSteps];
-    newSteps[index] = { ...newSteps[index], [field]: value };
-    setApprovalSteps(newSteps);
+  const handleUpdateLevel = (index: number, field: keyof LevelForm, value: any) => {
+    const newLevels = [...levels];
+    newLevels[index] = { ...newLevels[index], [field]: value };
+    setLevels(newLevels);
   };
 
   const resetForm = () => {
@@ -169,19 +196,32 @@ const WorkflowManager: React.FC = () => {
       name: '',
       description: '',
       isActive: true,
-      requiresSequentialApproval: true,
     });
-    setApprovalSteps([
+    setLevels([
       {
-        stepOrder: 1,
-        approverEmail: '',
-        approverName: '',
-        approverRole: '',
-        isRequired: true,
+        levelOrder: 1,
+        levelName: '',
+        approverIds: [],
+        approverGroupIds: [],
+        editableFields: [],
+        isParallel: false,
       },
     ]);
     setSelectedTemplate(null);
   };
+
+  const getTemplateFields = () => {
+    if (!selectedTemplate?.fields) return [];
+    return selectedTemplate.fields
+      .filter((f) => f.isVisible)
+      .map((f) => ({
+        name: f.fieldName,
+        label: f.label || f.fieldName,
+      }));
+  };
+
+  const getUserById = (id: string) => users.find((u) => u.id === id);
+  const getGroupById = (id: string) => groups.find((g) => g.id === id);
 
   if (loading) {
     return (
@@ -196,10 +236,10 @@ const WorkflowManager: React.FC = () => {
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          Workflows de Aprovação
+          Workflows de Aprovacao
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Configure os fluxos de aprovação para cada tipo de formulário
+          Configure os fluxos de aprovacao para cada tipo de formulario
         </Typography>
       </Box>
 
@@ -248,33 +288,56 @@ const WorkflowManager: React.FC = () => {
                         )}
 
                         <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                          Aprovação {workflow.requiresSequentialApproval ? 'Sequencial' : 'Paralela'}
+                          {workflow.levels?.length || 0} nivel(is) de aprovacao
                         </Typography>
 
                         <List dense sx={{ mt: 1 }}>
-                          {workflow.steps
-                            ?.sort((a, b) => a.stepOrder - b.stepOrder)
-                            .map((step, index) => (
-                              <React.Fragment key={step.id}>
+                          {workflow.levels
+                            ?.sort((a, b) => a.levelOrder - b.levelOrder)
+                            .map((level, index) => (
+                              <React.Fragment key={level.id}>
                                 <ListItem sx={{ py: 1, px: 0 }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, width: '100%' }}>
                                     <Chip
-                                      label={step.stepOrder}
+                                      label={level.levelOrder}
                                       size="small"
                                       color="primary"
-                                      sx={{ minWidth: 32 }}
+                                      sx={{ minWidth: 32, mt: 0.5 }}
                                     />
                                     <ListItemText
-                                      primary={step.approverName || step.approverEmail}
+                                      primary={level.levelName || `Nivel ${level.levelOrder}`}
                                       secondary={
-                                        <Box component="span">
-                                          {step.approverEmail}
-                                          {step.approverRole && ` • ${step.approverRole}`}
-                                          {step.isRequired && (
+                                        <Box component="span" sx={{ display: 'block' }}>
+                                          {level.approverGroupIds && level.approverGroupIds.length > 0 && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                              <Group fontSize="small" color="action" />
+                                              <Typography variant="caption">
+                                                {level.approverGroupIds.length} grupo(s)
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          {level.approverIds && level.approverIds.length > 0 && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                              <Person fontSize="small" color="action" />
+                                              <Typography variant="caption">
+                                                {level.approverIds.length} usuario(s)
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          {level.editableFields && level.editableFields.length > 0 && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                                              <EditIcon fontSize="small" color="action" />
+                                              <Typography variant="caption">
+                                                {level.editableFields.length} campo(s) editavel(is)
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          {level.isParallel && (
                                             <Chip
-                                              label="Obrigatório"
+                                              label="Paralelo"
                                               size="small"
-                                              sx={{ ml: 1, height: 18 }}
+                                              variant="outlined"
+                                              sx={{ mt: 0.5, height: 18 }}
                                             />
                                           )}
                                         </Box>
@@ -282,7 +345,7 @@ const WorkflowManager: React.FC = () => {
                                     />
                                   </Box>
                                 </ListItem>
-                                {index < (workflow.steps?.length || 0) - 1 && (
+                                {index < (workflow.levels?.length || 0) - 1 && (
                                   <Box sx={{ display: 'flex', justifyContent: 'center', my: 0.5 }}>
                                     <ArrowDownward fontSize="small" color="action" />
                                   </Box>
@@ -309,16 +372,16 @@ const WorkflowManager: React.FC = () => {
                           name: workflow.name || '',
                           description: workflow.description || '',
                           isActive: workflow.isActive ?? true,
-                          requiresSequentialApproval: workflow.requiresSequentialApproval ?? true,
                         });
-                        if (workflow.steps) {
-                          setApprovalSteps(
-                            workflow.steps.map((step) => ({
-                              stepOrder: step.stepOrder,
-                              approverEmail: step.approverEmail || '',
-                              approverName: step.approverName || '',
-                              approverRole: step.approverRole || '',
-                              isRequired: step.isRequired ?? true,
+                        if (workflow.levels) {
+                          setLevels(
+                            workflow.levels.map((level) => ({
+                              levelOrder: level.levelOrder,
+                              levelName: level.levelName || '',
+                              approverIds: level.approverIds || [],
+                              approverGroupIds: level.approverGroupIds || [],
+                              editableFields: level.editableFields || [],
+                              isParallel: level.isParallel ?? false,
                             }))
                           );
                         }
@@ -342,112 +405,226 @@ const WorkflowManager: React.FC = () => {
       )}
 
       {/* Create/Edit Workflow Dialog */}
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="lg" fullWidth>
         <DialogTitle>
           {selectedTemplate && `Workflow para ${selectedTemplate.label}`}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
-            <TextField
-              label="Nome do Workflow"
-              fullWidth
-              required
-              value={workflowData.name}
-              onChange={(e) => setWorkflowData({ ...workflowData, name: e.target.value })}
-            />
-            <TextField
-              label="Descrição"
-              fullWidth
-              multiline
-              rows={2}
-              value={workflowData.description}
-              onChange={(e) => setWorkflowData({ ...workflowData, description: e.target.value })}
-            />
-
-            <Box>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={workflowData.requiresSequentialApproval}
-                    onChange={(e) =>
-                      setWorkflowData({ ...workflowData, requiresSequentialApproval: e.target.checked })
-                    }
-                  />
-                }
-                label="Aprovação Sequencial (aguarda aprovação anterior)"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={workflowData.isActive}
-                    onChange={(e) => setWorkflowData({ ...workflowData, isActive: e.target.checked })}
-                  />
-                }
-                label="Workflow Ativo"
-              />
-            </Box>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Nome do Workflow"
+                  fullWidth
+                  required
+                  value={workflowData.name}
+                  onChange={(e) => setWorkflowData({ ...workflowData, name: e.target.value })}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={workflowData.isActive}
+                      onChange={(e) => setWorkflowData({ ...workflowData, isActive: e.target.checked })}
+                    />
+                  }
+                  label="Workflow Ativo"
+                  sx={{ mt: 1 }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  label="Descricao"
+                  fullWidth
+                  multiline
+                  rows={2}
+                  value={workflowData.description}
+                  onChange={(e) => setWorkflowData({ ...workflowData, description: e.target.value })}
+                />
+              </Grid>
+            </Grid>
 
             <Divider />
 
             <Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="subtitle2">Etapas de Aprovação</Typography>
-                <Button size="small" startIcon={<Add />} onClick={handleAddStep}>
-                  Adicionar Etapa
+                <Typography variant="subtitle1" fontWeight="bold">
+                  Niveis de Aprovacao
+                </Typography>
+                <Button size="small" startIcon={<Add />} onClick={handleAddLevel} variant="outlined">
+                  Adicionar Nivel
                 </Button>
               </Box>
 
-              <Stack spacing={2}>
-                {approvalSteps.map((step, index) => (
+              <Stack spacing={3}>
+                {levels.map((level, index) => (
                   <Paper key={index} sx={{ p: 2 }} variant="outlined">
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                      <Chip label={`Etapa ${index + 1}`} size="small" color="primary" />
-                      {approvalSteps.length > 1 && (
-                        <IconButton size="small" color="error" onClick={() => handleRemoveStep(index)}>
+                      <Chip label={`Nivel ${index + 1}`} size="small" color="primary" />
+                      {levels.length > 1 && (
+                        <IconButton size="small" color="error" onClick={() => handleRemoveLevel(index)}>
                           <Delete fontSize="small" />
                         </IconButton>
                       )}
+                      <Box sx={{ flexGrow: 1 }} />
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            size="small"
+                            checked={level.isParallel}
+                            onChange={(e) => handleUpdateLevel(index, 'isParallel', e.target.checked)}
+                          />
+                        }
+                        label={
+                          <Tooltip title="Se ativado, todos os aprovadores devem aprovar. Se desativado, apenas um aprovador e necessario.">
+                            <Typography variant="body2">Aprovacao Paralela</Typography>
+                          </Tooltip>
+                        }
+                      />
                     </Box>
 
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid item xs={12} md={6}>
                         <TextField
-                          label="E-mail do Aprovador"
+                          label="Nome do Nivel"
                           fullWidth
-                          required
-                          type="email"
-                          value={step.approverEmail}
-                          onChange={(e) => handleUpdateStep(index, 'approverEmail', e.target.value)}
+                          placeholder="Ex: Gerente, Diretor, etc."
+                          value={level.levelName}
+                          onChange={(e) => handleUpdateLevel(index, 'levelName', e.target.value)}
                         />
                       </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Nome do Aprovador"
-                          fullWidth
-                          value={step.approverName}
-                          onChange={(e) => handleUpdateStep(index, 'approverName', e.target.value)}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          label="Cargo/Função"
-                          fullWidth
-                          value={step.approverRole}
-                          onChange={(e) => handleUpdateStep(index, 'approverRole', e.target.value)}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={step.isRequired}
-                              onChange={(e) => handleUpdateStep(index, 'isRequired', e.target.checked)}
+
+                      <Grid item xs={12} md={6}>
+                        <Autocomplete
+                          multiple
+                          options={groups}
+                          getOptionLabel={(option) => option.name}
+                          value={groups.filter((g) => level.approverGroupIds.includes(g.id))}
+                          onChange={(_, newValue) => {
+                            handleUpdateLevel(index, 'approverGroupIds', newValue.map((g) => g.id));
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Grupos de Aprovacao"
+                              placeholder="Selecione grupos..."
                             />
+                          )}
+                          renderOption={(props, option) => (
+                            <li {...props}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Group fontSize="small" color="action" />
+                                <Box>
+                                  <Typography variant="body2">{option.name}</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {option._count?.members || 0} membro(s)
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </li>
+                          )}
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, i) => (
+                              <Chip
+                                {...getTagProps({ index: i })}
+                                key={option.id}
+                                label={option.name}
+                                size="small"
+                                icon={<Group fontSize="small" />}
+                              />
+                            ))
                           }
-                          label="Aprovação Obrigatória"
                         />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <Autocomplete
+                          multiple
+                          options={users}
+                          getOptionLabel={(option) => `${option.name} (${option.email})`}
+                          value={users.filter((u) => level.approverIds.includes(u.id))}
+                          onChange={(_, newValue) => {
+                            handleUpdateLevel(index, 'approverIds', newValue.map((u) => u.id));
+                          }}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Usuarios Aprovadores"
+                              placeholder="Selecione usuarios..."
+                            />
+                          )}
+                          renderOption={(props, option) => (
+                            <li {...props}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Person fontSize="small" color="action" />
+                                <Box>
+                                  <Typography variant="body2">{option.name}</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {option.email}
+                                    {option.department && ` - ${option.department}`}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                            </li>
+                          )}
+                          renderTags={(value, getTagProps) =>
+                            value.map((option, i) => (
+                              <Chip
+                                {...getTagProps({ index: i })}
+                                key={option.id}
+                                label={option.name}
+                                size="small"
+                                icon={<Person fontSize="small" />}
+                              />
+                            ))
+                          }
+                        />
+                      </Grid>
+
+                      <Grid item xs={12} md={6}>
+                        <FormControl fullWidth>
+                          <InputLabel>Campos Editaveis</InputLabel>
+                          <Select
+                            multiple
+                            value={level.editableFields}
+                            onChange={(e) => {
+                              const value = e.target.value as string[];
+                              handleUpdateLevel(index, 'editableFields', value);
+                            }}
+                            input={<OutlinedInput label="Campos Editaveis" />}
+                            renderValue={(selected) => (
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {selected.map((fieldName) => {
+                                  const field = getTemplateFields().find((f) => f.name === fieldName);
+                                  return (
+                                    <Chip
+                                      key={fieldName}
+                                      label={field?.label || fieldName}
+                                      size="small"
+                                      icon={<EditIcon fontSize="small" />}
+                                    />
+                                  );
+                                })}
+                              </Box>
+                            )}
+                          >
+                            {getTemplateFields().map((field) => (
+                              <MenuItem key={field.name} value={field.name}>
+                                <Checkbox checked={level.editableFields.includes(field.name)} />
+                                <ListItemText primary={field.label} secondary={field.name} />
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                       </Grid>
                     </Grid>
+
+                    {(level.approverIds.length === 0 && level.approverGroupIds.length === 0) && (
+                      <Alert severity="warning" sx={{ mt: 2 }}>
+                        Selecione pelo menos um grupo ou usuario aprovador para este nivel.
+                      </Alert>
+                    )}
                   </Paper>
                 ))}
               </Stack>
@@ -466,7 +643,7 @@ const WorkflowManager: React.FC = () => {
             onClick={handleCreateWorkflow}
             disabled={
               !workflowData.name ||
-              approvalSteps.some((step) => !step.approverEmail.trim())
+              levels.some((level) => level.approverIds.length === 0 && level.approverGroupIds.length === 0)
             }
           >
             Salvar Workflow

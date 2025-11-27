@@ -100,6 +100,14 @@ export class ApprovalGroupsController {
   // ==========================================
 
   /**
+   * Get all users (for selection dropdowns)
+   */
+  @Get('users/all')
+  getAllUsers() {
+    return this.approvalGroupsService.getAllUsers();
+  }
+
+  /**
    * Get groups that the current user belongs to
    */
   @Get('user/my-groups')

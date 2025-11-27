@@ -6,6 +6,8 @@ import type {
   ReorderFieldsDto,
   Workflow,
   CreateWorkflowDto,
+  ApprovalGroup,
+  UserOption,
 } from '../types/admin';
 
 export const adminService = {
@@ -140,6 +142,86 @@ export const adminService = {
    */
   async getAllTables(): Promise<string[]> {
     const response = await backendApi.get('/sx3/tables');
+    return response.data;
+  },
+
+  // ==========================================
+  // USERS
+  // ==========================================
+
+  /**
+   * Get all users for selection dropdowns
+   */
+  async getUsers(): Promise<UserOption[]> {
+    const response = await backendApi.get('/approval-groups/users/all');
+    return response.data;
+  },
+
+  // ==========================================
+  // APPROVAL GROUPS
+  // ==========================================
+
+  /**
+   * Get all approval groups
+   */
+  async getApprovalGroups(includeInactive = false): Promise<ApprovalGroup[]> {
+    const response = await backendApi.get('/approval-groups', {
+      params: { includeInactive },
+    });
+    return response.data;
+  },
+
+  /**
+   * Get a single approval group by ID
+   */
+  async getApprovalGroup(id: string): Promise<ApprovalGroup> {
+    const response = await backendApi.get(`/approval-groups/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Create a new approval group
+   */
+  async createApprovalGroup(data: { name: string; description?: string }): Promise<ApprovalGroup> {
+    const response = await backendApi.post('/approval-groups', data);
+    return response.data;
+  },
+
+  /**
+   * Update an approval group
+   */
+  async updateApprovalGroup(id: string, data: { name?: string; description?: string; isActive?: boolean }): Promise<ApprovalGroup> {
+    const response = await backendApi.put(`/approval-groups/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete an approval group
+   */
+  async deleteApprovalGroup(id: string): Promise<void> {
+    await backendApi.delete(`/approval-groups/${id}`);
+  },
+
+  /**
+   * Add a member to an approval group
+   */
+  async addGroupMember(groupId: string, userId: string): Promise<any> {
+    const response = await backendApi.post(`/approval-groups/${groupId}/members`, { userId });
+    return response.data;
+  },
+
+  /**
+   * Remove a member from an approval group
+   */
+  async removeGroupMember(groupId: string, userId: string): Promise<void> {
+    await backendApi.delete(`/approval-groups/${groupId}/members/${userId}`);
+  },
+
+  /**
+   * Get members of an approval group
+   */
+  async getGroupMembers(groupId: string): Promise<any[]> {
+    const response = await backendApi.get(`/approval-groups/${groupId}/members`);
     return response.data;
   },
 };
