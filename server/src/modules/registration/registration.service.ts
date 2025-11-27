@@ -412,7 +412,14 @@ export class RegistrationService {
     const registrations = await this.prisma.registrationRequest.findMany({
       where: filters,
       include: {
-        template: true,
+        template: {
+          include: {
+            fields: {
+              where: { isVisible: true },
+              orderBy: { fieldOrder: 'asc' },
+            },
+          },
+        },
         requestedBy: {
           select: {
             id: true,
@@ -958,7 +965,14 @@ export class RegistrationService {
       include: {
         request: {
           include: {
-            template: true,
+            template: {
+              include: {
+                fields: {
+                  where: { isVisible: true },
+                  orderBy: { fieldOrder: 'asc' },
+                },
+              },
+            },
             requestedBy: {
               select: {
                 id: true,
