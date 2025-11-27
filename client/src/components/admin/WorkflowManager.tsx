@@ -506,8 +506,8 @@ const WorkflowManager: React.FC = () => {
                               placeholder="Selecione grupos..."
                             />
                           )}
-                          renderOption={(props, option) => (
-                            <li {...props}>
+                          renderOption={({ key, ...props }, option) => (
+                            <li key={key} {...props}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Group fontSize="small" color="action" />
                                 <Box>
@@ -549,8 +549,8 @@ const WorkflowManager: React.FC = () => {
                               placeholder="Selecione usuarios..."
                             />
                           )}
-                          renderOption={(props, option) => (
-                            <li {...props}>
+                          renderOption={({ key, ...props }, option) => (
+                            <li key={key} {...props}>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Person fontSize="small" color="action" />
                                 <Box>
@@ -593,8 +593,8 @@ const WorkflowManager: React.FC = () => {
                               placeholder="Selecione campos..."
                             />
                           )}
-                          renderOption={(props, option, { selected }) => (
-                            <li {...props}>
+                          renderOption={({ key, ...props }, option, { selected }) => (
+                            <li key={key} {...props}>
                               <Checkbox checked={selected} sx={{ mr: 1 }} />
                               <Box>
                                 <Typography variant="body2">{option.label}</Typography>
