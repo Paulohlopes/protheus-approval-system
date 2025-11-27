@@ -440,45 +440,52 @@ export const ApprovalQueuePage = () => {
                     ) : (
                       <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                         <Stack spacing={2}>
-                          {Object.entries(selectedRequest.formData).map(([key, value]) => {
-                            const editable = isFieldEditable(key);
-                            const currentValue = getFieldValue(key);
-                            const wasChanged = key in fieldChanges;
+                          {/* Combine formData keys with editable fields that may not be in formData */}
+                          {(() => {
+                            const formDataKeys = Object.keys(selectedRequest.formData || {});
+                            const allKeys = [...new Set([...formDataKeys, ...editableFields])];
 
-                            return (
-                              <Box key={key}>
-                                {editable ? (
-                                  <TextField
-                                    label={key}
-                                    value={currentValue}
-                                    onChange={(e) => handleFieldChange(key, e.target.value)}
-                                    fullWidth
-                                    size="small"
-                                    sx={{
-                                      '& .MuiOutlinedInput-root': {
-                                        bgcolor: wasChanged ? 'warning.lighter' : 'primary.lighter',
-                                        '& fieldset': {
-                                          borderColor: wasChanged ? 'warning.main' : 'primary.main',
+                            return allKeys.map((key) => {
+                              const value = selectedRequest.formData?.[key];
+                              const editable = isFieldEditable(key);
+                              const currentValue = getFieldValue(key);
+                              const wasChanged = key in fieldChanges;
+
+                              return (
+                                <Box key={key}>
+                                  {editable ? (
+                                    <TextField
+                                      label={key}
+                                      value={currentValue}
+                                      onChange={(e) => handleFieldChange(key, e.target.value)}
+                                      fullWidth
+                                      size="small"
+                                      sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                          bgcolor: wasChanged ? 'warning.lighter' : 'primary.lighter',
+                                          '& fieldset': {
+                                            borderColor: wasChanged ? 'warning.main' : 'primary.main',
+                                          },
                                         },
-                                      },
-                                    }}
-                                    InputProps={{
-                                      endAdornment: (
-                                        <Tooltip title={t.registration.editableField || 'Campo editavel'}>
-                                          <Edit sx={{ fontSize: 16, color: 'primary.main', ml: 1 }} />
-                                        </Tooltip>
-                                      ),
-                                    }}
-                                  />
-                                ) : (
-                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
-                                    <Typography variant="body2" color="text.secondary">{key}:</Typography>
-                                    <Typography variant="body2" fontWeight={500}>{String(value)}</Typography>
-                                  </Box>
-                                )}
-                              </Box>
-                            );
-                          })}
+                                      }}
+                                      InputProps={{
+                                        endAdornment: (
+                                          <Tooltip title={t.registration.editableField || 'Campo editavel'}>
+                                            <Edit sx={{ fontSize: 16, color: 'primary.main', ml: 1 }} />
+                                          </Tooltip>
+                                        ),
+                                      }}
+                                    />
+                                  ) : (
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', py: 0.5 }}>
+                                      <Typography variant="body2" color="text.secondary">{key}:</Typography>
+                                      <Typography variant="body2" fontWeight={500}>{String(value ?? '')}</Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                              );
+                            });
+                          })()}
                         </Stack>
                       </Paper>
                     )}
