@@ -139,9 +139,10 @@ export const config: AppConfig = {
   },
 
   security: {
-    sessionTimeout: getEnvVar('VITE_SESSION_TIMEOUT', 86400000), // 24 hours
+    sessionTimeout: getEnvVar('VITE_SESSION_TIMEOUT', 86400000), // 24 hours (default, should use server's expires_in)
     tokenRefreshThreshold: getEnvVar('VITE_TOKEN_REFRESH_THRESHOLD', 300000), // 5 minutes
     maxLoginAttempts: getEnvVar('VITE_MAX_LOGIN_ATTEMPTS', 3),
+    inactivityTimeout: getEnvVar('VITE_INACTIVITY_TIMEOUT', 1800000), // 30 minutes
   },
 
   auth: {

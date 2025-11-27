@@ -1,8 +1,10 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { useAuthStore } from './stores/authStore';
+import { useInactivityLogout } from './hooks/useInactivityLogout';
 
 // Lazy load dos componentes para otimização de bundle
 const ProtectedRoute = lazy(() => import('./components/ProtectedRoute'));
@@ -30,13 +32,29 @@ const LoadingFallback = () => (
   </Box>
 );
 
+// Component that handles auth initialization and inactivity logout
+const AuthManager = ({ children }: { children: React.ReactNode }) => {
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
+
+  // Initialize auth state from secure storage on mount
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
+
+  // Setup inactivity logout
+  useInactivityLogout();
+
+  return <>{children}</>;
+};
+
 function App() {
   return (
     <ErrorBoundary level="critical">
       <LanguageProvider>
         <Router>
-          <Suspense fallback={<LoadingFallback />}>
-            <Routes>
+          <AuthManager>
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
               {/* Public routes */}
               <Route
                 path="/login"
@@ -132,8 +150,9 @@ function App() {
 
               {/* Catch all - redirect to documents */}
               <Route path="*" element={<Navigate to="/documents" replace />} />
-            </Routes>
-          </Suspense>
+              </Routes>
+            </Suspense>
+          </AuthManager>
         </Router>
       </LanguageProvider>
     </ErrorBoundary>

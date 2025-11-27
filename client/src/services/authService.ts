@@ -3,6 +3,7 @@ import api, { backendApi } from './api';
 import { config, logger } from '../config/environment';
 import { protheusLoginSchema } from '../schemas/loginSchema';
 import { getErrorMessage } from '../utils/translationHelpers';
+import { tokenManager } from '../utils/secureStorage';
 import type {
   ProtheusLoginCredentials,
   ProtheusAuthResponse,
@@ -163,19 +164,17 @@ export const authService = {
     }
   },
 
-  // Verificar se usuário está autenticado
+  // Verificar se usuário está autenticado (uses tokenManager for proper expiration check)
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('access_token');
-    return !!token;
+    return tokenManager.isAuthenticated();
   },
 
-  // Obter usuário atual do localStorage
+  // Obter usuário atual do secure storage
   getCurrentUser(): ProtheusUser | null {
     try {
-      const userStr = localStorage.getItem('user');
-      return userStr ? JSON.parse(userStr) : null;
+      return tokenManager.getUser();
     } catch (error) {
-      logger.warn('Erro ao recuperar usuário do localStorage:', error);
+      logger.warn('Erro ao recuperar usuário do storage:', error);
       return null;
     }
   }

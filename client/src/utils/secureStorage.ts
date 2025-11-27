@@ -325,28 +325,39 @@ export const tokenManager = {
 
   /**
    * Store tokens securely
+   * @param accessToken - The access token
+   * @param refreshToken - The refresh token (optional)
+   * @param user - User data (optional)
+   * @param tokenType - Token type (default: 'Bearer')
+   * @param expiresIn - Token expiration time in milliseconds (optional, uses server value or default)
    */
   setTokens(
-    accessToken: string, 
-    refreshToken?: string, 
-    user?: any, 
-    tokenType: string = 'Bearer'
+    accessToken: string,
+    refreshToken?: string,
+    user?: any,
+    tokenType: string = 'Bearer',
+    expiresIn?: number
   ): boolean {
+    // Use server-provided expiration or fall back to config default
+    const tokenExpiry = expiresIn || config.security.sessionTimeout;
+
     console.log('tokenManager.setTokens - Saving tokens:', {
       accessToken: accessToken?.substring(0, 10) + '...',
       refreshToken: refreshToken?.substring(0, 10) + '...',
       user,
-      tokenType
+      tokenType,
+      expiresIn: tokenExpiry,
+      expiresAt: new Date(Date.now() + tokenExpiry).toISOString()
     });
-    
+
     const results = [
       secureStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken, {
         encrypt: true,
-        expiresIn: config.security.sessionTimeout
+        expiresIn: tokenExpiry
       }),
       secureStorage.setItem(this.TOKEN_TYPE_KEY, tokenType, {
         encrypt: false,
-        expiresIn: config.security.sessionTimeout
+        expiresIn: tokenExpiry
       })
     ];
 
@@ -354,7 +365,7 @@ export const tokenManager = {
       results.push(
         secureStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken, {
           encrypt: true,
-          expiresIn: config.security.sessionTimeout * 2 // Longer expiry for refresh token
+          expiresIn: tokenExpiry * 2 // Longer expiry for refresh token
         })
       );
     }
@@ -363,7 +374,7 @@ export const tokenManager = {
       results.push(
         secureStorage.setItem(this.USER_KEY, JSON.stringify(user), {
           encrypt: true,
-          expiresIn: config.security.sessionTimeout
+          expiresIn: tokenExpiry
         })
       );
     }
