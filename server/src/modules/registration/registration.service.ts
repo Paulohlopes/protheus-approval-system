@@ -409,7 +409,7 @@ export class RegistrationService {
     requestedById?: string;
     templateId?: string;
   }) {
-    return this.prisma.registrationRequest.findMany({
+    const registrations = await this.prisma.registrationRequest.findMany({
       where: filters,
       include: {
         template: true,
@@ -420,9 +420,18 @@ export class RegistrationService {
             email: true,
           },
         },
-        _count: {
-          select: {
-            approvals: true,
+        approvals: {
+          include: {
+            approver: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: {
+            level: 'asc',
           },
         },
       },
@@ -430,6 +439,33 @@ export class RegistrationService {
         createdAt: 'desc',
       },
     });
+
+    // Enrich workflow snapshots with approver names
+    const enrichedRegistrations = await Promise.all(
+      registrations.map(async (request) => {
+        if (request.workflowSnapshot) {
+          const snapshot = request.workflowSnapshot as any;
+          const needsEnrichment = snapshot.levels?.some((level: any) => {
+            const hasApproverIds = level.approverIds && level.approverIds.length > 0;
+            const hasGroupIds = level.approverGroupIds && level.approverGroupIds.length > 0;
+            const hasEnrichedApprovers = level.approvers && level.approvers.length > 0;
+            const hasEnrichedGroups = level.approverGroups && level.approverGroups.length > 0;
+            return (hasApproverIds && !hasEnrichedApprovers) || (hasGroupIds && !hasEnrichedGroups);
+          });
+
+          if (needsEnrichment) {
+            const enrichedSnapshot = await this.enrichWorkflowWithNames(snapshot);
+            return {
+              ...request,
+              workflowSnapshot: enrichedSnapshot,
+            };
+          }
+        }
+        return request;
+      })
+    );
+
+    return enrichedRegistrations;
   }
 
   /**
@@ -930,6 +966,20 @@ export class RegistrationService {
                 email: true,
               },
             },
+            approvals: {
+              include: {
+                approver: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+              orderBy: {
+                level: 'asc',
+              },
+            },
           },
         },
       },
@@ -938,7 +988,33 @@ export class RegistrationService {
       },
     });
 
-    return approvals.map((a) => a.request);
+    // Enrich workflow snapshots with approver names
+    const enrichedRequests = await Promise.all(
+      approvals.map(async (a) => {
+        const request = a.request;
+        if (request.workflowSnapshot) {
+          const snapshot = request.workflowSnapshot as any;
+          const needsEnrichment = snapshot.levels?.some((level: any) => {
+            const hasApproverIds = level.approverIds && level.approverIds.length > 0;
+            const hasGroupIds = level.approverGroupIds && level.approverGroupIds.length > 0;
+            const hasEnrichedApprovers = level.approvers && level.approvers.length > 0;
+            const hasEnrichedGroups = level.approverGroups && level.approverGroups.length > 0;
+            return (hasApproverIds && !hasEnrichedApprovers) || (hasGroupIds && !hasEnrichedGroups);
+          });
+
+          if (needsEnrichment) {
+            const enrichedSnapshot = await this.enrichWorkflowWithNames(snapshot);
+            return {
+              ...request,
+              workflowSnapshot: enrichedSnapshot,
+            };
+          }
+        }
+        return request;
+      })
+    );
+
+    return enrichedRequests;
   }
 
   /**
