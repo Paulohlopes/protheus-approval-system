@@ -685,17 +685,19 @@ export class RegistrationService {
 
     // Add group members if groups are configured
     if (level.approverGroupIds && level.approverGroupIds.length > 0) {
-      // Query group members directly instead of using service (to support transactions)
-      const members = await db.approvalGroupMember.findMany({
-        where: {
-          groupId: { in: level.approverGroupIds },
-          group: { isActive: true },
-          user: { isActive: true },
-        },
-        select: {
-          userId: true,
-        },
-      });
+      // Use raw query with explicit UUID array casting to avoid PostgreSQL type mismatch
+      // when approverGroupIds come from JSON (stored as text) but groupId column is UUID
+      const members = await db.$queryRaw<{ userId: string }[]>(
+        Prisma.sql`
+          SELECT DISTINCT agm."userId"
+          FROM approval_group_members agm
+          INNER JOIN approval_groups ag ON agm."groupId" = ag.id
+          INNER JOIN users u ON agm."userId" = u.id
+          WHERE agm."groupId" = ANY(${level.approverGroupIds}::uuid[])
+            AND ag."isActive" = true
+            AND u."isActive" = true
+        `
+      );
       members.forEach((m: { userId: string }) => allApprovers.add(m.userId));
     }
 
