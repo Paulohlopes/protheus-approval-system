@@ -438,6 +438,19 @@ export const es = {
     editableField: 'Campo editable',
     changesWillBeApplied: 'Los cambios se aplicarán al aprobar:',
     noChangesRecorded: 'No hay cambios registrados',
+
+    // Draft management
+    deleteDraft: 'Eliminar Borrador',
+    confirmDeleteDraft: '¿Está seguro de que desea eliminar este borrador? Esta acción no se puede deshacer.',
+    deleting: 'Eliminando...',
+    successDeleted: '¡Borrador eliminado con éxito!',
+    errorDelete: 'Error al eliminar borrador. Por favor, inténtelo de nuevo.',
+    saveDraft: 'Guardar Borrador',
+    saving: 'Guardando...',
+    successSaved: '¡Borrador guardado con éxito!',
+    errorSave: 'Error al guardar borrador. Por favor, inténtelo de nuevo.',
+    editDraft: 'Editar Borrador',
+    submitDraft: 'Enviar para Aprobación',
   },
   admin: {
     // Page title

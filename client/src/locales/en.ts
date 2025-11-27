@@ -438,6 +438,19 @@ export const en = {
     editableField: 'Editable field',
     changesWillBeApplied: 'Changes will be applied upon approval:',
     noChangesRecorded: 'No changes recorded',
+
+    // Draft management
+    deleteDraft: 'Delete Draft',
+    confirmDeleteDraft: 'Are you sure you want to delete this draft? This action cannot be undone.',
+    deleting: 'Deleting...',
+    successDeleted: 'Draft deleted successfully!',
+    errorDelete: 'Error deleting draft. Please try again.',
+    saveDraft: 'Save Draft',
+    saving: 'Saving...',
+    successSaved: 'Draft saved successfully!',
+    errorSave: 'Error saving draft. Please try again.',
+    editDraft: 'Edit Draft',
+    submitDraft: 'Submit for Approval',
   },
   admin: {
     // Page title

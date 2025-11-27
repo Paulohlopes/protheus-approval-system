@@ -44,6 +44,8 @@ import {
   Cancel,
   History,
   Close,
+  Delete,
+  Send,
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
@@ -65,6 +67,12 @@ export const MyRequestsPage = () => {
   const [requestIdToRetry, setRequestIdToRetry] = useState<string | null>(null);
   const [retryLoading, setRetryLoading] = useState(false);
   const [detailsTab, setDetailsTab] = useState(0);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [requestIdToDelete, setRequestIdToDelete] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [requestIdToSubmit, setRequestIdToSubmit] = useState<string | null>(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   const statusConfig: Record<RegistrationStatus, { label: string; color: ChipColor; icon: React.ReactNode }> = {
     DRAFT: { label: t.registration.statusDraft, color: 'default', icon: <Schedule fontSize="small" /> },
@@ -127,6 +135,52 @@ export const MyRequestsPage = () => {
     } finally {
       setRetryLoading(false);
       setRequestIdToRetry(null);
+    }
+  };
+
+  const handleDeleteClick = (requestId: string) => {
+    setRequestIdToDelete(requestId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!requestIdToDelete) return;
+
+    try {
+      setDeleteLoading(true);
+      await registrationService.deleteRegistration(requestIdToDelete);
+      toast.success(t.registration.successDeleted);
+      setDeleteDialogOpen(false);
+      await loadMyRequests();
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      toast.error(t.registration.errorDelete);
+    } finally {
+      setDeleteLoading(false);
+      setRequestIdToDelete(null);
+    }
+  };
+
+  const handleSubmitClick = (requestId: string) => {
+    setRequestIdToSubmit(requestId);
+    setSubmitDialogOpen(true);
+  };
+
+  const handleSubmitDraft = async () => {
+    if (!requestIdToSubmit) return;
+
+    try {
+      setSubmitLoading(true);
+      await registrationService.submitRegistration(requestIdToSubmit);
+      toast.success(t.registration.successSubmitted);
+      setSubmitDialogOpen(false);
+      await loadMyRequests();
+    } catch (error) {
+      console.error('Error submitting draft:', error);
+      toast.error(t.registration.errorSubmit);
+    } finally {
+      setSubmitLoading(false);
+      setRequestIdToSubmit(null);
     }
   };
 
@@ -262,15 +316,48 @@ export const MyRequestsPage = () => {
                       )}
                     </TableCell>
                     <TableCell align="right">
-                      <Tooltip title={t.common.viewDetails}>
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => setSelectedRequest(request)}
-                        >
-                          <Visibility />
-                        </IconButton>
-                      </Tooltip>
+                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                        <Tooltip title={t.common.viewDetails}>
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            onClick={() => setSelectedRequest(request)}
+                          >
+                            <Visibility />
+                          </IconButton>
+                        </Tooltip>
+                        {request.status === RegistrationStatus.DRAFT && (
+                          <>
+                            <Tooltip title={t.registration.editDraft}>
+                              <IconButton
+                                size="small"
+                                color="info"
+                                onClick={() => navigate(`/registration/edit/${request.id}`)}
+                              >
+                                <Edit />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={t.registration.submitDraft}>
+                              <IconButton
+                                size="small"
+                                color="success"
+                                onClick={() => handleSubmitClick(request.id)}
+                              >
+                                <Send />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={t.registration.deleteDraft}>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDeleteClick(request.id)}
+                              >
+                                <Delete />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -757,6 +844,98 @@ export const MyRequestsPage = () => {
             sx={{ borderRadius: 2, textTransform: 'none' }}
           >
             {retryLoading ? t.registration.retrying : t.registration.retry}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Draft Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setRequestIdToDelete(null);
+        }}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Delete color="error" />
+            <Typography variant="h6">{t.registration.deleteDraft}</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {t.registration.confirmDeleteDraft}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={() => {
+              setDeleteDialogOpen(false);
+              setRequestIdToDelete(null);
+            }}
+            disabled={deleteLoading}
+            sx={{ textTransform: 'none' }}
+          >
+            {t.common.cancel}
+          </Button>
+          <Button
+            onClick={handleDelete}
+            variant="contained"
+            color="error"
+            disabled={deleteLoading}
+            startIcon={deleteLoading ? <CircularProgress size={16} /> : <Delete />}
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+          >
+            {deleteLoading ? t.registration.deleting : t.common.delete}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Submit Draft Confirmation Dialog */}
+      <Dialog
+        open={submitDialogOpen}
+        onClose={() => {
+          setSubmitDialogOpen(false);
+          setRequestIdToSubmit(null);
+        }}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Send color="success" />
+            <Typography variant="h6">{t.registration.submitDraft}</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {t.common.submitForApproval}?
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={() => {
+              setSubmitDialogOpen(false);
+              setRequestIdToSubmit(null);
+            }}
+            disabled={submitLoading}
+            sx={{ textTransform: 'none' }}
+          >
+            {t.common.cancel}
+          </Button>
+          <Button
+            onClick={handleSubmitDraft}
+            variant="contained"
+            color="success"
+            disabled={submitLoading}
+            startIcon={submitLoading ? <CircularProgress size={16} /> : <Send />}
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+          >
+            {submitLoading ? t.common.sending : t.common.submit}
           </Button>
         </DialogActions>
       </Dialog>

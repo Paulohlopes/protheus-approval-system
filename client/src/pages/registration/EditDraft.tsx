@@ -25,15 +25,16 @@ import {
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
 import { useLanguage } from '../../contexts/LanguageContext';
-import type { FormTemplate, FormField, SupportedLanguage } from '../../types/registration';
-import { getFieldLabel } from '../../types/registration';
+import type { FormTemplate, FormField, SupportedLanguage, RegistrationRequest } from '../../types/registration';
+import { getFieldLabel, RegistrationStatus } from '../../types/registration';
 
 type FormValue = string | number | boolean | null;
 
-export const DynamicFormPage = () => {
-  const { templateId } = useParams<{ templateId: string }>();
+export const EditDraftPage = () => {
+  const { registrationId } = useParams<{ registrationId: string }>();
   const navigate = useNavigate();
   const { language, t, formatMessage } = useLanguage();
+  const [registration, setRegistration] = useState<RegistrationRequest | null>(null);
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [fields, setFields] = useState<FormField[]>([]);
   const [formData, setFormData] = useState<Record<string, FormValue>>({});
@@ -42,47 +43,63 @@ export const DynamicFormPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Get localized field label
   const getLabel = (field: FormField): string => {
     return getFieldLabel(field, language as SupportedLanguage);
   };
 
   useEffect(() => {
-    loadTemplate();
-  }, [templateId]);
+    loadRegistration();
+  }, [registrationId]);
 
-  const loadTemplate = async () => {
-    if (!templateId) return;
+  const loadRegistration = async () => {
+    if (!registrationId) return;
 
     try {
       setLoading(true);
-      const data = await registrationService.getTemplate(templateId);
-      setTemplate(data);
+      const reg = await registrationService.getRegistration(registrationId);
 
-      const visibleFields = (data.fields || [])
+      if (reg.status !== RegistrationStatus.DRAFT) {
+        toast.error('Apenas rascunhos podem ser editados');
+        navigate('/registration/my-requests');
+        return;
+      }
+
+      setRegistration(reg);
+
+      const templateData = reg.template || await registrationService.getTemplate(reg.templateId);
+      setTemplate(templateData);
+
+      const visibleFields = (templateData.fields || [])
         .filter((f) => f.isVisible && f.isEnabled)
         .sort((a, b) => a.fieldOrder - b.fieldOrder);
 
       setFields(visibleFields);
 
+      // Load existing form data
       const initialData: Record<string, FormValue> = {};
       visibleFields.forEach((field) => {
-        switch (field.fieldType) {
-          case 'boolean':
-            initialData[field.sx3FieldName] = false;
-            break;
-          case 'number':
-            initialData[field.sx3FieldName] = null;
-            break;
-          default:
-            initialData[field.sx3FieldName] = '';
+        const existingValue = reg.formData?.[field.sx3FieldName];
+        if (existingValue !== undefined) {
+          initialData[field.sx3FieldName] = existingValue;
+        } else {
+          switch (field.fieldType) {
+            case 'boolean':
+              initialData[field.sx3FieldName] = false;
+              break;
+            case 'number':
+              initialData[field.sx3FieldName] = null;
+              break;
+            default:
+              initialData[field.sx3FieldName] = '';
+          }
         }
       });
       setFormData(initialData);
       setErrors({});
     } catch (error) {
-      console.error('Error loading template:', error);
+      console.error('Error loading registration:', error);
       toast.error(t.registration.errorLoadForm);
+      navigate('/registration/my-requests');
     } finally {
       setLoading(false);
     }
@@ -262,15 +279,14 @@ export const DynamicFormPage = () => {
   };
 
   const handleSaveDraft = async () => {
-    if (!templateId) return;
+    if (!registrationId) return;
 
     try {
       setSaving(true);
 
       const preparedData = prepareFormData();
 
-      await registrationService.createRegistration({
-        templateId,
+      await registrationService.updateRegistration(registrationId, {
         formData: preparedData,
       });
 
@@ -287,7 +303,7 @@ export const DynamicFormPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!templateId) return;
+    if (!registrationId) return;
 
     if (!validateForm()) {
       return;
@@ -298,12 +314,11 @@ export const DynamicFormPage = () => {
 
       const preparedData = prepareFormData();
 
-      const registration = await registrationService.createRegistration({
-        templateId,
+      await registrationService.updateRegistration(registrationId, {
         formData: preparedData,
       });
 
-      await registrationService.submitRegistration(registration.id);
+      await registrationService.submitRegistration(registrationId);
 
       toast.success(t.registration.successSubmitted);
       navigate('/registration/my-requests');
@@ -325,7 +340,7 @@ export const DynamicFormPage = () => {
     );
   }
 
-  if (!template) {
+  if (!template || !registration) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Alert severity="error">{t.registration.errorTemplateNotFound}</Alert>
@@ -349,7 +364,7 @@ export const DynamicFormPage = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
           <Edit fontSize="large" color="primary" />
           <Typography variant="h4" component="h1" fontWeight={600}>
-            {template.label}
+            {t.registration.editDraft}: {template.label}
           </Typography>
         </Box>
         {template.description && (
@@ -393,7 +408,7 @@ export const DynamicFormPage = () => {
           <Button
             variant="outlined"
             startIcon={<ArrowBack />}
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/registration/my-requests')}
             disabled={submitting || saving}
             sx={{ borderRadius: 2, textTransform: 'none' }}
           >

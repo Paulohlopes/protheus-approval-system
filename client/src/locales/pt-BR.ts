@@ -438,6 +438,19 @@ export const ptBR = {
     editableField: 'Campo editável',
     changesWillBeApplied: 'Alterações serão aplicadas ao aprovar:',
     noChangesRecorded: 'Nenhuma alteração registrada',
+
+    // Draft management
+    deleteDraft: 'Excluir Rascunho',
+    confirmDeleteDraft: 'Tem certeza que deseja excluir este rascunho? Esta ação não pode ser desfeita.',
+    deleting: 'Excluindo...',
+    successDeleted: 'Rascunho excluído com sucesso!',
+    errorDelete: 'Erro ao excluir rascunho. Por favor, tente novamente.',
+    saveDraft: 'Salvar Rascunho',
+    saving: 'Salvando...',
+    successSaved: 'Rascunho salvo com sucesso!',
+    errorSave: 'Erro ao salvar rascunho. Por favor, tente novamente.',
+    editDraft: 'Editar Rascunho',
+    submitDraft: 'Enviar para Aprovação',
   },
   admin: {
     // Page title
