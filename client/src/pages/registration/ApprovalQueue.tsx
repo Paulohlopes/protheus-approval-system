@@ -624,14 +624,78 @@ export const ApprovalQueuePage = () => {
 
                                     {/* Approvers info */}
                                     <Box sx={{ ml: 4.5 }}>
-                                      {level.approverGroupIds && level.approverGroupIds.length > 0 && (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                                          <Group fontSize="small" color="action" />
-                                          <Typography variant="caption" color="text.secondary">
-                                            {level.approverGroupIds.length} grupo(s) de aprovacao
-                                          </Typography>
+                                      {/* Individual Approvers */}
+                                      {level.approvers && level.approvers.length > 0 && (
+                                        <Box sx={{ mb: 1 }}>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                            <Person fontSize="small" color="action" />
+                                            <Typography variant="caption" fontWeight={600} color="text.secondary">
+                                              Aprovadores individuais:
+                                            </Typography>
+                                          </Box>
+                                          <Box sx={{ ml: 3 }}>
+                                            {level.approvers.map((approver) => (
+                                              <Typography key={approver.id} variant="caption" display="block" color="text.secondary">
+                                                • {approver.name} ({approver.email})
+                                              </Typography>
+                                            ))}
+                                          </Box>
                                         </Box>
                                       )}
+
+                                      {/* Approval Groups */}
+                                      {level.approverGroups && level.approverGroups.length > 0 && (
+                                        <Box sx={{ mb: 1 }}>
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                            <Group fontSize="small" color="action" />
+                                            <Typography variant="caption" fontWeight={600} color="text.secondary">
+                                              Grupos de aprovacao:
+                                            </Typography>
+                                          </Box>
+                                          <Box sx={{ ml: 3 }}>
+                                            {level.approverGroups.map((group) => (
+                                              <Box key={group.id} sx={{ mb: 0.5 }}>
+                                                <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                                                  • {group.name}
+                                                </Typography>
+                                                {group.members && group.members.length > 0 && (
+                                                  <Box sx={{ ml: 2 }}>
+                                                    {group.members.map((member) => (
+                                                      <Typography key={member.id} variant="caption" display="block" color="text.disabled">
+                                                        - {member.name} ({member.email})
+                                                      </Typography>
+                                                    ))}
+                                                  </Box>
+                                                )}
+                                              </Box>
+                                            ))}
+                                          </Box>
+                                        </Box>
+                                      )}
+
+                                      {/* Fallback for old snapshots without enriched data */}
+                                      {(!level.approvers || level.approvers.length === 0) &&
+                                       (!level.approverGroups || level.approverGroups.length === 0) && (
+                                        <>
+                                          {level.approverGroupIds && level.approverGroupIds.length > 0 && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                              <Group fontSize="small" color="action" />
+                                              <Typography variant="caption" color="text.secondary">
+                                                {level.approverGroupIds.length} grupo(s) de aprovacao
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          {level.approverIds && level.approverIds.length > 0 && (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                              <Person fontSize="small" color="action" />
+                                              <Typography variant="caption" color="text.secondary">
+                                                {level.approverIds.length} aprovador(es)
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                        </>
+                                      )}
+
                                       {level.editableFields && level.editableFields.length > 0 && (
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                                           <Edit fontSize="small" color="action" />

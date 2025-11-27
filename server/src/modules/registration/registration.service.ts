@@ -181,6 +181,86 @@ export class RegistrationService {
     return workflow;
   }
 
+  /**
+   * Enrich workflow with approver and group names for snapshot storage
+   */
+  private async enrichWorkflowWithNames(workflow: any) {
+    // Collect all unique approver IDs and group IDs
+    const allApproverIds = new Set<string>();
+    const allGroupIds = new Set<string>();
+
+    for (const level of workflow.levels) {
+      if (level.approverIds) {
+        level.approverIds.forEach((id: string) => allApproverIds.add(id));
+      }
+      if (level.approverGroupIds) {
+        level.approverGroupIds.forEach((id: string) => allGroupIds.add(id));
+      }
+    }
+
+    // Fetch all users and groups in batch
+    const [users, groups] = await Promise.all([
+      allApproverIds.size > 0
+        ? this.prisma.user.findMany({
+            where: { id: { in: Array.from(allApproverIds) } },
+            select: { id: true, name: true, email: true },
+          })
+        : [],
+      allGroupIds.size > 0
+        ? this.prisma.approvalGroup.findMany({
+            where: { id: { in: Array.from(allGroupIds) } },
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              members: {
+                select: {
+                  user: {
+                    select: { id: true, name: true, email: true }
+                  }
+                }
+              }
+            },
+          })
+        : [],
+    ]);
+
+    // Create lookup maps
+    const userMap = new Map(users.map((u) => [u.id, u]));
+    const groupMap = new Map(groups.map((g) => [g.id, g]));
+
+    // Enrich levels with names
+    const enrichedLevels = workflow.levels.map((level: any) => ({
+      ...level,
+      // Add approvers with names
+      approvers: (level.approverIds || []).map((id: string) => {
+        const user = userMap.get(id);
+        return user ? { id, name: user.name, email: user.email } : { id, name: 'Usuario desconhecido', email: '' };
+      }),
+      // Add groups with names and members
+      approverGroups: (level.approverGroupIds || []).map((id: string) => {
+        const group = groupMap.get(id);
+        return group
+          ? {
+              id,
+              name: group.name,
+              description: group.description,
+              members: group.members.map((m: any) => ({
+                id: m.user.id,
+                name: m.user.name,
+                email: m.user.email
+              }))
+            }
+          : { id, name: 'Grupo desconhecido', description: '', members: [] };
+      }),
+    }));
+
+    return {
+      ...workflow,
+      levels: enrichedLevels,
+    };
+  }
+
   // ==========================================
   // REGISTRATION REQUEST CRUD
   // ==========================================
@@ -468,14 +548,17 @@ export class RegistrationService {
     // Get active workflow
     const workflow = await this.getActiveWorkflow(registration.templateId);
 
+    // Enrich workflow with approver and group names for the snapshot
+    const enrichedWorkflow = await this.enrichWorkflowWithNames(workflow);
+
     // Debug: log workflow being saved as snapshot
-    this.logger.log(`Saving workflow snapshot with ${workflow.levels.length} levels:`,
-      workflow.levels.map(l => ({
+    this.logger.log(`Saving workflow snapshot with ${enrichedWorkflow.levels.length} levels:`,
+      enrichedWorkflow.levels.map(l => ({
         levelOrder: l.levelOrder,
         levelName: l.levelName,
         editableFields: l.editableFields,
-        approverIds: l.approverIds?.length || 0,
-        approverGroupIds: l.approverGroupIds?.length || 0
+        approvers: l.approvers?.length || 0,
+        approverGroups: l.approverGroups?.length || 0
       }))
     );
 
@@ -498,7 +581,7 @@ export class RegistrationService {
       data: {
         status: RegistrationStatus.PENDING_APPROVAL,
         currentLevel: 1,
-        workflowSnapshot: workflow as any,
+        workflowSnapshot: enrichedWorkflow as any,
         approvals: {
           create: approverIds.map((approverId) => ({
             level: 1,

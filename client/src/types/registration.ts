@@ -160,4 +160,20 @@ export type WorkflowLevel = {
   conditions?: any;
   createdAt: string;
   updatedAt: string;
+  // Enriched data (from snapshot)
+  approvers?: Array<{
+    id: string;
+    name: string;
+    email: string;
+  }>;
+  approverGroups?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    members: Array<{
+      id: string;
+      name: string;
+      email: string;
+    }>;
+  }>;
 };
