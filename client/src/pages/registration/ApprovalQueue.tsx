@@ -454,10 +454,14 @@ export const ApprovalQueuePage = () => {
                             const formDataKeys = Object.keys(selectedRequest.formData || {});
                             const allKeys = [...new Set([...formDataKeys, ...editableFields])];
 
-                            // Create a map of sx3FieldName -> label from template fields
+                            // Create a map of fieldName -> label from template fields
                             const fieldLabels: Record<string, string> = {};
                             selectedRequest.template?.fields?.forEach((field: any) => {
-                              fieldLabels[field.sx3FieldName] = field.label || field.sx3FieldName;
+                              // Use fieldName if available, fallback to sx3FieldName for compatibility
+                              const key = field.fieldName || field.sx3FieldName;
+                              if (key) {
+                                fieldLabels[key] = field.label || key;
+                              }
                             });
 
                             return allKeys.map((key) => {
@@ -515,10 +519,13 @@ export const ApprovalQueuePage = () => {
                       </Typography>
                       <Box component="ul" sx={{ m: 0, pl: 2, mt: 1 }}>
                         {(() => {
-                          // Create a map of sx3FieldName -> label from template fields
+                          // Create a map of fieldName -> label from template fields
                           const fieldLabels: Record<string, string> = {};
                           selectedRequest.template?.fields?.forEach((field: any) => {
-                            fieldLabels[field.sx3FieldName] = field.label || field.sx3FieldName;
+                            const key = field.fieldName || field.sx3FieldName;
+                            if (key) {
+                              fieldLabels[key] = field.label || key;
+                            }
                           });
 
                           return Object.entries(fieldChanges).map(([key, newValue]) => (

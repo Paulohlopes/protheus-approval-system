@@ -102,4 +102,35 @@ export class FormTemplateController {
   syncWithSx3(@Param('id') id: string) {
     return this.formTemplateService.syncWithSx3(id);
   }
+
+  /**
+   * Create a custom field in the template
+   */
+  @Post(':id/custom-fields')
+  createCustomField(
+    @Param('id') id: string,
+    @Body() dto: {
+      fieldName: string;
+      label: string;
+      fieldType: string;
+      isRequired?: boolean;
+      fieldGroup?: string;
+      placeholder?: string;
+      helpText?: string;
+      metadata?: any;
+    },
+  ) {
+    return this.formTemplateService.createCustomField(id, dto);
+  }
+
+  /**
+   * Delete a field from the template
+   */
+  @Delete(':id/fields/:fieldId')
+  deleteField(
+    @Param('id') id: string,
+    @Param('fieldId') fieldId: string,
+  ) {
+    return this.formTemplateService.deleteField(id, fieldId);
+  }
 }

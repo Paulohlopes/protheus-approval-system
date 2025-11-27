@@ -44,12 +44,15 @@ export class FormTemplateService {
         isActive: dto.isActive ?? true,
         fields: {
           create: structure.fields.map((field, index) => ({
+            fieldName: field.fieldName, // Use SX3 field name as fieldName
             sx3FieldName: field.fieldName,
             label: field.label,
             fieldType: field.fieldType,
             isRequired: field.isRequired,
             isVisible: field.isRequired, // Only required fields visible by default
             isEnabled: true,
+            isCustomField: false, // SX3 fields are not custom
+            isSyncField: true, // SX3 fields are synced to Protheus
             fieldOrder: index,
             fieldGroup: null,
             // Multi-language labels from SX3
@@ -302,5 +305,105 @@ export class FormTemplateService {
     this.logger.log(`Synced template ${templateId} with SX3`);
 
     return this.findOne(templateId);
+  }
+
+  /**
+   * Create a custom field in the template
+   * Custom fields are not from SX3 and will not be synced to Protheus
+   */
+  async createCustomField(
+    templateId: string,
+    dto: {
+      fieldName: string;
+      label: string;
+      fieldType: string;
+      isRequired?: boolean;
+      fieldGroup?: string;
+      placeholder?: string;
+      helpText?: string;
+      metadata?: any;
+    },
+  ) {
+    this.logger.log(`Creating custom field ${dto.fieldName} for template ${templateId}`);
+
+    const template = await this.prisma.formTemplate.findUnique({
+      where: { id: templateId },
+      include: { fields: true },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Template ${templateId} not found`);
+    }
+
+    // Check if field name already exists
+    const existingField = template.fields.find(
+      (f) => f.fieldName === dto.fieldName || f.sx3FieldName === dto.fieldName,
+    );
+
+    if (existingField) {
+      throw new BadRequestException(`Field with name ${dto.fieldName} already exists`);
+    }
+
+    // Get max field order
+    const maxOrder = template.fields.reduce(
+      (max, f) => Math.max(max, f.fieldOrder),
+      -1,
+    );
+
+    // Create the custom field
+    await this.prisma.formField.create({
+      data: {
+        templateId,
+        fieldName: dto.fieldName,
+        sx3FieldName: null, // Custom fields don't have SX3 field name
+        label: dto.label,
+        fieldType: dto.fieldType,
+        isRequired: dto.isRequired ?? false,
+        isVisible: true,
+        isEnabled: true,
+        isCustomField: true,
+        isSyncField: false, // Custom fields are not synced to Protheus
+        fieldOrder: maxOrder + 1,
+        fieldGroup: dto.fieldGroup || 'Campos Customizados',
+        placeholder: dto.placeholder,
+        helpText: dto.helpText,
+        metadata: dto.metadata,
+      },
+    });
+
+    this.logger.log(`Custom field ${dto.fieldName} created for template ${templateId}`);
+
+    return this.findOne(templateId);
+  }
+
+  /**
+   * Delete a field from the template
+   * Only custom fields can be deleted
+   */
+  async deleteField(templateId: string, fieldId: string) {
+    this.logger.log(`Deleting field ${fieldId} from template ${templateId}`);
+
+    const field = await this.prisma.formField.findFirst({
+      where: {
+        id: fieldId,
+        templateId,
+      },
+    });
+
+    if (!field) {
+      throw new NotFoundException(`Field ${fieldId} not found in template ${templateId}`);
+    }
+
+    if (!field.isCustomField) {
+      throw new BadRequestException('Only custom fields can be deleted. SX3 fields can only be hidden.');
+    }
+
+    await this.prisma.formField.delete({
+      where: { id: fieldId },
+    });
+
+    this.logger.log(`Field ${fieldId} deleted from template ${templateId}`);
+
+    return { success: true };
   }
 }

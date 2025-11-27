@@ -105,6 +105,33 @@ export const adminService = {
     return response.data;
   },
 
+  /**
+   * Create a custom field in a template
+   */
+  async createCustomField(
+    templateId: string,
+    data: {
+      fieldName: string;
+      label: string;
+      fieldType: string;
+      isRequired?: boolean;
+      fieldGroup?: string;
+      placeholder?: string;
+      helpText?: string;
+      metadata?: any;
+    }
+  ): Promise<FormTemplate> {
+    const response = await backendApi.post(`/form-templates/${templateId}/custom-fields`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete a field from a template
+   */
+  async deleteTemplateField(templateId: string, fieldId: string): Promise<void> {
+    await backendApi.delete(`/form-templates/${templateId}/fields/${fieldId}`);
+  },
+
   // ==========================================
   // WORKFLOWS
   // ==========================================

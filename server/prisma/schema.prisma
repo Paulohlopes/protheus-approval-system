@@ -104,13 +104,18 @@ model FormField {
   templateId      String
   template        FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
-  // Field definition from SX3
-  sx3FieldName    String        // B1_COD, B1_DESC, etc
-  label           String        // X3_TITULO (Portuguese - default)
-  fieldType       String        // string, number, date, boolean
-  isRequired      Boolean       // X3_OBRIGAT == 'S'
+  // Field definition from SX3 (optional for custom fields)
+  sx3FieldName    String?       // B1_COD, B1_DESC, etc (null for custom fields)
+  fieldName       String        // Unique field name (sx3FieldName or custom name)
+  label           String        // X3_TITULO or custom label
+  fieldType       String        // string, number, date, boolean, select, textarea
+  isRequired      Boolean       // X3_OBRIGAT == 'S' or custom requirement
   isVisible       Boolean       // Admin configures this
   isEnabled       Boolean       @default(true)
+
+  // Custom field indicator
+  isCustomField   Boolean       @default(false)  // true = custom field, false = SX3 field
+  isSyncField     Boolean       @default(true)   // true = sync to Protheus, false = local only
 
   // Multi-language labels from SX3
   labelPtBR       String?       // X3_TITULO (Portuguese)
@@ -124,11 +129,13 @@ model FormField {
 
   // Ordering and grouping
   fieldOrder      Int
-  fieldGroup      String?       // "Dados Básicos", "Estoque", etc
+  fieldGroup      String?       // "Dados Básicos", "Estoque", "Campos Customizados", etc
 
   // Additional configuration
   validationRules Json?         // Custom validation rules
-  metadata        Json?         // { size, decimals, mask, lookup }
+  metadata        Json?         // { size, decimals, mask, lookup, options (for select) }
+  placeholder     String?       // Placeholder text for input
+  helpText        String?       // Help text shown below field
 
   // Timestamps
   createdAt       DateTime      @default(now())
@@ -136,6 +143,7 @@ model FormField {
 
   @@map("form_fields")
   @@index([templateId])
+  @@index([fieldName])
 }
 
 // ==========================================
