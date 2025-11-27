@@ -236,20 +236,20 @@ export class RegistrationService {
     }
 
     // Fetch all users and groups in batch
-    // Use raw queries with explicit UUID casting for Prisma v4+ compatibility
+    // Cast column to text to avoid UUID type mismatch with Prisma string parameters
     let users: { id: string; name: string; email: string }[] = [];
     if (allApproverIds.size > 0) {
-      const userUuids = Array.from(allApproverIds).map((uid: string) => Prisma.sql`${uid}::uuid`);
+      const userIds = Array.from(allApproverIds);
       users = await db.$queryRaw(
-        Prisma.sql`SELECT id, name, email FROM users WHERE id IN (${Prisma.join(userUuids)})`
+        Prisma.sql`SELECT id, name, email FROM users WHERE id::text IN (${Prisma.join(userIds)})`
       );
     }
 
     let groups: { id: string; name: string; description: string | null }[] = [];
     if (allGroupIds.size > 0) {
-      const groupUuids = Array.from(allGroupIds).map((gid: string) => Prisma.sql`${gid}::uuid`);
+      const groupIds = Array.from(allGroupIds);
       groups = await db.$queryRaw(
-        Prisma.sql`SELECT id, name, description FROM approval_groups WHERE id IN (${Prisma.join(groupUuids)})`
+        Prisma.sql`SELECT id, name, description FROM approval_groups WHERE id::text IN (${Prisma.join(groupIds)})`
       );
 
       // Fetch group members separately
@@ -258,7 +258,7 @@ export class RegistrationService {
           SELECT agm."groupId", u.id as "userId", u.name as "userName", u.email as "userEmail"
           FROM approval_group_members agm
           INNER JOIN users u ON agm."userId" = u.id
-          WHERE agm."groupId" IN (${Prisma.join(groupUuids)})
+          WHERE agm."groupId"::text IN (${Prisma.join(groupIds)})
         `
       );
 
@@ -695,17 +695,15 @@ export class RegistrationService {
 
     // Add group members if groups are configured
     if (level.approverGroupIds && level.approverGroupIds.length > 0) {
-      // Use raw query with explicit UUID array casting to avoid PostgreSQL type mismatch
-      // when approverGroupIds come from JSON (stored as text) but groupId column is UUID
-      // For Prisma v4+, we need to map each UUID with explicit casting using Prisma.join
-      const uuidArray = level.approverGroupIds.map((gid: string) => Prisma.sql`${gid}::uuid`);
+      // Cast column to text to avoid UUID type mismatch with Prisma string parameters
+      const groupIds = level.approverGroupIds;
       const members: { userId: string }[] = await db.$queryRaw(
         Prisma.sql`
           SELECT DISTINCT agm."userId"
           FROM approval_group_members agm
           INNER JOIN approval_groups ag ON agm."groupId" = ag.id
           INNER JOIN users u ON agm."userId" = u.id
-          WHERE agm."groupId" IN (${Prisma.join(uuidArray)})
+          WHERE agm."groupId"::text IN (${Prisma.join(groupIds)})
             AND ag."isActive" = true
             AND u."isActive" = true
         `
@@ -728,10 +726,9 @@ export class RegistrationService {
     // LOG-04: Use transaction for atomic submit operation
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent submissions
-      // Use Prisma.sql with explicit UUID casting for Prisma v4+ compatibility
-      const uuidId = Prisma.sql`${id}::uuid`;
+      // Cast column to text since Prisma uses text for UUID in schema without @db.Uuid
       const registrations = await tx.$queryRaw<any[]>(
-        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${uuidId} FOR UPDATE`
+        Prisma.sql`SELECT * FROM registration_requests WHERE id::text = ${id} FOR UPDATE`
       );
       const registration = registrations[0];
 
@@ -874,10 +871,9 @@ export class RegistrationService {
     // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
-      // Use Prisma.sql with explicit UUID casting for Prisma v4+ compatibility
-      const uuidId = Prisma.sql`${id}::uuid`;
+      // Cast column to text since Prisma uses text for UUID in schema without @db.Uuid
       const registrations = await tx.$queryRaw<any[]>(
-        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${uuidId} FOR UPDATE`
+        Prisma.sql`SELECT * FROM registration_requests WHERE id::text = ${id} FOR UPDATE`
       );
       const registration = registrations[0];
 
@@ -1174,10 +1170,9 @@ export class RegistrationService {
     // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration row to prevent concurrent modifications
-      // Use Prisma.sql with explicit UUID casting for Prisma v4+ compatibility
-      const uuidId = Prisma.sql`${id}::uuid`;
+      // Cast column to text since Prisma uses text for UUID in schema without @db.Uuid
       const registrations = await tx.$queryRaw<any[]>(
-        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${uuidId} FOR UPDATE`
+        Prisma.sql`SELECT * FROM registration_requests WHERE id::text = ${id} FOR UPDATE`
       );
       const registration = registrations[0];
 
@@ -1613,10 +1608,9 @@ export class RegistrationService {
 
     return this.prisma.$transaction(async (tx) => {
       // Lock the registration
-      // Use Prisma.sql with explicit UUID casting for Prisma v4+ compatibility
-      const uuidId = Prisma.sql`${registrationId}::uuid`;
+      // Cast column to text since Prisma uses text for UUID in schema without @db.Uuid
       const registrations = await tx.$queryRaw<any[]>(
-        Prisma.sql`SELECT * FROM registration_requests WHERE id = ${uuidId} FOR UPDATE`
+        Prisma.sql`SELECT * FROM registration_requests WHERE id::text = ${registrationId} FOR UPDATE`
       );
       const registration = registrations[0];
 
