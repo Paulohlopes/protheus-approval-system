@@ -7,14 +7,20 @@ import {
   Body,
   Param,
   Query,
+  ForbiddenException,
+  UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { ApprovalGroupsService } from './approval-groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserInfo } from '../auth/interfaces/auth.interface';
+import { RolesGuard, Roles, Role, AdminOnly } from '../auth/guards/roles.guard';
 
+@ApiTags('approval-groups')
+@ApiBearerAuth('JWT-auth')
 @Controller('approval-groups')
 export class ApprovalGroupsController {
   constructor(private readonly approvalGroupsService: ApprovalGroupsService) {}
@@ -23,42 +29,42 @@ export class ApprovalGroupsController {
   // GROUP ENDPOINTS
   // ==========================================
 
-  /**
-   * Get all approval groups
-   */
   @Get()
+  @ApiOperation({ summary: 'Listar grupos', description: 'Lista todos os grupos de aprovação' })
+  @ApiQuery({ name: 'includeInactive', required: false, description: 'Incluir grupos inativos' })
+  @ApiResponse({ status: 200, description: 'Lista de grupos' })
   findAll(@Query('includeInactive') includeInactive?: string) {
     return this.approvalGroupsService.findAll(includeInactive === 'true');
   }
 
-  /**
-   * Get a specific approval group by ID
-   */
   @Get(':id')
+  @ApiOperation({ summary: 'Obter grupo', description: 'Retorna detalhes de um grupo específico' })
+  @ApiParam({ name: 'id', description: 'ID do grupo' })
+  @ApiResponse({ status: 200, description: 'Detalhes do grupo' })
+  @ApiResponse({ status: 404, description: 'Grupo não encontrado' })
   findOne(@Param('id') id: string) {
     return this.approvalGroupsService.findOne(id);
   }
 
-  /**
-   * Create a new approval group
-   */
   @Post()
+  @ApiOperation({ summary: 'Criar grupo', description: 'Cria um novo grupo de aprovação' })
+  @ApiResponse({ status: 201, description: 'Grupo criado com sucesso' })
   create(@Body() dto: CreateGroupDto, @CurrentUser() user: UserInfo) {
     return this.approvalGroupsService.create(dto, user?.id);
   }
 
-  /**
-   * Update an approval group
-   */
   @Put(':id')
+  @ApiOperation({ summary: 'Atualizar grupo', description: 'Atualiza um grupo de aprovação' })
+  @ApiParam({ name: 'id', description: 'ID do grupo' })
+  @ApiResponse({ status: 200, description: 'Grupo atualizado' })
   update(@Param('id') id: string, @Body() dto: UpdateGroupDto) {
     return this.approvalGroupsService.update(id, dto);
   }
 
-  /**
-   * Delete (deactivate) an approval group
-   */
   @Delete(':id')
+  @ApiOperation({ summary: 'Desativar grupo', description: 'Desativa um grupo de aprovação' })
+  @ApiParam({ name: 'id', description: 'ID do grupo' })
+  @ApiResponse({ status: 200, description: 'Grupo desativado' })
   remove(@Param('id') id: string) {
     return this.approvalGroupsService.remove(id);
   }
@@ -101,9 +107,15 @@ export class ApprovalGroupsController {
 
   /**
    * Get all users (for selection dropdowns)
+   * SEC-07: Restricted to admins only
    */
   @Get('users/all')
-  getAllUsers() {
+  @UseGuards(RolesGuard)
+  @AdminOnly()
+  getAllUsers(@CurrentUser() user: UserInfo) {
+    if (!user.isAdmin) {
+      throw new ForbiddenException('Only administrators can view all users');
+    }
     return this.approvalGroupsService.getAllUsers();
   }
 

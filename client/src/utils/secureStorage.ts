@@ -20,41 +20,33 @@ interface StorageItem {
 
 class SecureStorage {
   private readonly storagePrefix = 'ps_'; // Protheus System prefix
-  
+
   /**
-   * Simple encryption for client-side token storage
-   * Note: This is obfuscation, not real encryption. For production,
-   * consider using Web Crypto API or server-side session tokens
+   * SEC-02: Encode value for storage
+   * NOTE: This is NOT encryption - it's just base64 encoding for basic obfuscation.
+   * Client-side storage cannot be truly secure. For sensitive data, use:
+   * - HttpOnly cookies set by the server
+   * - Server-side session management
+   * - Short-lived tokens with server refresh
+   *
+   * The 'encrypt' option is kept for API compatibility but only does base64.
    */
-  private simpleEncrypt(text: string): string {
-    // Simple XOR cipher with rotating key
-    const key = 'ProtheusSecureKey2024';
-    let result = '';
-    
-    for (let i = 0; i < text.length; i++) {
-      const keyChar = key.charCodeAt(i % key.length);
-      const textChar = text.charCodeAt(i);
-      result += String.fromCharCode(textChar ^ keyChar);
+  private encode(text: string): string {
+    try {
+      // Just base64 encode - no fake encryption
+      return btoa(encodeURIComponent(text));
+    } catch (error) {
+      logger.warn('Failed to encode value:', error);
+      return text;
     }
-    
-    return btoa(result); // Base64 encode
   }
 
-  private simpleDecrypt(encrypted: string): string {
+  private decode(encoded: string): string {
     try {
-      const decoded = atob(encrypted); // Base64 decode
-      const key = 'ProtheusSecureKey2024';
-      let result = '';
-      
-      for (let i = 0; i < decoded.length; i++) {
-        const keyChar = key.charCodeAt(i % key.length);
-        const encryptedChar = decoded.charCodeAt(i);
-        result += String.fromCharCode(encryptedChar ^ keyChar);
-      }
-      
-      return result;
+      // Just base64 decode
+      return decodeURIComponent(atob(encoded));
     } catch (error) {
-      logger.warn('Failed to decrypt storage item:', error);
+      logger.warn('Failed to decode storage item:', error);
       return '';
     }
   }
@@ -75,7 +67,7 @@ class SecureStorage {
       } = options;
 
       const storageItem: StorageItem = {
-        value: encrypt ? this.simpleEncrypt(value) : value,
+        value: encrypt ? this.encode(value) : value,
         encrypted: encrypt,
         expiresAt: expiresIn ? Date.now() + expiresIn : undefined,
         timestamp: Date.now()
@@ -120,9 +112,9 @@ class SecureStorage {
         return null;
       }
 
-      // Decrypt if needed
-      const value = storageItem.encrypted 
-        ? this.simpleDecrypt(storageItem.value)
+      // Decode if needed
+      const value = storageItem.encrypted
+        ? this.decode(storageItem.value)
         : storageItem.value;
 
       return value || null;

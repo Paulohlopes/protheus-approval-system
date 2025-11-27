@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { ProtheusTokenStrategy } from './strategies/protheus-token.strategy';
 import { ProtheusJwtAuthGuard } from './guards/protheus-jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
@@ -14,7 +15,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
     PrismaModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, ProtheusTokenStrategy, ProtheusJwtAuthGuard],
-  exports: [AuthService, ProtheusJwtAuthGuard],
+  providers: [AuthService, ProtheusTokenStrategy, ProtheusJwtAuthGuard, RolesGuard],
+  exports: [AuthService, ProtheusJwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

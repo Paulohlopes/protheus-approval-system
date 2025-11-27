@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { Sx3Module } from './modules/sx3/sx3.module';
@@ -10,6 +11,9 @@ import { RegistrationModule } from './modules/registration/registration.module';
 import { ProtheusIntegrationModule } from './modules/protheus-integration/protheus-integration.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ApprovalGroupsModule } from './modules/approval-groups/approval-groups.module';
+import { SettingsModule } from './modules/settings/settings.module';
+import { HealthModule } from './modules/health/health.module';
+import { LoggerModule } from './common/logger';
 import { ProtheusJwtAuthGuard } from './modules/auth/guards/protheus-jwt-auth.guard';
 import { Sx3 } from './modules/sx3/entities/sx3.entity';
 
@@ -23,6 +27,25 @@ import { Sx3 } from './modules/sx3/entities/sx3.entity';
 
     // Schedule (for cron jobs)
     ScheduleModule.forRoot(),
+
+    // SEC-04: Rate limiting (100 requests per minute per IP)
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000, // 1 second
+        limit: 10, // 10 requests per second
+      },
+      {
+        name: 'medium',
+        ttl: 10000, // 10 seconds
+        limit: 50, // 50 requests per 10 seconds
+      },
+      {
+        name: 'long',
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute
+      },
+    ]),
 
     // Prisma (PostgreSQL - Application Database)
     PrismaModule,
@@ -55,6 +78,9 @@ import { Sx3 } from './modules/sx3/entities/sx3.entity';
 
     // Application Modules
     AuthModule,
+    SettingsModule, // SEC-01: Global settings with encryption
+    HealthModule,   // MAN-04: Health check endpoints
+    LoggerModule,   // MAN-03: Structured logging
     Sx3Module,
     FormTemplateModule,
     ProtheusIntegrationModule,
@@ -63,6 +89,12 @@ import { Sx3 } from './modules/sx3/entities/sx3.entity';
   ],
   controllers: [],
   providers: [
+    // SEC-04: Rate limiting guard
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+    // Authentication guard
     {
       provide: APP_GUARD,
       useClass: ProtheusJwtAuthGuard,

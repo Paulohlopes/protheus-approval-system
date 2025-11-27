@@ -303,3 +303,24 @@ model FieldChangeHistory {
   @@index([changedById])
   @@index([fieldName])
 }
+
+// ==========================================
+// SYSTEM SETTINGS (SEC-01: Secure Credentials Storage)
+// ==========================================
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique  // "PROTHEUS_API_URL", "JWT_SECRET", etc
+  value       String   // Encrypted value for secrets, plain for non-secrets
+  description String?
+  isSecret    Boolean  @default(false)  // If true, value is encrypted with AES-256
+  category    String?  // "protheus", "auth", "email", "system", etc
+
+  // Audit fields
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@map("system_settings")
+  @@index([category])
+}

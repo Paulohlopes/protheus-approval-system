@@ -10,6 +10,39 @@ import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
 import { ProtheusIntegrationService } from '../protheus-integration/protheus-integration.service';
 import { ApprovalGroupsService } from '../approval-groups/approval-groups.service';
 
+// ==========================================
+// LOG-08: STATE MACHINE - Valid Status Transitions
+// ==========================================
+const VALID_STATUS_TRANSITIONS: Record<RegistrationStatus, RegistrationStatus[]> = {
+  [RegistrationStatus.DRAFT]: [RegistrationStatus.PENDING_APPROVAL],
+  [RegistrationStatus.PENDING_APPROVAL]: [RegistrationStatus.IN_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.REJECTED],
+  [RegistrationStatus.IN_APPROVAL]: [RegistrationStatus.APPROVED, RegistrationStatus.REJECTED],
+  [RegistrationStatus.APPROVED]: [RegistrationStatus.SYNCING_TO_PROTHEUS],
+  [RegistrationStatus.REJECTED]: [], // Terminal state - no transitions allowed
+  [RegistrationStatus.SYNCING_TO_PROTHEUS]: [RegistrationStatus.SYNCED, RegistrationStatus.SYNC_FAILED],
+  [RegistrationStatus.SYNCED]: [], // Terminal state - no transitions allowed
+  [RegistrationStatus.SYNC_FAILED]: [RegistrationStatus.APPROVED], // Can retry sync
+};
+
+/**
+ * Validates if a status transition is allowed
+ */
+function isValidTransition(from: RegistrationStatus, to: RegistrationStatus): boolean {
+  const allowedTransitions = VALID_STATUS_TRANSITIONS[from];
+  return allowedTransitions?.includes(to) ?? false;
+}
+
+/**
+ * Validates and throws if transition is invalid
+ */
+function validateStatusTransition(from: RegistrationStatus, to: RegistrationStatus, context?: string): void {
+  if (!isValidTransition(from, to)) {
+    throw new BadRequestException(
+      `Invalid status transition from ${from} to ${to}${context ? ` (${context})` : ''}`
+    );
+  }
+}
+
 @Injectable()
 export class RegistrationService {
   private readonly logger = new Logger(RegistrationService.name);
@@ -476,9 +509,51 @@ export class RegistrationService {
   }
 
   /**
+   * SEC-06: Check if user has access to a registration
+   * Access is granted if:
+   * - User is the owner (requestedById)
+   * - User is an approver in the workflow
+   * - User is an admin
+   */
+  async checkRegistrationAccess(registration: any, userId: string, isAdmin: boolean): Promise<boolean> {
+    // Admin can access all
+    if (isAdmin) {
+      return true;
+    }
+
+    // Owner can access
+    if (registration.requestedById === userId) {
+      return true;
+    }
+
+    // Approver can access
+    const isApprover = registration.approvals?.some(
+      (a: any) => a.approverId === userId
+    );
+    if (isApprover) {
+      return true;
+    }
+
+    // Check if user is in any group that's part of the workflow
+    if (registration.workflowSnapshot) {
+      const snapshot = registration.workflowSnapshot as any;
+      for (const level of snapshot.levels || []) {
+        if (level.approverGroupIds && level.approverGroupIds.length > 0) {
+          const groupMemberIds = await this.approvalGroupsService.getUserIdsFromGroups(level.approverGroupIds);
+          if (groupMemberIds.includes(userId)) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
    * Find one registration
    */
-  async findOne(id: string) {
+  async findOne(id: string, userId?: string, isAdmin?: boolean) {
     const registration = await this.prisma.registrationRequest.findUnique({
       where: { id },
       include: {
@@ -516,6 +591,14 @@ export class RegistrationService {
 
     if (!registration) {
       throw new NotFoundException(`Registration ${id} not found`);
+    }
+
+    // SEC-06: Check access if userId is provided
+    if (userId !== undefined) {
+      const hasAccess = await this.checkRegistrationAccess(registration, userId, isAdmin ?? false);
+      if (!hasAccess) {
+        throw new ForbiddenException('You do not have access to this registration');
+      }
     }
 
     // Enrich workflow snapshot if it doesn't have approver names (for old registrations)
@@ -594,85 +677,307 @@ export class RegistrationService {
   /**
    * Submit registration for approval
    * DRAFT → PENDING_APPROVAL
+   * LOG-04: Uses transaction to ensure atomic state change
+   * LOG-05: Validates all workflow levels have at least 1 approver
    */
-  async submit(id: string) {
+  async submit(id: string, userId: string) {
     this.logger.log(`Submitting registration ${id} for approval`);
 
-    const registration = await this.prisma.registrationRequest.findUnique({
-      where: { id },
-      include: { template: true },
-    });
+    // LOG-04: Use transaction for atomic submit operation
+    return this.prisma.$transaction(async (tx) => {
+      // Lock the registration row to prevent concurrent submissions
+      const [registration] = await tx.$queryRaw<any[]>`
+        SELECT * FROM registration_requests
+        WHERE id = ${id}::uuid
+        FOR UPDATE
+      `;
 
-    if (!registration) {
-      throw new NotFoundException(`Registration ${id} not found`);
-    }
+      if (!registration) {
+        throw new NotFoundException(`Registration ${id} not found`);
+      }
 
-    if (registration.status !== RegistrationStatus.DRAFT) {
-      throw new BadRequestException('Can only submit DRAFT registrations');
-    }
+      // Ownership check - only owner can submit
+      if (registration.requestedById !== userId) {
+        throw new ForbiddenException('You can only submit your own registrations');
+      }
 
-    // Get active workflow
-    const workflow = await this.getActiveWorkflow(registration.templateId);
+      // LOG-08: Validate state transition
+      validateStatusTransition(
+        registration.status as RegistrationStatus,
+        RegistrationStatus.PENDING_APPROVAL,
+        'submit'
+      );
 
-    // Enrich workflow with approver and group names for the snapshot
-    const enrichedWorkflow = await this.enrichWorkflowWithNames(workflow);
-
-    // Debug: log workflow being saved as snapshot
-    this.logger.log(`Saving workflow snapshot with ${enrichedWorkflow.levels.length} levels:`,
-      enrichedWorkflow.levels.map(l => ({
-        levelOrder: l.levelOrder,
-        levelName: l.levelName,
-        editableFields: l.editableFields,
-        approvers: l.approvers?.length || 0,
-        approverGroups: l.approverGroups?.length || 0
-      }))
-    );
-
-    // Get first level approvers
-    const firstLevel = workflow.levels.find((l) => l.levelOrder === 1);
-    if (!firstLevel) {
-      throw new BadRequestException('Workflow has no levels configured');
-    }
-
-    // Resolve all approvers (individual + group members)
-    const approverIds = await this.resolveApproversForLevel(firstLevel);
-
-    if (approverIds.length === 0) {
-      throw new BadRequestException('No approvers configured for first level');
-    }
-
-    // Update registration status and create approval records
-    const updated = await this.prisma.registrationRequest.update({
-      where: { id },
-      data: {
-        status: RegistrationStatus.PENDING_APPROVAL,
-        currentLevel: 1,
-        workflowSnapshot: enrichedWorkflow as any,
-        approvals: {
-          create: approverIds.map((approverId) => ({
-            level: 1,
-            approverId,
-            approverEmail: '', // TODO: Get from user
-            action: ApprovalAction.PENDING,
-          })),
+      // Get active workflow
+      const workflow = await tx.registrationWorkflow.findFirst({
+        where: {
+          templateId: registration.templateId,
+          isActive: true,
         },
-      },
-      include: {
-        approvals: true,
-      },
+        include: {
+          levels: {
+            orderBy: { levelOrder: 'asc' },
+          },
+        },
+      });
+
+      if (!workflow) {
+        throw new NotFoundException(`No active workflow found for template ${registration.templateId}`);
+      }
+
+      // LOG-05: Validate all levels have at least 1 approver
+      for (const level of workflow.levels) {
+        const approverIds = await this.resolveApproversForLevel(level);
+        if (approverIds.length === 0) {
+          throw new BadRequestException(
+            `Workflow level ${level.levelOrder} (${level.levelName || 'Unnamed'}) has no approvers configured. ` +
+            `Please configure at least one approver or group for each level.`
+          );
+        }
+      }
+
+      // Enrich workflow with approver and group names for the snapshot
+      const enrichedWorkflow = await this.enrichWorkflowWithNames(workflow);
+
+      // Debug: log workflow being saved as snapshot
+      this.logger.log(`Saving workflow snapshot with ${enrichedWorkflow.levels.length} levels:`,
+        enrichedWorkflow.levels.map((l: any) => ({
+          levelOrder: l.levelOrder,
+          levelName: l.levelName,
+          editableFields: l.editableFields,
+          approvers: l.approvers?.length || 0,
+          approverGroups: l.approverGroups?.length || 0
+        }))
+      );
+
+      // Get first level approvers
+      const firstLevel = workflow.levels.find((l) => l.levelOrder === 1);
+      if (!firstLevel) {
+        throw new BadRequestException('Workflow has no levels configured');
+      }
+
+      // Resolve all approvers for first level (individual + group members)
+      const firstLevelApproverIds = await this.resolveApproversForLevel(firstLevel);
+
+      // Update registration status
+      await tx.registrationRequest.update({
+        where: { id },
+        data: {
+          status: RegistrationStatus.PENDING_APPROVAL,
+          currentLevel: 1,
+          workflowSnapshot: enrichedWorkflow as any,
+        },
+      });
+
+      // Create approval records for first level
+      await tx.registrationApproval.createMany({
+        data: firstLevelApproverIds.map((approverId) => ({
+          requestId: id,
+          level: 1,
+          approverId,
+          approverEmail: '', // TODO: Get from user
+          action: ApprovalAction.PENDING,
+        })),
+      });
+
+      // Return updated registration with approvals
+      const updated = await tx.registrationRequest.findUnique({
+        where: { id },
+        include: {
+          approvals: true,
+        },
+      });
+
+      this.logger.log(`Registration ${id} submitted. Created ${updated?.approvals.length || 0} approval records`);
+
+      // TODO: Send email notifications to approvers
+
+      return updated;
+    }, {
+      timeout: 30000,
+      isolationLevel: 'Serializable',
     });
-
-    this.logger.log(`Registration ${id} submitted. Created ${updated.approvals.length} approval records`);
-
-    // TODO: Send email notifications to approvers
-
-    return updated;
   }
 
   /**
-   * Validate and apply field changes during approval
+   * Get editable fields for current level from workflow snapshot
    */
-  private async applyFieldChanges(
+  private getEditableFieldsForLevel(workflowSnapshot: any, levelOrder: number): string[] {
+    this.logger.debug(`Looking for level ${levelOrder} in workflow snapshot. Available levels:`,
+      workflowSnapshot?.levels?.map((l: any) => ({
+        levelOrder: l.levelOrder,
+        levelName: l.levelName,
+        editableFields: l.editableFields
+      }))
+    );
+    const level = workflowSnapshot?.levels?.find((l: any) => l.levelOrder === levelOrder);
+    this.logger.debug(`Found level:`, level);
+    return level?.editableFields || [];
+  }
+
+  /**
+   * Approve registration at current level
+   * LOG-02: Uses transaction with pessimistic lock to prevent race conditions
+   */
+  async approve(id: string, dto: ApproveRegistrationDto, approverId: string) {
+    this.logger.log(`Approving registration ${id} by user ${approverId}`);
+
+    // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
+    return this.prisma.$transaction(async (tx) => {
+      // Lock the registration row to prevent concurrent modifications
+      const [registration] = await tx.$queryRaw<any[]>`
+        SELECT * FROM registration_requests
+        WHERE id = ${id}::uuid
+        FOR UPDATE
+      `;
+
+      if (!registration) {
+        throw new NotFoundException(`Registration ${id} not found`);
+      }
+
+      // LOG-01: Prevent self-approval - user cannot approve their own request
+      if (registration.requestedById === approverId) {
+        throw new ForbiddenException('You cannot approve your own registration request');
+      }
+
+      // LOG-08: Validate status allows approval
+      const currentStatus = registration.status as RegistrationStatus;
+      if (
+        currentStatus !== RegistrationStatus.PENDING_APPROVAL &&
+        currentStatus !== RegistrationStatus.IN_APPROVAL
+      ) {
+        throw new BadRequestException(`Registration is not pending approval (current status: ${currentStatus})`);
+      }
+
+      // Find pending approval for this user at current level
+      const approval = await tx.registrationApproval.findFirst({
+        where: {
+          requestId: id,
+          approverId,
+          level: registration.currentLevel,
+          action: ApprovalAction.PENDING,
+        },
+      });
+
+      if (!approval) {
+        throw new BadRequestException('No pending approval found for this user at current level');
+      }
+
+      // Process field changes if provided
+      const workflowSnapshot = registration.workflowSnapshot as any;
+      if (dto.fieldChanges && Object.keys(dto.fieldChanges).length > 0) {
+        const editableFields = this.getEditableFieldsForLevel(
+          workflowSnapshot,
+          registration.currentLevel,
+        );
+
+        const updatedFormData = await this.applyFieldChangesInTransaction(
+          tx,
+          id,
+          registration.formData as Record<string, any>,
+          dto.fieldChanges,
+          editableFields,
+          approverId,
+          registration.currentLevel,
+        );
+
+        // Update registration with new form data
+        await tx.registrationRequest.update({
+          where: { id },
+          data: { formData: updatedFormData },
+        });
+      }
+
+      // Mark as approved
+      await tx.registrationApproval.update({
+        where: { id: approval.id },
+        data: {
+          action: ApprovalAction.APPROVED,
+          comments: dto.comments,
+          actionAt: new Date(),
+        },
+      });
+
+      // Check if level is complete
+      const pendingCount = await tx.registrationApproval.count({
+        where: {
+          requestId: id,
+          level: registration.currentLevel,
+          action: ApprovalAction.PENDING,
+        },
+      });
+      const levelComplete = pendingCount === 0;
+
+      if (levelComplete) {
+        await this.advanceToNextLevelInTransaction(tx, id, registration, workflowSnapshot);
+      } else {
+        // Update status to IN_APPROVAL if not already
+        if (registration.status !== RegistrationStatus.IN_APPROVAL) {
+          await tx.registrationRequest.update({
+            where: { id },
+            data: { status: RegistrationStatus.IN_APPROVAL },
+          });
+        }
+      }
+
+      this.logger.log(`Registration ${id} approved by ${approverId}`);
+
+      // Return the updated registration
+      const updatedRegistration = await tx.registrationRequest.findUnique({
+        where: { id },
+        include: {
+          template: {
+            include: {
+              fields: {
+                where: { isVisible: true },
+                orderBy: { fieldOrder: 'asc' },
+              },
+            },
+          },
+          requestedBy: {
+            select: { id: true, name: true, email: true },
+          },
+          approvals: {
+            include: {
+              approver: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+            orderBy: { level: 'asc' },
+          },
+        },
+      });
+
+      return updatedRegistration;
+    }, {
+      timeout: 30000, // 30 second timeout
+      isolationLevel: 'Serializable', // Highest isolation level
+    });
+
+    // After transaction completes, trigger Protheus sync if workflow is complete
+    const finalRegistration = await this.prisma.registrationRequest.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+
+    if (finalRegistration?.status === RegistrationStatus.APPROVED) {
+      // Trigger sync to Protheus (outside transaction)
+      try {
+        await this.protheusIntegrationService.syncToProtheus(id);
+      } catch (error) {
+        this.logger.error(`Failed to sync registration ${id} to Protheus`, error);
+        // Error is already logged in ProtheusIntegrationService
+      }
+    }
+
+    return this.findOne(id);
+  }
+
+  /**
+   * Apply field changes within a transaction
+   */
+  private async applyFieldChangesInTransaction(
+    tx: any,
     registrationId: string,
     formData: Record<string, any>,
     changes: Record<string, any>,
@@ -715,7 +1020,7 @@ export class RegistrationService {
 
     // Save change history
     if (changeHistory.length > 0) {
-      await this.prisma.fieldChangeHistory.createMany({
+      await tx.fieldChangeHistory.createMany({
         data: changeHistory,
       });
 
@@ -726,176 +1031,23 @@ export class RegistrationService {
   }
 
   /**
-   * Get editable fields for current level from workflow snapshot
+   * Advance to next level within a transaction
    */
-  private getEditableFieldsForLevel(workflowSnapshot: any, levelOrder: number): string[] {
-    this.logger.debug(`Looking for level ${levelOrder} in workflow snapshot. Available levels:`,
-      workflowSnapshot?.levels?.map((l: any) => ({
-        levelOrder: l.levelOrder,
-        levelName: l.levelName,
-        editableFields: l.editableFields
-      }))
-    );
-    const level = workflowSnapshot?.levels?.find((l: any) => l.levelOrder === levelOrder);
-    this.logger.debug(`Found level:`, level);
-    return level?.editableFields || [];
-  }
-
-  /**
-   * Approve registration at current level
-   */
-  async approve(id: string, dto: ApproveRegistrationDto, approverId: string) {
-    this.logger.log(`Approving registration ${id} by user ${approverId}`);
-
-    const registration = await this.findOne(id);
-
-    if (
-      registration.status !== RegistrationStatus.PENDING_APPROVAL &&
-      registration.status !== RegistrationStatus.IN_APPROVAL
-    ) {
-      throw new BadRequestException('Registration is not pending approval');
+  private async advanceToNextLevelInTransaction(
+    tx: any,
+    id: string,
+    registration: any,
+    workflowSnapshot: any,
+    iterationCount: number = 0,
+  ) {
+    // LOG-07: Prevent infinite loops
+    const MAX_ITERATIONS = 100;
+    if (iterationCount >= MAX_ITERATIONS) {
+      this.logger.error(`Max iterations (${MAX_ITERATIONS}) reached for registration ${id}. Possible infinite loop.`);
+      throw new BadRequestException('Workflow processing error: too many iterations. Please contact support.');
     }
 
-    // Find pending approval for this user at current level
-    const approval = registration.approvals.find(
-      (a) =>
-        a.approverId === approverId &&
-        a.level === registration.currentLevel &&
-        a.action === ApprovalAction.PENDING,
-    );
-
-    if (!approval) {
-      throw new BadRequestException('No pending approval found for this user at current level');
-    }
-
-    // Process field changes if provided
-    if (dto.fieldChanges && Object.keys(dto.fieldChanges).length > 0) {
-      const editableFields = this.getEditableFieldsForLevel(
-        registration.workflowSnapshot,
-        registration.currentLevel,
-      );
-
-      const updatedFormData = await this.applyFieldChanges(
-        id,
-        registration.formData as Record<string, any>,
-        dto.fieldChanges,
-        editableFields,
-        approverId,
-        registration.currentLevel,
-      );
-
-      // Update registration with new form data
-      await this.prisma.registrationRequest.update({
-        where: { id },
-        data: { formData: updatedFormData },
-      });
-    }
-
-    // Mark as approved
-    await this.prisma.registrationApproval.update({
-      where: { id: approval.id },
-      data: {
-        action: ApprovalAction.APPROVED,
-        comments: dto.comments,
-        actionAt: new Date(),
-      },
-    });
-
-    // Check if level is complete
-    const levelComplete = await this.isLevelComplete(id, registration.currentLevel);
-
-    if (levelComplete) {
-      await this.advanceToNextLevel(id);
-    } else {
-      // Update status to IN_APPROVAL if not already
-      if (registration.status !== RegistrationStatus.IN_APPROVAL) {
-        await this.prisma.registrationRequest.update({
-          where: { id },
-          data: { status: RegistrationStatus.IN_APPROVAL },
-        });
-      }
-    }
-
-    this.logger.log(`Registration ${id} approved by ${approverId}`);
-
-    return this.findOne(id);
-  }
-
-  /**
-   * Reject registration
-   */
-  async reject(id: string, dto: RejectRegistrationDto, approverId: string) {
-    this.logger.log(`Rejecting registration ${id} by user ${approverId}`);
-
-    const registration = await this.findOne(id);
-
-    if (
-      registration.status !== RegistrationStatus.PENDING_APPROVAL &&
-      registration.status !== RegistrationStatus.IN_APPROVAL
-    ) {
-      throw new BadRequestException('Registration is not pending approval');
-    }
-
-    // Find pending approval for this user at current level
-    const approval = registration.approvals.find(
-      (a) =>
-        a.approverId === approverId &&
-        a.level === registration.currentLevel &&
-        a.action === ApprovalAction.PENDING,
-    );
-
-    if (!approval) {
-      throw new BadRequestException('No pending approval found for this user at current level');
-    }
-
-    // Mark as rejected
-    await this.prisma.registrationApproval.update({
-      where: { id: approval.id },
-      data: {
-        action: ApprovalAction.REJECTED,
-        comments: dto.reason,
-        actionAt: new Date(),
-      },
-    });
-
-    // Update registration status to REJECTED
-    await this.prisma.registrationRequest.update({
-      where: { id },
-      data: {
-        status: RegistrationStatus.REJECTED,
-      },
-    });
-
-    this.logger.log(`Registration ${id} rejected by ${approverId}`);
-
-    // TODO: Send notification to requester
-
-    return this.findOne(id);
-  }
-
-  /**
-   * Check if current level is complete (all approvers approved)
-   */
-  private async isLevelComplete(registrationId: string, level: number): Promise<boolean> {
-    const pendingCount = await this.prisma.registrationApproval.count({
-      where: {
-        requestId: registrationId,
-        level,
-        action: ApprovalAction.PENDING,
-      },
-    });
-
-    return pendingCount === 0;
-  }
-
-  /**
-   * Advance to next level or complete workflow
-   */
-  private async advanceToNextLevel(id: string) {
-    const registration = await this.findOne(id);
-    const workflow = registration.workflowSnapshot as any;
-
-    const nextLevel = workflow.levels.find(
+    const nextLevel = workflowSnapshot.levels.find(
       (l: any) => l.levelOrder === registration.currentLevel + 1,
     );
 
@@ -907,28 +1059,32 @@ export class RegistrationService {
 
       if (approverIds.length === 0) {
         this.logger.warn(`No approvers for level ${nextLevel.levelOrder}, skipping to next`);
-        // Recursively advance if no approvers at this level
-        await this.prisma.registrationRequest.update({
+        // Update current level and recursively advance
+        const updatedRegistration = { ...registration, currentLevel: nextLevel.levelOrder };
+        await tx.registrationRequest.update({
           where: { id },
           data: { currentLevel: nextLevel.levelOrder },
         });
-        return this.advanceToNextLevel(id);
+        return this.advanceToNextLevelInTransaction(tx, id, updatedRegistration, workflowSnapshot, iterationCount + 1);
       }
 
-      await this.prisma.registrationRequest.update({
+      await tx.registrationRequest.update({
         where: { id },
         data: {
           currentLevel: nextLevel.levelOrder,
           status: RegistrationStatus.IN_APPROVAL,
-          approvals: {
-            create: approverIds.map((approverId: string) => ({
-              level: nextLevel.levelOrder,
-              approverId,
-              approverEmail: '', // TODO: Get from user
-              action: ApprovalAction.PENDING,
-            })),
-          },
         },
+      });
+
+      // Create approval records for next level
+      await tx.registrationApproval.createMany({
+        data: approverIds.map((approverId: string) => ({
+          requestId: id,
+          level: nextLevel.levelOrder,
+          approverId,
+          approverEmail: '', // TODO: Get from user
+          action: ApprovalAction.PENDING,
+        })),
       });
 
       // TODO: Send notifications to next level approvers
@@ -936,21 +1092,119 @@ export class RegistrationService {
       // No next level - workflow complete
       this.logger.log(`Registration ${id} approved - all levels complete`);
 
-      await this.prisma.registrationRequest.update({
+      await tx.registrationRequest.update({
         where: { id },
         data: {
           status: RegistrationStatus.APPROVED,
         },
       });
 
-      // Trigger sync to Protheus
-      try {
-        await this.protheusIntegrationService.syncToProtheus(id);
-      } catch (error) {
-        this.logger.error(`Failed to sync registration ${id} to Protheus`, error);
-        // Error is already logged in ProtheusIntegrationService
-      }
+      // Note: Protheus sync will be triggered outside transaction
     }
+  }
+
+  /**
+   * Reject registration
+   * LOG-02: Uses transaction with pessimistic lock to prevent race conditions
+   */
+  async reject(id: string, dto: RejectRegistrationDto, approverId: string) {
+    this.logger.log(`Rejecting registration ${id} by user ${approverId}`);
+
+    // LOG-02: Use transaction with FOR UPDATE lock to prevent race conditions
+    return this.prisma.$transaction(async (tx) => {
+      // Lock the registration row to prevent concurrent modifications
+      const [registration] = await tx.$queryRaw<any[]>`
+        SELECT * FROM registration_requests
+        WHERE id = ${id}::uuid
+        FOR UPDATE
+      `;
+
+      if (!registration) {
+        throw new NotFoundException(`Registration ${id} not found`);
+      }
+
+      // LOG-01: Prevent self-rejection - user cannot reject their own request
+      if (registration.requestedById === approverId) {
+        throw new ForbiddenException('You cannot reject your own registration request');
+      }
+
+      // LOG-08: Validate status allows rejection
+      const currentStatus = registration.status as RegistrationStatus;
+      if (
+        currentStatus !== RegistrationStatus.PENDING_APPROVAL &&
+        currentStatus !== RegistrationStatus.IN_APPROVAL
+      ) {
+        throw new BadRequestException(`Registration is not pending approval (current status: ${currentStatus})`);
+      }
+
+      // Validate transition to REJECTED
+      validateStatusTransition(currentStatus, RegistrationStatus.REJECTED, 'reject');
+
+      // Find pending approval for this user at current level
+      const approval = await tx.registrationApproval.findFirst({
+        where: {
+          requestId: id,
+          approverId,
+          level: registration.currentLevel,
+          action: ApprovalAction.PENDING,
+        },
+      });
+
+      if (!approval) {
+        throw new BadRequestException('No pending approval found for this user at current level');
+      }
+
+      // Mark as rejected
+      await tx.registrationApproval.update({
+        where: { id: approval.id },
+        data: {
+          action: ApprovalAction.REJECTED,
+          comments: dto.reason,
+          actionAt: new Date(),
+        },
+      });
+
+      // Update registration status to REJECTED
+      await tx.registrationRequest.update({
+        where: { id },
+        data: {
+          status: RegistrationStatus.REJECTED,
+        },
+      });
+
+      this.logger.log(`Registration ${id} rejected by ${approverId}`);
+
+      // TODO: Send notification to requester
+
+      // Return the updated registration
+      return tx.registrationRequest.findUnique({
+        where: { id },
+        include: {
+          template: {
+            include: {
+              fields: {
+                where: { isVisible: true },
+                orderBy: { fieldOrder: 'asc' },
+              },
+            },
+          },
+          requestedBy: {
+            select: { id: true, name: true, email: true },
+          },
+          approvals: {
+            include: {
+              approver: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+            orderBy: { level: 'asc' },
+          },
+        },
+      });
+    }, {
+      timeout: 30000, // 30 second timeout
+      isolationLevel: 'Serializable', // Highest isolation level
+    });
   }
 
   /**
@@ -1119,5 +1373,264 @@ export class RegistrationService {
       editableFields,
       currentLevel: registration.currentLevel,
     };
+  }
+
+  // ==========================================
+  // LOG-03: STUCK WORKFLOW DETECTION AND ADMIN OVERRIDE
+  // ==========================================
+
+  /**
+   * Check if a registration's workflow is stuck (approvers deleted/deactivated)
+   * Returns information about the stuck status
+   */
+  async checkWorkflowStuckStatus(registrationId: string) {
+    const registration = await this.findOne(registrationId);
+
+    // Only check in-progress registrations
+    if (
+      registration.status !== RegistrationStatus.PENDING_APPROVAL &&
+      registration.status !== RegistrationStatus.IN_APPROVAL
+    ) {
+      return {
+        isStuck: false,
+        reason: null,
+        currentLevel: registration.currentLevel,
+        status: registration.status,
+      };
+    }
+
+    // Get all pending approvals at current level
+    const pendingApprovals = registration.approvals.filter(
+      (a) => a.level === registration.currentLevel && a.action === ApprovalAction.PENDING
+    );
+
+    if (pendingApprovals.length === 0) {
+      // No pending approvals but status indicates waiting - workflow is stuck
+      return {
+        isStuck: true,
+        reason: 'No pending approvals at current level',
+        currentLevel: registration.currentLevel,
+        status: registration.status,
+        pendingApprovers: [],
+      };
+    }
+
+    // Check if any pending approvers are deactivated
+    const approverIds = pendingApprovals.map((a) => a.approverId);
+    const activeApprovers = await this.prisma.user.findMany({
+      where: {
+        id: { in: approverIds },
+        isActive: true,
+      },
+      select: { id: true, name: true, email: true },
+    });
+
+    const activeApproverIds = new Set(activeApprovers.map((u) => u.id));
+    const deactivatedApprovers = pendingApprovals
+      .filter((a) => !activeApproverIds.has(a.approverId))
+      .map((a) => ({
+        approvalId: a.id,
+        approverId: a.approverId,
+        approverName: a.approver?.name || 'Unknown',
+        approverEmail: a.approver?.email || 'Unknown',
+      }));
+
+    if (deactivatedApprovers.length > 0 && deactivatedApprovers.length === pendingApprovals.length) {
+      // All pending approvers are deactivated - workflow is stuck
+      return {
+        isStuck: true,
+        reason: 'All pending approvers are deactivated',
+        currentLevel: registration.currentLevel,
+        status: registration.status,
+        deactivatedApprovers,
+        activeApprovers: activeApprovers,
+      };
+    }
+
+    return {
+      isStuck: false,
+      reason: null,
+      currentLevel: registration.currentLevel,
+      status: registration.status,
+      pendingApprovers: pendingApprovals.map((a) => ({
+        approverId: a.approverId,
+        approverName: a.approver?.name || 'Unknown',
+        isActive: activeApproverIds.has(a.approverId),
+      })),
+    };
+  }
+
+  /**
+   * Get all stuck workflows in the system
+   * Returns list of registrations with stuck workflows
+   */
+  async getStuckWorkflows() {
+    // Get all registrations in approval status
+    const inProgressRegistrations = await this.prisma.registrationRequest.findMany({
+      where: {
+        status: {
+          in: [RegistrationStatus.PENDING_APPROVAL, RegistrationStatus.IN_APPROVAL],
+        },
+      },
+      include: {
+        template: true,
+        requestedBy: {
+          select: { id: true, name: true, email: true },
+        },
+        approvals: {
+          include: {
+            approver: {
+              select: { id: true, name: true, email: true, isActive: true },
+            },
+          },
+        },
+      },
+    });
+
+    const stuckRegistrations = [];
+
+    for (const reg of inProgressRegistrations) {
+      const pendingApprovals = reg.approvals.filter(
+        (a) => a.level === reg.currentLevel && a.action === ApprovalAction.PENDING
+      );
+
+      // Check if all pending approvers are inactive
+      const allInactive = pendingApprovals.length > 0 &&
+        pendingApprovals.every((a) => !a.approver?.isActive);
+
+      if (allInactive || pendingApprovals.length === 0) {
+        stuckRegistrations.push({
+          registrationId: reg.id,
+          templateName: reg.template.label,
+          tableName: reg.tableName,
+          requestedBy: reg.requestedBy,
+          status: reg.status,
+          currentLevel: reg.currentLevel,
+          createdAt: reg.createdAt,
+          pendingApprovals: pendingApprovals.map((a) => ({
+            approverId: a.approverId,
+            approverName: a.approver?.name || 'Unknown',
+            approverEmail: a.approver?.email || 'Unknown',
+            isActive: a.approver?.isActive ?? false,
+          })),
+          reason: pendingApprovals.length === 0
+            ? 'No pending approvals at current level'
+            : 'All pending approvers are deactivated',
+        });
+      }
+    }
+
+    return stuckRegistrations;
+  }
+
+  /**
+   * Admin override to advance a stuck workflow
+   * This allows an admin to force-approve or skip the current level
+   */
+  async adminOverrideAdvance(
+    registrationId: string,
+    adminId: string,
+    action: 'force_approve' | 'skip_level',
+    comments?: string,
+  ) {
+    this.logger.log(`Admin ${adminId} performing override (${action}) on registration ${registrationId}`);
+
+    // Verify admin has permission (checked in controller via guard)
+    const admin = await this.prisma.user.findUnique({
+      where: { id: adminId },
+      select: { id: true, name: true, isAdmin: true },
+    });
+
+    if (!admin?.isAdmin) {
+      throw new ForbiddenException('Only administrators can perform workflow overrides');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // Lock the registration
+      const [registration] = await tx.$queryRaw<any[]>`
+        SELECT * FROM registration_requests
+        WHERE id = ${registrationId}::uuid
+        FOR UPDATE
+      `;
+
+      if (!registration) {
+        throw new NotFoundException(`Registration ${registrationId} not found`);
+      }
+
+      const currentStatus = registration.status as RegistrationStatus;
+      if (
+        currentStatus !== RegistrationStatus.PENDING_APPROVAL &&
+        currentStatus !== RegistrationStatus.IN_APPROVAL
+      ) {
+        throw new BadRequestException(
+          `Cannot override registration with status ${currentStatus}. Only PENDING_APPROVAL or IN_APPROVAL can be overridden.`
+        );
+      }
+
+      const workflowSnapshot = registration.workflowSnapshot as any;
+
+      // Mark all pending approvals at current level as admin-overridden
+      await tx.registrationApproval.updateMany({
+        where: {
+          requestId: registrationId,
+          level: registration.currentLevel,
+          action: ApprovalAction.PENDING,
+        },
+        data: {
+          action: ApprovalAction.APPROVED,
+          comments: `[ADMIN OVERRIDE by ${admin.name}] ${action === 'force_approve' ? 'Force approved' : 'Level skipped'}${comments ? ': ' + comments : ''}`,
+          actionAt: new Date(),
+        },
+      });
+
+      // Create audit record for this override
+      await tx.fieldChangeHistory.create({
+        data: {
+          requestId: registrationId,
+          fieldName: '__ADMIN_OVERRIDE__',
+          previousValue: JSON.stringify({
+            action,
+            level: registration.currentLevel,
+            status: currentStatus,
+          }),
+          newValue: JSON.stringify({
+            overriddenBy: admin.name,
+            overriddenAt: new Date().toISOString(),
+            comments,
+          }),
+          changedById: adminId,
+          approvalLevel: registration.currentLevel,
+        },
+      });
+
+      // Advance to next level (reusing existing logic)
+      await this.advanceToNextLevelInTransaction(
+        tx,
+        registrationId,
+        registration,
+        workflowSnapshot,
+        0, // iteration count
+      );
+
+      this.logger.log(`Admin override completed for registration ${registrationId}`);
+
+      // Return updated registration
+      return tx.registrationRequest.findUnique({
+        where: { id: registrationId },
+        include: {
+          template: true,
+          requestedBy: { select: { id: true, name: true, email: true } },
+          approvals: {
+            include: {
+              approver: { select: { id: true, name: true, email: true } },
+            },
+            orderBy: { level: 'asc' },
+          },
+        },
+      });
+    }, {
+      timeout: 30000,
+      isolationLevel: 'Serializable',
+    });
   }
 }
