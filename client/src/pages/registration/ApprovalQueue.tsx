@@ -654,18 +654,22 @@ export const ApprovalQueuePage = () => {
                                           </Box>
                                           <Box sx={{ ml: 3 }}>
                                             {level.approverGroups.map((group) => (
-                                              <Box key={group.id} sx={{ mb: 0.5 }}>
+                                              <Box key={group.id} sx={{ mb: 1 }}>
                                                 <Typography variant="caption" color="text.secondary" fontWeight={500}>
                                                   • {group.name}
                                                 </Typography>
-                                                {group.members && group.members.length > 0 && (
-                                                  <Box sx={{ ml: 2 }}>
+                                                {group.members && group.members.length > 0 ? (
+                                                  <Box sx={{ ml: 2, mt: 0.5 }}>
                                                     {group.members.map((member) => (
-                                                      <Typography key={member.id} variant="caption" display="block" color="text.disabled">
+                                                      <Typography key={member.id} variant="caption" display="block" color="text.secondary">
                                                         - {member.name} ({member.email})
                                                       </Typography>
                                                     ))}
                                                   </Box>
+                                                ) : (
+                                                  <Typography variant="caption" display="block" color="text.disabled" sx={{ ml: 2 }}>
+                                                    (Sem membros no grupo)
+                                                  </Typography>
                                                 )}
                                               </Box>
                                             ))}

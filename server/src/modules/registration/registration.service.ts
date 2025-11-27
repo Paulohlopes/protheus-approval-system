@@ -478,9 +478,17 @@ export class RegistrationService {
     // Enrich workflow snapshot if it doesn't have approver names (for old registrations)
     if (registration.workflowSnapshot) {
       const snapshot = registration.workflowSnapshot as any;
-      const needsEnrichment = snapshot.levels?.some(
-        (level: any) => !level.approvers || level.approvers.length === 0
-      );
+
+      // Check if any level has approverIds or approverGroupIds but missing enriched data
+      const needsEnrichment = snapshot.levels?.some((level: any) => {
+        const hasApproverIds = level.approverIds && level.approverIds.length > 0;
+        const hasGroupIds = level.approverGroupIds && level.approverGroupIds.length > 0;
+        const hasEnrichedApprovers = level.approvers && level.approvers.length > 0;
+        const hasEnrichedGroups = level.approverGroups && level.approverGroups.length > 0;
+
+        // Needs enrichment if has IDs but no enriched data
+        return (hasApproverIds && !hasEnrichedApprovers) || (hasGroupIds && !hasEnrichedGroups);
+      });
 
       if (needsEnrichment) {
         const enrichedSnapshot = await this.enrichWorkflowWithNames(snapshot);
