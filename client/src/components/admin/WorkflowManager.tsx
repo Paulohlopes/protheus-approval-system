@@ -300,8 +300,9 @@ const WorkflowManager: React.FC = () => {
                                     />
                                     <ListItemText
                                       primary={level.levelName || `Nivel ${level.levelOrder}`}
+                                      secondaryTypographyProps={{ component: 'div' }}
                                       secondary={
-                                        <Box component="span" sx={{ display: 'block' }}>
+                                        <Box>
                                           {level.approverGroupIds && level.approverGroupIds.length > 0 && (
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
                                               <Group fontSize="small" color="action" />
