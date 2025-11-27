@@ -21,6 +21,10 @@ import {
   Stack,
   CircularProgress,
   Tooltip,
+  Tabs,
+  Tab,
+  Divider,
+  Alert,
 } from '@mui/material';
 import {
   Add,
@@ -32,13 +36,22 @@ import {
   Schedule,
   Sync,
   SyncProblem,
+  AccountTree,
+  Group,
+  Person,
+  Edit,
+  ArrowDownward,
+  Cancel,
+  History,
+  Close,
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
 import { useLanguage } from '../../contexts/LanguageContext';
-import type { RegistrationRequest, RegistrationApproval } from '../../types/registration';
+import type { RegistrationRequest, RegistrationApproval, WorkflowLevel } from '../../types/registration';
 import { RegistrationStatus, ApprovalAction } from '../../types/registration';
 import { EmptyState } from '../../components/EmptyState';
+import FieldChangeHistory from '../../components/FieldChangeHistory';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 
@@ -51,6 +64,7 @@ export const MyRequestsPage = () => {
   const [retrySyncDialogOpen, setRetrySyncDialogOpen] = useState(false);
   const [requestIdToRetry, setRequestIdToRetry] = useState<string | null>(null);
   const [retryLoading, setRetryLoading] = useState(false);
+  const [detailsTab, setDetailsTab] = useState(0);
 
   const statusConfig: Record<RegistrationStatus, { label: string; color: ChipColor; icon: React.ReactNode }> = {
     DRAFT: { label: t.registration.statusDraft, color: 'default', icon: <Schedule fontSize="small" /> },
@@ -269,7 +283,10 @@ export const MyRequestsPage = () => {
       {/* Details Dialog */}
       <Dialog
         open={!!selectedRequest}
-        onClose={() => setSelectedRequest(null)}
+        onClose={() => {
+          setSelectedRequest(null);
+          setDetailsTab(0);
+        }}
         maxWidth="md"
         fullWidth
         PaperProps={{ sx: { borderRadius: 2 } }}
@@ -277,124 +294,343 @@ export const MyRequestsPage = () => {
         {selectedRequest && (
           <>
             <DialogTitle sx={{ pb: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Assignment color="primary" />
-                <Typography variant="h6" fontWeight={600}>
-                  {t.registration.requestDetails}
-                </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Assignment color="primary" />
+                  <Typography variant="h6" fontWeight={600}>
+                    {t.registration.requestDetails}
+                  </Typography>
+                </Box>
+                <IconButton onClick={() => {
+                  setSelectedRequest(null);
+                  setDetailsTab(0);
+                }} size="small">
+                  <Close />
+                </IconButton>
               </Box>
             </DialogTitle>
-            <DialogContent dividers>
-              {/* Request Info */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  {t.registration.generalInfo}
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                  <Stack spacing={1.5}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">{t.registration.tableType}:</Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        {selectedRequest.template?.label || selectedRequest.tableName}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">{t.registration.tableDate}:</Typography>
-                      <Typography variant="body2">
-                        {formatDateTime(selectedRequest.requestedAt)}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body2" color="text.secondary">{t.registration.tableStatus}:</Typography>
-                      {getStatusChip(selectedRequest.status)}
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">{t.registration.currentLevel}:</Typography>
-                      <Typography variant="body2">{selectedRequest.currentLevel}</Typography>
-                    </Box>
-                    {selectedRequest.protheusRecno && (
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">RECNO Protheus:</Typography>
-                        <Typography variant="body2" color="success.main" fontWeight={500}>
-                          {selectedRequest.protheusRecno}
-                        </Typography>
-                      </Box>
-                    )}
-                    {selectedRequest.syncError && (
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">{t.errors.unknownError}:</Typography>
-                        <Typography variant="body2" color="error.main">
-                          {selectedRequest.syncError}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Stack>
-                </Paper>
-              </Box>
+            <DialogContent dividers sx={{ p: 0 }}>
+              {/* Tabs */}
+              <Tabs
+                value={detailsTab}
+                onChange={(_, v) => setDetailsTab(v)}
+                sx={{ px: 3, borderBottom: 1, borderColor: 'divider' }}
+              >
+                <Tab
+                  icon={<Edit sx={{ fontSize: 18 }} />}
+                  iconPosition="start"
+                  label={t.registration.formData}
+                  sx={{ textTransform: 'none' }}
+                />
+                <Tab
+                  icon={<AccountTree sx={{ fontSize: 18 }} />}
+                  iconPosition="start"
+                  label={t.registration.workflowTab || 'Fluxo'}
+                  sx={{ textTransform: 'none' }}
+                />
+                <Tab
+                  icon={<History sx={{ fontSize: 18 }} />}
+                  iconPosition="start"
+                  label={t.registration.changeHistory || 'Historico'}
+                  sx={{ textTransform: 'none' }}
+                />
+              </Tabs>
 
-              {/* Approval History */}
-              {selectedRequest.approvals && selectedRequest.approvals.length > 0 && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    {t.registration.approvalHistory}
-                  </Typography>
-                  <Stack spacing={1}>
-                    {selectedRequest.approvals.map((approval: RegistrationApproval) => (
-                      <Paper key={approval.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              {/* Tab Panel: Form Data */}
+              {detailsTab === 0 && (
+                <Box sx={{ p: 3 }}>
+                  {/* Request Info */}
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      {t.registration.generalInfo}
+                    </Typography>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                      <Stack spacing={1.5}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">{t.registration.tableType}:</Typography>
                           <Typography variant="body2" fontWeight={500}>
-                            {t.registration.level} {approval.level}: {approval.approver?.name || approval.approverEmail}
+                            {selectedRequest.template?.label || selectedRequest.tableName}
                           </Typography>
-                          <Chip
-                            label={approvalActionLabels[approval.action] || approval.action}
-                            size="small"
-                            color={
-                              approval.action === ApprovalAction.APPROVED
-                                ? 'success'
-                                : approval.action === ApprovalAction.REJECTED
-                                ? 'error'
-                                : 'default'
-                            }
-                            variant="outlined"
-                            sx={{ borderRadius: 1 }}
-                          />
                         </Box>
-                        {approval.comments && (
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                            {approval.comments}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">{t.registration.tableDate}:</Typography>
+                          <Typography variant="body2">
+                            {formatDateTime(selectedRequest.requestedAt)}
                           </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Typography variant="body2" color="text.secondary">{t.registration.tableStatus}:</Typography>
+                          {getStatusChip(selectedRequest.status)}
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="body2" color="text.secondary">{t.registration.currentLevel}:</Typography>
+                          <Typography variant="body2">{selectedRequest.currentLevel}</Typography>
+                        </Box>
+                        {selectedRequest.protheusRecno && (
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">RECNO Protheus:</Typography>
+                            <Typography variant="body2" color="success.main" fontWeight={500}>
+                              {selectedRequest.protheusRecno}
+                            </Typography>
+                          </Box>
                         )}
-                        {approval.actionAt && (
-                          <Typography variant="caption" color="text.disabled">
-                            {formatDateTime(approval.actionAt)}
-                          </Typography>
+                        {selectedRequest.syncError && (
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">{t.errors.unknownError}:</Typography>
+                            <Typography variant="body2" color="error.main">
+                              {selectedRequest.syncError}
+                            </Typography>
+                          </Box>
                         )}
-                      </Paper>
-                    ))}
-                  </Stack>
+                      </Stack>
+                    </Paper>
+                  </Box>
+
+                  {/* Form Data */}
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                      {t.registration.formData}
+                    </Typography>
+                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                      <Stack spacing={1}>
+                        {Object.entries(selectedRequest.formData).map(([key, value]) => (
+                          <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">{key}:</Typography>
+                            <Typography variant="body2">{String(value)}</Typography>
+                          </Box>
+                        ))}
+                      </Stack>
+                    </Paper>
+                  </Box>
                 </Box>
               )}
 
-              {/* Form Data */}
-              <Box>
-                <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                  {t.registration.formData}
-                </Typography>
-                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                  <Stack spacing={1}>
-                    {Object.entries(selectedRequest.formData).map(([key, value]) => (
-                      <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">{key}:</Typography>
-                        <Typography variant="body2">{String(value)}</Typography>
+              {/* Tab Panel: Workflow */}
+              {detailsTab === 1 && (
+                <Box sx={{ p: 3 }}>
+                  {(() => {
+                    const workflow = selectedRequest.workflowSnapshot;
+                    const approvals = selectedRequest.approvals || [];
+                    const levels: WorkflowLevel[] = workflow?.levels || [];
+
+                    const getApprovalsForLevel = (levelOrder: number): RegistrationApproval[] => {
+                      return approvals.filter(a => a.level === levelOrder);
+                    };
+
+                    const getLevelStatus = (levelOrder: number): 'pending' | 'current' | 'completed' | 'rejected' => {
+                      const levelApprovals = getApprovalsForLevel(levelOrder);
+                      if (levelApprovals.length === 0) return 'pending';
+
+                      const hasRejected = levelApprovals.some(a => a.action === ApprovalAction.REJECTED);
+                      if (hasRejected) return 'rejected';
+
+                      const allApproved = levelApprovals.every(a => a.action === ApprovalAction.APPROVED);
+                      if (allApproved) return 'completed';
+
+                      const hasPending = levelApprovals.some(a => a.action === ApprovalAction.PENDING);
+                      if (hasPending && levelOrder === selectedRequest.currentLevel) return 'current';
+
+                      return 'pending';
+                    };
+
+                    const getStatusColor = (status: string): ChipColor => {
+                      switch (status) {
+                        case 'completed': return 'success';
+                        case 'current': return 'warning';
+                        case 'rejected': return 'error';
+                        default: return 'default';
+                      }
+                    };
+
+                    const getStatusLabel = (status: string): string => {
+                      switch (status) {
+                        case 'completed': return t.registration.statusApproved || 'Aprovado';
+                        case 'current': return t.registration.statusPendingApproval || 'Aguardando';
+                        case 'rejected': return t.registration.statusRejected || 'Rejeitado';
+                        default: return t.registration.statusPending || 'Pendente';
+                      }
+                    };
+
+                    if (!workflow || levels.length === 0) {
+                      return (
+                        <Alert severity="info">
+                          {t.registration.noWorkflowInfo || 'Informacoes do fluxo nao disponiveis'}
+                        </Alert>
+                      );
+                    }
+
+                    return (
+                      <Box>
+                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                          {t.registration.workflowTitle || 'Fluxo de Aprovacao'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                          {workflow.name} {workflow.description && `- ${workflow.description}`}
+                        </Typography>
+
+                        <Stack spacing={0}>
+                          {levels
+                            .sort((a, b) => a.levelOrder - b.levelOrder)
+                            .map((level, index) => {
+                              const status = getLevelStatus(level.levelOrder);
+                              const levelApprovals = getApprovalsForLevel(level.levelOrder);
+                              const isLast = index === levels.length - 1;
+
+                              return (
+                                <Box key={level.id || index}>
+                                  <Paper
+                                    variant="outlined"
+                                    sx={{
+                                      p: 2,
+                                      borderColor: status === 'current' ? 'warning.main' : status === 'completed' ? 'success.main' : status === 'rejected' ? 'error.main' : 'divider',
+                                      borderWidth: status === 'current' ? 2 : 1,
+                                      bgcolor: status === 'current' ? 'warning.lighter' : status === 'completed' ? 'success.lighter' : status === 'rejected' ? 'error.lighter' : 'background.paper',
+                                    }}
+                                  >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Chip
+                                          label={level.levelOrder}
+                                          size="small"
+                                          color={getStatusColor(status)}
+                                          sx={{ minWidth: 28, fontWeight: 600 }}
+                                        />
+                                        <Typography variant="subtitle2" fontWeight={600}>
+                                          {level.levelName || `${t.registration.level || 'Nivel'} ${level.levelOrder}`}
+                                        </Typography>
+                                      </Box>
+                                      <Chip
+                                        label={getStatusLabel(status)}
+                                        size="small"
+                                        color={getStatusColor(status)}
+                                        variant="outlined"
+                                      />
+                                    </Box>
+
+                                    {/* Approvers info */}
+                                    <Box sx={{ ml: 4.5 }}>
+                                      {level.approverGroupIds && level.approverGroupIds.length > 0 && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                          <Group fontSize="small" color="action" />
+                                          <Typography variant="caption" color="text.secondary">
+                                            {level.approverGroupIds.length} grupo(s) de aprovacao
+                                          </Typography>
+                                        </Box>
+                                      )}
+                                      {level.editableFields && level.editableFields.length > 0 && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                          <Edit fontSize="small" color="action" />
+                                          <Typography variant="caption" color="text.secondary">
+                                            {level.editableFields.length} campo(s) editavel(is): {level.editableFields.join(', ')}
+                                          </Typography>
+                                        </Box>
+                                      )}
+
+                                      {/* Approval actions - show all approvers with their status */}
+                                      {levelApprovals.length > 0 ? (
+                                        <Box sx={{ mt: 1.5 }}>
+                                          <Divider sx={{ mb: 1 }} />
+                                          <Typography variant="caption" fontWeight={600} color="text.secondary">
+                                            {t.registration.approvers || 'Aprovadores:'}
+                                          </Typography>
+                                          <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+                                            {levelApprovals.map((approval) => (
+                                              <Box
+                                                key={approval.id}
+                                                sx={{
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  gap: 1,
+                                                  p: 1,
+                                                  bgcolor: approval.action === ApprovalAction.APPROVED ? 'success.lighter' : approval.action === ApprovalAction.REJECTED ? 'error.lighter' : 'grey.100',
+                                                  borderRadius: 1,
+                                                }}
+                                              >
+                                                {approval.action === ApprovalAction.APPROVED ? (
+                                                  <CheckCircle fontSize="small" color="success" />
+                                                ) : approval.action === ApprovalAction.REJECTED ? (
+                                                  <Cancel fontSize="small" color="error" />
+                                                ) : (
+                                                  <Schedule fontSize="small" color="action" />
+                                                )}
+                                                <Box sx={{ flex: 1 }}>
+                                                  <Typography variant="body2" fontWeight={500}>
+                                                    {approval.approver?.name || approval.approverEmail}
+                                                  </Typography>
+                                                  {approval.approver?.email && approval.approver.name && (
+                                                    <Typography variant="caption" color="text.secondary" display="block">
+                                                      {approval.approver.email}
+                                                    </Typography>
+                                                  )}
+                                                  {approval.actionAt && (
+                                                    <Typography variant="caption" color="text.secondary" display="block">
+                                                      {formatDateTime(approval.actionAt)}
+                                                    </Typography>
+                                                  )}
+                                                  {approval.comments && (
+                                                    <Typography variant="caption" display="block" sx={{ fontStyle: 'italic', mt: 0.5 }}>
+                                                      "{approval.comments}"
+                                                    </Typography>
+                                                  )}
+                                                </Box>
+                                                <Chip
+                                                  label={approvalActionLabels[approval.action] || approval.action}
+                                                  size="small"
+                                                  color={
+                                                    approval.action === ApprovalAction.APPROVED
+                                                      ? 'success'
+                                                      : approval.action === ApprovalAction.REJECTED
+                                                      ? 'error'
+                                                      : 'default'
+                                                  }
+                                                  variant="outlined"
+                                                />
+                                              </Box>
+                                            ))}
+                                          </Stack>
+                                        </Box>
+                                      ) : (
+                                        /* Level not yet reached - show message */
+                                        (level.approverIds?.length > 0 || level.approverGroupIds?.length > 0) && (
+                                          <Box sx={{ mt: 1 }}>
+                                            <Typography variant="caption" color="text.secondary">
+                                              {t.registration.awaitingPreviousLevels || 'Aguardando niveis anteriores'}
+                                            </Typography>
+                                          </Box>
+                                        )
+                                      )}
+                                    </Box>
+                                  </Paper>
+
+                                  {/* Connector arrow */}
+                                  {!isLast && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+                                      <ArrowDownward color="action" />
+                                    </Box>
+                                  )}
+                                </Box>
+                              );
+                            })}
+                        </Stack>
                       </Box>
-                    ))}
-                  </Stack>
-                </Paper>
-              </Box>
+                    );
+                  })()}
+                </Box>
+              )}
+
+              {/* Tab Panel: History */}
+              {detailsTab === 2 && (
+                <Box sx={{ p: 3 }}>
+                  <FieldChangeHistory registrationId={selectedRequest.id} />
+                </Box>
+              )}
             </DialogContent>
             <DialogActions sx={{ px: 3, py: 2 }}>
               <Button
-                onClick={() => setSelectedRequest(null)}
+                onClick={() => {
+                  setSelectedRequest(null);
+                  setDetailsTab(0);
+                }}
                 variant="outlined"
                 sx={{ borderRadius: 2, textTransform: 'none' }}
               >

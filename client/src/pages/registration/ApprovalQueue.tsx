@@ -632,14 +632,6 @@ export const ApprovalQueuePage = () => {
                                           </Typography>
                                         </Box>
                                       )}
-                                      {level.approverIds && level.approverIds.length > 0 && (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                                          <Person fontSize="small" color="action" />
-                                          <Typography variant="caption" color="text.secondary">
-                                            {level.approverIds.length} aprovador(es) individual(is)
-                                          </Typography>
-                                        </Box>
-                                      )}
                                       {level.editableFields && level.editableFields.length > 0 && (
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                                           <Edit fontSize="small" color="action" />
@@ -649,12 +641,12 @@ export const ApprovalQueuePage = () => {
                                         </Box>
                                       )}
 
-                                      {/* Approval actions */}
-                                      {levelApprovals.length > 0 && (
+                                      {/* Approval actions - show all approvers with their status */}
+                                      {levelApprovals.length > 0 ? (
                                         <Box sx={{ mt: 1.5 }}>
                                           <Divider sx={{ mb: 1 }} />
                                           <Typography variant="caption" fontWeight={600} color="text.secondary">
-                                            {t.registration.approvalActions || 'Acoes:'}
+                                            {t.registration.approvers || 'Aprovadores:'}
                                           </Typography>
                                           <Stack spacing={0.5} sx={{ mt: 0.5 }}>
                                             {levelApprovals.map((approval) => (
@@ -677,11 +669,16 @@ export const ApprovalQueuePage = () => {
                                                   <Schedule fontSize="small" color="action" />
                                                 )}
                                                 <Box sx={{ flex: 1 }}>
-                                                  <Typography variant="body2">
+                                                  <Typography variant="body2" fontWeight={500}>
                                                     {approval.approver?.name || approval.approverEmail}
                                                   </Typography>
+                                                  {approval.approver?.email && approval.approver.name && (
+                                                    <Typography variant="caption" color="text.secondary" display="block">
+                                                      {approval.approver.email}
+                                                    </Typography>
+                                                  )}
                                                   {approval.actionAt && (
-                                                    <Typography variant="caption" color="text.secondary">
+                                                    <Typography variant="caption" color="text.secondary" display="block">
                                                       {formatDateTime(approval.actionAt)}
                                                     </Typography>
                                                   )}
@@ -713,6 +710,15 @@ export const ApprovalQueuePage = () => {
                                             ))}
                                           </Stack>
                                         </Box>
+                                      ) : (
+                                        /* Level not yet reached - show configured approvers count */
+                                        (level.approverIds?.length > 0 || level.approverGroupIds?.length > 0) && (
+                                          <Box sx={{ mt: 1 }}>
+                                            <Typography variant="caption" color="text.secondary">
+                                              {t.registration.awaitingPreviousLevels || 'Aguardando niveis anteriores'}
+                                            </Typography>
+                                          </Box>
+                                        )
                                       )}
                                     </Box>
                                   </Paper>
