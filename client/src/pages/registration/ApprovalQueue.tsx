@@ -178,9 +178,14 @@ export const ApprovalQueuePage = () => {
       setSelectedRequest(null);
       setFieldChanges({});
       await loadPendingApprovals();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error approving request:', error);
-      toast.error(t.registration.errorApprove);
+      // Check if it's a self-approval error (403 Forbidden)
+      if (error?.response?.status === 403) {
+        toast.error(t.registration.errorSelfApproval);
+      } else {
+        toast.error(t.registration.errorApprove);
+      }
     } finally {
       setActionLoading(false);
     }

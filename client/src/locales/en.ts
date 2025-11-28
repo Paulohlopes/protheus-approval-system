@@ -424,6 +424,7 @@ export const en = {
     errorLoadRequests: 'Error loading requests. Please try again.',
     errorLoadPending: 'Error loading pending approvals. Please try again.',
     errorApprove: 'Error approving request. Please try again.',
+    errorSelfApproval: 'You cannot approve your own request.',
     errorReject: 'Error rejecting request. Please try again.',
     errorRetrySync: 'Error retrying sync. Please try again.',
     errorSubmit: 'Error submitting request. Please try again.',

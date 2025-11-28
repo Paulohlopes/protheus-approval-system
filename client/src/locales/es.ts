@@ -424,6 +424,7 @@ export const es = {
     errorLoadRequests: 'Error al cargar solicitudes. Por favor, inténtelo de nuevo.',
     errorLoadPending: 'Error al cargar aprobaciones pendientes. Por favor, inténtelo de nuevo.',
     errorApprove: 'Error al aprobar solicitud. Por favor, inténtelo de nuevo.',
+    errorSelfApproval: 'No puede aprobar su propia solicitud.',
     errorReject: 'Error al rechazar solicitud. Por favor, inténtelo de nuevo.',
     errorRetrySync: 'Error al reintentar sincronización. Por favor, inténtelo de nuevo.',
     errorSubmit: 'Error al enviar solicitud. Por favor, inténtelo de nuevo.',

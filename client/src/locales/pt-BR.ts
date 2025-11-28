@@ -424,6 +424,7 @@ export const ptBR = {
     errorLoadRequests: 'Erro ao carregar solicitações. Por favor, tente novamente.',
     errorLoadPending: 'Erro ao carregar aprovações pendentes. Por favor, tente novamente.',
     errorApprove: 'Erro ao aprovar solicitação. Por favor, tente novamente.',
+    errorSelfApproval: 'Você não pode aprovar sua própria solicitação.',
     errorReject: 'Erro ao rejeitar solicitação. Por favor, tente novamente.',
     errorRetrySync: 'Erro ao retentar sincronização. Por favor, tente novamente.',
     errorSubmit: 'Erro ao enviar solicitação. Por favor, tente novamente.',
