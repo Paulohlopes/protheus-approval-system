@@ -1301,15 +1301,12 @@ export class RegistrationService {
       }
 
       // Note: Raw query returns snake_case column names from PostgreSQL
-      const requestedById = registration.requested_by_id || registration.requestedById;
       const currentLevel = registration.current_level ?? registration.currentLevel;
       const currentStatus = registration.status as RegistrationStatus;
       const workflowSnapshot = registration.workflow_snapshot || registration.workflowSnapshot;
 
-      // Prevent self-sendback
-      if (requestedById === approverId) {
-        throw new ForbiddenException('You cannot send back your own registration request');
-      }
+      // Note: Self-sendback is allowed - an approver can send back their own request
+      // This is different from approve/reject where self-action is blocked
 
       // Validate status allows send back
       if (
