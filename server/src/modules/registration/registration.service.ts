@@ -5,6 +5,7 @@ import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { UpdateRegistrationDto } from './dto/update-registration.dto';
 import { ApproveRegistrationDto } from './dto/approve-registration.dto';
 import { RejectRegistrationDto } from './dto/reject-registration.dto';
+import { SendBackRegistrationDto } from './dto/send-back-registration.dto';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
 import { ProtheusIntegrationService } from '../protheus-integration/protheus-integration.service';
@@ -15,10 +16,11 @@ import { ApprovalGroupsService } from '../approval-groups/approval-groups.servic
 // ==========================================
 const VALID_STATUS_TRANSITIONS: Record<RegistrationStatus, RegistrationStatus[]> = {
   [RegistrationStatus.DRAFT]: [RegistrationStatus.PENDING_APPROVAL],
-  [RegistrationStatus.PENDING_APPROVAL]: [RegistrationStatus.IN_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.REJECTED],
-  [RegistrationStatus.IN_APPROVAL]: [RegistrationStatus.APPROVED, RegistrationStatus.REJECTED],
+  [RegistrationStatus.PENDING_APPROVAL]: [RegistrationStatus.IN_APPROVAL, RegistrationStatus.APPROVED, RegistrationStatus.REJECTED, RegistrationStatus.RETURNED],
+  [RegistrationStatus.IN_APPROVAL]: [RegistrationStatus.APPROVED, RegistrationStatus.REJECTED, RegistrationStatus.RETURNED],
   [RegistrationStatus.APPROVED]: [RegistrationStatus.SYNCING_TO_PROTHEUS],
   [RegistrationStatus.REJECTED]: [], // Terminal state - no transitions allowed
+  [RegistrationStatus.RETURNED]: [RegistrationStatus.DRAFT, RegistrationStatus.PENDING_APPROVAL], // Can be resubmitted or returned to draft
   [RegistrationStatus.SYNCING_TO_PROTHEUS]: [RegistrationStatus.SYNCED, RegistrationStatus.SYNC_FAILED],
   [RegistrationStatus.SYNCED]: [], // Terminal state - no transitions allowed
   [RegistrationStatus.SYNC_FAILED]: [RegistrationStatus.APPROVED], // Can retry sync
@@ -1277,6 +1279,184 @@ export class RegistrationService {
     }, {
       timeout: 30000, // 30 second timeout
       isolationLevel: 'Serializable', // Highest isolation level
+    });
+  }
+
+  /**
+   * Send back registration to previous level or to requester (draft)
+   * LOG-02: Uses transaction with pessimistic lock to prevent race conditions
+   */
+  async sendBack(id: string, dto: SendBackRegistrationDto, approverId: string) {
+    this.logger.log(`Sending back registration ${id} by user ${approverId}`);
+
+    return this.prisma.$transaction(async (tx) => {
+      // Lock the registration row to prevent concurrent modifications
+      const registrations = await tx.$queryRaw<any[]>(
+        Prisma.sql`SELECT * FROM registration_requests WHERE id::text = ${id} FOR UPDATE`
+      );
+      const registration = registrations[0];
+
+      if (!registration) {
+        throw new NotFoundException(`Registration ${id} not found`);
+      }
+
+      // Note: Raw query returns snake_case column names from PostgreSQL
+      const requestedById = registration.requested_by_id || registration.requestedById;
+      const currentLevel = registration.current_level ?? registration.currentLevel;
+      const currentStatus = registration.status as RegistrationStatus;
+      const workflowSnapshot = registration.workflow_snapshot || registration.workflowSnapshot;
+
+      // Prevent self-sendback
+      if (requestedById === approverId) {
+        throw new ForbiddenException('You cannot send back your own registration request');
+      }
+
+      // Validate status allows send back
+      if (
+        currentStatus !== RegistrationStatus.PENDING_APPROVAL &&
+        currentStatus !== RegistrationStatus.IN_APPROVAL
+      ) {
+        throw new BadRequestException(`Registration is not pending approval (current status: ${currentStatus})`);
+      }
+
+      // Find pending approval for this user at current level
+      const approval = await tx.registrationApproval.findFirst({
+        where: {
+          requestId: id,
+          approverId,
+          level: currentLevel,
+          action: ApprovalAction.PENDING,
+        },
+      });
+
+      if (!approval) {
+        throw new BadRequestException('No pending approval found for this user at current level');
+      }
+
+      // Determine target level
+      // If targetLevel is 0, return to DRAFT (requester)
+      // If targetLevel is not provided, go to previous level (currentLevel - 1)
+      // If targetLevel is provided and > 0, go to that specific level
+      let targetLevel = dto.targetLevel !== undefined ? dto.targetLevel : currentLevel - 1;
+
+      // Validate target level
+      if (targetLevel < 0) {
+        targetLevel = 0;
+      }
+      if (targetLevel >= currentLevel) {
+        throw new BadRequestException(`Target level (${targetLevel}) must be less than current level (${currentLevel})`);
+      }
+
+      this.logger.debug(`Send back: current level ${currentLevel} -> target level ${targetLevel}`);
+
+      // Mark current approval as SENT_BACK
+      await tx.registrationApproval.update({
+        where: { id: approval.id },
+        data: {
+          action: ApprovalAction.SENT_BACK,
+          comments: dto.reason,
+          actionAt: new Date(),
+        },
+      });
+
+      // Cancel all other pending approvals at current level
+      await tx.registrationApproval.updateMany({
+        where: {
+          requestId: id,
+          level: currentLevel,
+          action: ApprovalAction.PENDING,
+        },
+        data: {
+          action: ApprovalAction.SENT_BACK,
+          comments: `Cancelled due to send back by another approver`,
+          actionAt: new Date(),
+        },
+      });
+
+      if (targetLevel === 0) {
+        // Return to DRAFT status - requester needs to resubmit
+        await tx.registrationRequest.update({
+          where: { id },
+          data: {
+            status: RegistrationStatus.DRAFT,
+            currentLevel: 0,
+          },
+        });
+
+        this.logger.log(`Registration ${id} sent back to DRAFT by ${approverId}`);
+      } else {
+        // Return to a previous approval level
+        // Update status to RETURNED and set target level
+        await tx.registrationRequest.update({
+          where: { id },
+          data: {
+            status: RegistrationStatus.RETURNED,
+            currentLevel: targetLevel,
+          },
+        });
+
+        // Create new pending approvals for the target level
+        const snapshot = workflowSnapshot as any;
+        const targetLevelConfig = snapshot?.levels?.find((l: any) => l.levelOrder === targetLevel);
+
+        if (targetLevelConfig) {
+          // Resolve approvers for the target level
+          const approverIds = await this.resolveApproversForLevel(targetLevelConfig, tx);
+
+          // Create approval records for target level
+          for (const approverIdItem of approverIds) {
+            await tx.registrationApproval.create({
+              data: {
+                requestId: id,
+                level: targetLevel,
+                approverId: approverIdItem,
+                action: ApprovalAction.PENDING,
+              },
+            });
+          }
+
+          // Update status to appropriate state
+          await tx.registrationRequest.update({
+            where: { id },
+            data: {
+              status: RegistrationStatus.PENDING_APPROVAL,
+            },
+          });
+        }
+
+        this.logger.log(`Registration ${id} sent back to level ${targetLevel} by ${approverId}`);
+      }
+
+      // TODO: Send notification to requester or previous level approvers
+
+      // Return the updated registration
+      return tx.registrationRequest.findUnique({
+        where: { id },
+        include: {
+          template: {
+            include: {
+              fields: {
+                where: { isVisible: true },
+                orderBy: { fieldOrder: 'asc' },
+              },
+            },
+          },
+          requestedBy: {
+            select: { id: true, name: true, email: true },
+          },
+          approvals: {
+            include: {
+              approver: {
+                select: { id: true, name: true, email: true },
+              },
+            },
+            orderBy: { level: 'asc' },
+          },
+        },
+      });
+    }, {
+      timeout: 30000,
+      isolationLevel: 'Serializable',
     });
   }
 

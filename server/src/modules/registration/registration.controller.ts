@@ -16,6 +16,7 @@ import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { UpdateRegistrationDto } from './dto/update-registration.dto';
 import { ApproveRegistrationDto } from './dto/approve-registration.dto';
 import { RejectRegistrationDto } from './dto/reject-registration.dto';
+import { SendBackRegistrationDto } from './dto/send-back-registration.dto';
 import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { RegistrationStatus } from '@prisma/client';
@@ -178,6 +179,20 @@ export class RegistrationController {
     @CurrentUser() user: UserInfo,
   ) {
     return this.registrationService.reject(id, dto, user.id);
+  }
+
+  @Post(':id/send-back')
+  @ApiOperation({ summary: 'Devolver cadastro', description: 'Devolve o cadastro para nível anterior ou para o solicitante (rascunho)' })
+  @ApiParam({ name: 'id', description: 'ID do cadastro' })
+  @ApiResponse({ status: 200, description: 'Cadastro devolvido' })
+  @ApiResponse({ status: 400, description: 'Nenhuma aprovação pendente ou nível inválido' })
+  @ApiResponse({ status: 403, description: 'Não pode devolver própria solicitação' })
+  sendBack(
+    @Param('id') id: string,
+    @Body() dto: SendBackRegistrationDto,
+    @CurrentUser() user: UserInfo,
+  ) {
+    return this.registrationService.sendBack(id, dto, user.id);
   }
 
   @Post(':id/retry-sync')
