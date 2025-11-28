@@ -39,9 +39,13 @@ import { registrationService } from '../../services/registrationService';
 import {
   protheusDataService,
   type SearchFilter,
-  type SearchableField,
-  type ProtheusRecord,
 } from '../../services/protheusDataService';
+
+// Record from search result
+interface SearchResultRecord {
+  recno: string;
+  data: Record<string, any>;
+}
 import { toast } from '../../utils/toast';
 import { useLanguage } from '../../contexts/LanguageContext';
 import type { FormTemplate, FormField, SupportedLanguage } from '../../types/registration';
@@ -67,7 +71,7 @@ export const SearchRecordPage = () => {
 
   // Search state
   const [filters, setFilters] = useState<FilterValue[]>([{ field: '', operator: 'like', value: '' }]);
-  const [results, setResults] = useState<ProtheusRecord[]>([]);
+  const [results, setResults] = useState<SearchResultRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -128,8 +132,8 @@ export const SearchRecordPage = () => {
         pageSize,
       });
 
-      setResults(result.data);
-      setTotal(result.total);
+      setResults(result.records || []);
+      setTotal(result.total || 0);
     } catch (error: any) {
       console.error('Error searching records:', error);
       toast.error(error.response?.data?.message || t.registration.alteration.errorSearch);
@@ -180,7 +184,7 @@ export const SearchRecordPage = () => {
   }, [page, pageSize]);
 
   // Handle record selection for alteration
-  const handleSelectRecord = async (record: ProtheusRecord) => {
+  const handleSelectRecord = async (record: SearchResultRecord) => {
     if (!templateId) return;
 
     try {
@@ -189,7 +193,7 @@ export const SearchRecordPage = () => {
       // Create alteration draft
       const registration = await protheusDataService.createAlterationDraft({
         templateId,
-        originalRecno: String(record.R_E_C_N_O_),
+        originalRecno: record.recno,
       });
 
       toast.success(t.registration.alteration.draftCreated);
@@ -403,27 +407,29 @@ export const SearchRecordPage = () => {
                   </TableRow>
                 ) : (
                   results.map((record) => (
-                    <TableRow key={record.R_E_C_N_O_} hover>
+                    <TableRow key={record.recno} hover>
                       <TableCell>
-                        <Chip label={record.R_E_C_N_O_} size="small" variant="outlined" />
+                        <Chip label={record.recno} size="small" variant="outlined" />
                       </TableCell>
                       {displayColumns.map((field) => (
                         <TableCell key={field.sx3FieldName}>
-                          {record[field.sx3FieldName] ?? '-'}
+                          {record.data?.[field.sx3FieldName] ?? '-'}
                         </TableCell>
                       ))}
                       <TableCell align="right">
                         <Tooltip title={t.registration.alteration.selectForAlteration}>
-                          <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={creating ? <CircularProgress size={14} color="inherit" /> : <Edit />}
-                            onClick={() => handleSelectRecord(record)}
-                            disabled={creating}
-                            sx={{ borderRadius: 2, textTransform: 'none' }}
-                          >
-                            {t.registration.alteration.select}
-                          </Button>
+                          <span>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={creating ? <CircularProgress size={14} color="inherit" /> : <Edit />}
+                              onClick={() => handleSelectRecord(record)}
+                              disabled={creating}
+                              sx={{ borderRadius: 2, textTransform: 'none' }}
+                            >
+                              {t.registration.alteration.select}
+                            </Button>
+                          </span>
                         </Tooltip>
                       </TableCell>
                     </TableRow>

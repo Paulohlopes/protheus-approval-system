@@ -15,11 +15,10 @@ export interface SearchRecordsParams {
 }
 
 export interface SearchResult {
-  data: Record<string, any>[];
+  records: Array<{ recno: string; data: Record<string, any> }>;
   total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+  limit: number;
+  offset: number;
 }
 
 export interface SearchableField {
@@ -37,19 +36,37 @@ export interface ProtheusRecord {
 export const protheusDataService = {
   /**
    * Search records in Protheus table with filters
+   * Backend endpoint: GET /protheus-data/:tableName/search?filters=JSON&limit=N&offset=N
    */
   async searchRecords(params: SearchRecordsParams): Promise<SearchResult> {
-    const response = await backendApi.post('/protheus-data/search', params);
+    // Convert filters array to object format expected by backend
+    const filtersObj: Record<string, string> = {};
+    if (params.filters) {
+      params.filters.forEach((f) => {
+        if (f.field && f.value) {
+          // Backend expects simple field:value format with LIKE by default
+          // For more complex operators, we could encode them in the value
+          filtersObj[f.field] = String(f.value);
+        }
+      });
+    }
+
+    const response = await backendApi.get(`/protheus-data/${params.tableName}/search`, {
+      params: {
+        filters: Object.keys(filtersObj).length > 0 ? JSON.stringify(filtersObj) : undefined,
+        limit: params.pageSize || 50,
+        offset: ((params.page || 1) - 1) * (params.pageSize || 50),
+      },
+    });
     return response.data;
   },
 
   /**
    * Get a single record by RECNO
+   * Backend endpoint: GET /protheus-data/:tableName/record/:recno
    */
   async getRecordByRecno(tableName: string, recno: string): Promise<ProtheusRecord> {
-    const response = await backendApi.get(`/protheus-data/record/${recno}`, {
-      params: { tableName },
-    });
+    const response = await backendApi.get(`/protheus-data/${tableName}/record/${recno}`);
     return response.data;
   },
 
