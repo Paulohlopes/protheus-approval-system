@@ -385,6 +385,17 @@ export const en = {
     rejectReasonRequired: 'Rejection reason is required',
     approving: 'Approving...',
     rejecting: 'Rejecting...',
+    sendingBack: 'Sending back...',
+    sendBack: 'Send Back',
+    sendBackRequest: 'Send Back Request',
+    sendBackCommentHint: 'Please provide the reason for sending back.',
+    sendBackReason: 'Reason for sending back...',
+    sendBackReasonRequired: 'Reason for sending back is required',
+    sendBackTargetLevel: 'Send back to',
+    sendBackToDraft: 'Return to requester (draft)',
+    sendBackToPreviousLevel: 'Return to previous level',
+    successSentBack: 'Request sent back successfully',
+    errorSendBack: 'Error sending back request. Please try again.',
 
     // Status labels
     statusDraft: 'Draft',

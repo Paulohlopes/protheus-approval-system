@@ -26,6 +26,10 @@ import {
   Tab,
   Divider,
   Alert,
+  FormControl,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
 } from '@mui/material';
 import {
   HowToReg,
@@ -43,6 +47,7 @@ import {
   AccountTree,
   Group,
   ArrowDownward,
+  Undo,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
@@ -54,7 +59,7 @@ import { EmptyState } from '../../components/EmptyState';
 import FieldChangeHistory from '../../components/FieldChangeHistory';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
-type ActionDialogType = 'approve' | 'reject' | null;
+type ActionDialogType = 'approve' | 'reject' | 'sendBack' | null;
 
 export const ApprovalQueuePage = () => {
   const { user } = useAuthStore();
@@ -72,6 +77,9 @@ export const ApprovalQueuePage = () => {
   const [editableFields, setEditableFields] = useState<string[]>([]);
   const [fieldChanges, setFieldChanges] = useState<Record<string, any>>({});
   const [loadingEditableFields, setLoadingEditableFields] = useState(false);
+
+  // Send back state
+  const [sendBackTargetLevel, setSendBackTargetLevel] = useState<number>(0); // 0 = return to draft
 
   const statusConfig: Record<RegistrationStatus, { label: string; color: ChipColor; icon: React.ReactNode }> = {
     DRAFT: { label: t.registration.statusDraft, color: 'default', icon: <Schedule fontSize="small" /> },
@@ -209,6 +217,38 @@ export const ApprovalQueuePage = () => {
     } catch (error) {
       console.error('Error rejecting request:', error);
       toast.error(t.registration.errorReject);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSendBack = async () => {
+    if (!selectedRequest) return;
+
+    if (!actionInput.trim()) {
+      setActionError(t.registration.sendBackReasonRequired);
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      await registrationService.sendBackRegistration(
+        selectedRequest.id,
+        actionInput,
+        sendBackTargetLevel,
+      );
+      toast.success(t.registration.successSentBack);
+      handleCloseActionDialog();
+      setSelectedRequest(null);
+      setSendBackTargetLevel(0);
+      await loadPendingApprovals();
+    } catch (error: any) {
+      console.error('Error sending back request:', error);
+      if (error?.response?.status === 403) {
+        toast.error(t.registration.errorSelfApproval);
+      } else {
+        toast.error(t.registration.errorSendBack);
+      }
     } finally {
       setActionLoading(false);
     }
@@ -851,6 +891,16 @@ export const ApprovalQueuePage = () => {
                 {t.common.close}
               </Button>
               <Button
+                onClick={() => handleOpenActionDialog('sendBack')}
+                variant="contained"
+                color="warning"
+                startIcon={<Undo />}
+                disabled={actionLoading}
+                sx={{ borderRadius: 2, textTransform: 'none' }}
+              >
+                {t.registration.sendBack}
+              </Button>
+              <Button
                 onClick={() => handleOpenActionDialog('reject')}
                 variant="contained"
                 color="error"
@@ -985,6 +1035,90 @@ export const ApprovalQueuePage = () => {
             sx={{ borderRadius: 2, textTransform: 'none' }}
           >
             {actionLoading ? t.registration.rejecting : t.common.reject}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Send Back Dialog */}
+      <Dialog
+        open={actionDialog === 'sendBack'}
+        onClose={handleCloseActionDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Undo color="warning" />
+            <Typography variant="h6">{t.registration.sendBackRequest}</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t.registration.sendBackCommentHint}
+          </Typography>
+
+          <FormControl component="fieldset" sx={{ mb: 2, width: '100%' }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              {t.registration.sendBackTargetLevel}
+            </Typography>
+            <RadioGroup
+              value={sendBackTargetLevel}
+              onChange={(e) => setSendBackTargetLevel(Number(e.target.value))}
+            >
+              <FormControlLabel
+                value={0}
+                control={<Radio color="warning" />}
+                label={t.registration.sendBackToDraft}
+              />
+              {selectedRequest && selectedRequest.currentLevel > 1 && (
+                <FormControlLabel
+                  value={selectedRequest.currentLevel - 1}
+                  control={<Radio color="warning" />}
+                  label={`${t.registration.sendBackToPreviousLevel} (${selectedRequest.currentLevel - 1})`}
+                />
+              )}
+            </RadioGroup>
+          </FormControl>
+
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            placeholder={t.registration.sendBackReason}
+            value={actionInput}
+            onChange={(e) => {
+              setActionInput(e.target.value);
+              if (actionError) setActionError('');
+            }}
+            error={!!actionError}
+            helperText={actionError}
+            required
+            variant="outlined"
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button
+            onClick={handleCloseActionDialog}
+            disabled={actionLoading}
+            sx={{ textTransform: 'none' }}
+          >
+            {t.common.cancel}
+          </Button>
+          <Button
+            onClick={handleSendBack}
+            variant="contained"
+            color="warning"
+            disabled={actionLoading}
+            startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <Undo />}
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+          >
+            {actionLoading ? t.registration.sendingBack : t.registration.sendBack}
           </Button>
         </DialogActions>
       </Dialog>

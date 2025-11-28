@@ -227,6 +227,24 @@ export const registrationService = {
   },
 
   /**
+   * Send back registration to previous level or to requester (draft)
+   * @param id - Registration ID
+   * @param reason - Reason for sending back
+   * @param targetLevel - Target level (0 = return to draft, undefined = previous level)
+   */
+  async sendBackRegistration(
+    id: string,
+    reason: string,
+    targetLevel?: number,
+  ): Promise<RegistrationRequest> {
+    const response = await backendApi.post(`/registrations/${id}/send-back`, {
+      reason,
+      targetLevel,
+    });
+    return response.data;
+  },
+
+  /**
    * Get pending approvals for current user
    */
   async getPendingApprovals(approverId: string): Promise<RegistrationRequest[]> {

@@ -385,6 +385,17 @@ export const ptBR = {
     rejectReasonRequired: 'O motivo da rejeição é obrigatório',
     approving: 'Aprovando...',
     rejecting: 'Rejeitando...',
+    sendingBack: 'Devolvendo...',
+    sendBack: 'Devolver',
+    sendBackRequest: 'Devolver Solicitação',
+    sendBackCommentHint: 'Por favor, informe o motivo da devolução.',
+    sendBackReason: 'Motivo da devolução...',
+    sendBackReasonRequired: 'O motivo da devolução é obrigatório',
+    sendBackTargetLevel: 'Devolver para',
+    sendBackToDraft: 'Devolver ao solicitante (rascunho)',
+    sendBackToPreviousLevel: 'Devolver ao nível anterior',
+    successSentBack: 'Solicitação devolvida com sucesso',
+    errorSendBack: 'Erro ao devolver solicitação. Por favor, tente novamente.',
 
     // Status labels
     statusDraft: 'Rascunho',

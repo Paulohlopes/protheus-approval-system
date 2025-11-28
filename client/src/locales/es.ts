@@ -385,6 +385,17 @@ export const es = {
     rejectReasonRequired: 'El motivo del rechazo es obligatorio',
     approving: 'Aprobando...',
     rejecting: 'Rechazando...',
+    sendingBack: 'Devolviendo...',
+    sendBack: 'Devolver',
+    sendBackRequest: 'Devolver Solicitud',
+    sendBackCommentHint: 'Por favor, indique el motivo de la devolución.',
+    sendBackReason: 'Motivo de la devolución...',
+    sendBackReasonRequired: 'El motivo de la devolución es obligatorio',
+    sendBackTargetLevel: 'Devolver a',
+    sendBackToDraft: 'Devolver al solicitante (borrador)',
+    sendBackToPreviousLevel: 'Devolver al nivel anterior',
+    successSentBack: 'Solicitud devuelta con éxito',
+    errorSendBack: 'Error al devolver solicitud. Por favor, inténtelo de nuevo.',
 
     // Status labels
     statusDraft: 'Borrador',
