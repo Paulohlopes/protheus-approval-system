@@ -1,12 +1,12 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProtheusJwtAuthGuard } from '../auth/guards/protheus-jwt-auth.guard';
 import { ProtheusDataService } from './protheus-data.service';
 import { SearchRecordsDto, SearchResultDto, SearchFieldDto, ProtheusRecordDto } from './dto/search-records.dto';
 
 @ApiTags('Protheus Data')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@ApiBearerAuth('JWT-auth')
+@UseGuards(ProtheusJwtAuthGuard)
 @Controller('protheus-data')
 export class ProtheusDataController {
   constructor(private readonly protheusDataService: ProtheusDataService) {}
