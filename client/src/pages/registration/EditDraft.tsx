@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -15,12 +15,17 @@ import {
   Stack,
   Alert,
   Grid,
+  Chip,
+  Tooltip,
+  alpha,
 } from '@mui/material';
 import {
   Edit,
   Send,
   ArrowBack,
   Save,
+  CompareArrows,
+  History,
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
@@ -30,11 +35,18 @@ import { getFieldLabel, RegistrationStatus } from '../../types/registration';
 
 type FormValue = string | number | boolean | null;
 
+// Extended registration type with alteration fields
+interface ExtendedRegistrationRequest extends RegistrationRequest {
+  operationType?: 'NEW' | 'ALTERATION';
+  originalRecno?: string;
+  originalFormData?: Record<string, any>;
+}
+
 export const EditDraftPage = () => {
   const { registrationId } = useParams<{ registrationId: string }>();
   const navigate = useNavigate();
   const { language, t, formatMessage } = useLanguage();
-  const [registration, setRegistration] = useState<RegistrationRequest | null>(null);
+  const [registration, setRegistration] = useState<ExtendedRegistrationRequest | null>(null);
   const [template, setTemplate] = useState<FormTemplate | null>(null);
   const [fields, setFields] = useState<FormField[]>([]);
   const [formData, setFormData] = useState<Record<string, FormValue>>({});
@@ -42,6 +54,33 @@ export const EditDraftPage = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Check if this is an alteration
+  const isAlteration = registration?.operationType === 'ALTERATION';
+  const originalFormData = registration?.originalFormData || {};
+
+  // Calculate which fields have been modified
+  const modifiedFields = useMemo(() => {
+    if (!isAlteration || !originalFormData) return new Set<string>();
+
+    const modified = new Set<string>();
+    Object.keys(formData).forEach((fieldName) => {
+      const currentValue = formData[fieldName];
+      const originalValue = originalFormData[fieldName];
+
+      // Compare values (handle null, undefined, empty string as equivalent)
+      const normalizeValue = (v: any) => {
+        if (v === null || v === undefined || v === '') return '';
+        return String(v);
+      };
+
+      if (normalizeValue(currentValue) !== normalizeValue(originalValue)) {
+        modified.add(fieldName);
+      }
+    });
+
+    return modified;
+  }, [formData, originalFormData, isAlteration]);
 
   const getLabel = (field: FormField): string => {
     return getFieldLabel(field, language as SupportedLanguage);
@@ -166,103 +205,194 @@ export const EditDraftPage = () => {
     return true;
   }, [fields, formData, language, t, formatMessage]);
 
+  // Get the style for modified fields
+  const getFieldStyle = (fieldName: string) => {
+    const isModified = modifiedFields.has(fieldName);
+    if (!isAlteration || !isModified) {
+      return { '& .MuiOutlinedInput-root': { borderRadius: 2 } };
+    }
+
+    return {
+      '& .MuiOutlinedInput-root': {
+        borderRadius: 2,
+        bgcolor: (theme: any) => alpha(theme.palette.warning.main, 0.08),
+        '& fieldset': {
+          borderColor: 'warning.main',
+          borderWidth: 2,
+        },
+        '&:hover fieldset': {
+          borderColor: 'warning.dark',
+        },
+        '&.Mui-focused fieldset': {
+          borderColor: 'warning.main',
+        },
+      },
+    };
+  };
+
+  // Render original value hint for altered fields
+  const renderOriginalValueHint = (fieldName: string) => {
+    if (!isAlteration || !modifiedFields.has(fieldName)) return null;
+
+    const originalValue = originalFormData[fieldName];
+    const displayValue = originalValue === null || originalValue === undefined || originalValue === ''
+      ? t.registration.alteration.emptyValue
+      : String(originalValue);
+
+    return (
+      <Tooltip title={`${t.registration.alteration.originalValue}: ${displayValue}`}>
+        <Chip
+          icon={<History sx={{ fontSize: 14 }} />}
+          label={displayValue.length > 20 ? `${displayValue.substring(0, 20)}...` : displayValue}
+          size="small"
+          color="warning"
+          variant="outlined"
+          sx={{ mt: 0.5, fontSize: '0.75rem' }}
+        />
+      </Tooltip>
+    );
+  };
+
   const renderField = (field: FormField) => {
     const value = formData[field.sx3FieldName];
     const hasError = !!errors[field.sx3FieldName];
     const errorMessage = errors[field.sx3FieldName];
     const label = getLabel(field);
+    const isModified = modifiedFields.has(field.sx3FieldName);
+    const fieldStyle = getFieldStyle(field.sx3FieldName);
+
+    // Build helper text
+    const getHelperText = (defaultHint?: string) => {
+      if (errorMessage) return errorMessage;
+      if (isAlteration && isModified) {
+        return t.registration.alteration.fieldModified;
+      }
+      return defaultHint;
+    };
 
     switch (field.fieldType) {
       case 'number':
         return (
-          <TextField
-            fullWidth
-            type="number"
-            label={label}
-            value={value === null ? '' : String(value)}
-            onChange={(e) => {
-              const numValue = e.target.value === '' ? null : parseFloat(e.target.value);
-              handleChange(field.sx3FieldName, numValue);
-            }}
-            required={field.isRequired}
-            error={hasError}
-            helperText={errorMessage || (field.metadata?.mask ? `${t.common.format}: ${field.metadata.mask}` : undefined)}
-            inputProps={{
-              step: field.metadata?.decimals ? `0.${'0'.repeat(field.metadata.decimals - 1)}1` : '1',
-            }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
+          <Box>
+            <TextField
+              fullWidth
+              type="number"
+              label={label}
+              value={value === null ? '' : String(value)}
+              onChange={(e) => {
+                const numValue = e.target.value === '' ? null : parseFloat(e.target.value);
+                handleChange(field.sx3FieldName, numValue);
+              }}
+              required={field.isRequired}
+              error={hasError}
+              helperText={getHelperText(field.metadata?.mask ? `${t.common.format}: ${field.metadata.mask}` : undefined)}
+              inputProps={{
+                step: field.metadata?.decimals ? `0.${'0'.repeat(field.metadata.decimals - 1)}1` : '1',
+              }}
+              sx={fieldStyle}
+            />
+            {renderOriginalValueHint(field.sx3FieldName)}
+          </Box>
         );
 
       case 'date':
         return (
-          <TextField
-            fullWidth
-            type="date"
-            label={label}
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
-            required={field.isRequired}
-            error={hasError}
-            helperText={errorMessage}
-            InputLabelProps={{ shrink: true }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
+          <Box>
+            <TextField
+              fullWidth
+              type="date"
+              label={label}
+              value={typeof value === 'string' ? value : ''}
+              onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
+              required={field.isRequired}
+              error={hasError}
+              helperText={getHelperText()}
+              InputLabelProps={{ shrink: true }}
+              sx={fieldStyle}
+            />
+            {renderOriginalValueHint(field.sx3FieldName)}
+          </Box>
         );
 
       case 'boolean':
         return (
-          <FormControl error={hasError}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={value === true}
-                  onChange={(e) => handleChange(field.sx3FieldName, e.target.checked)}
-                  color="primary"
-                />
-              }
-              label={label}
-            />
-            {hasError && (
-              <Typography variant="caption" color="error">
-                {errorMessage}
-              </Typography>
-            )}
-          </FormControl>
+          <Box
+            sx={
+              isAlteration && isModified
+                ? {
+                    p: 1,
+                    borderRadius: 2,
+                    bgcolor: (theme: any) => alpha(theme.palette.warning.main, 0.08),
+                    border: '2px solid',
+                    borderColor: 'warning.main',
+                  }
+                : {}
+            }
+          >
+            <FormControl error={hasError}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={value === true}
+                    onChange={(e) => handleChange(field.sx3FieldName, e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={label}
+              />
+              {hasError && (
+                <Typography variant="caption" color="error">
+                  {errorMessage}
+                </Typography>
+              )}
+              {isAlteration && isModified && (
+                <Typography variant="caption" color="warning.main">
+                  {t.registration.alteration.fieldModified}
+                </Typography>
+              )}
+            </FormControl>
+            {renderOriginalValueHint(field.sx3FieldName)}
+          </Box>
         );
 
       case 'text':
         return (
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label={label}
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
-            required={field.isRequired}
-            error={hasError}
-            helperText={errorMessage}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
+          <Box>
+            <TextField
+              fullWidth
+              multiline
+              rows={4}
+              label={label}
+              value={typeof value === 'string' ? value : ''}
+              onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
+              required={field.isRequired}
+              error={hasError}
+              helperText={getHelperText()}
+              sx={fieldStyle}
+            />
+            {renderOriginalValueHint(field.sx3FieldName)}
+          </Box>
         );
 
       case 'string':
       default:
         return (
-          <TextField
-            fullWidth
-            label={label}
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
-            required={field.isRequired}
-            error={hasError}
-            helperText={errorMessage || (field.metadata?.mask ? `${t.common.format}: ${field.metadata.mask}` : undefined)}
-            inputProps={{
-              maxLength: field.metadata?.size || undefined,
-            }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
+          <Box>
+            <TextField
+              fullWidth
+              label={label}
+              value={typeof value === 'string' ? value : ''}
+              onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
+              required={field.isRequired}
+              error={hasError}
+              helperText={getHelperText(field.metadata?.mask ? `${t.common.format}: ${field.metadata.mask}` : undefined)}
+              inputProps={{
+                maxLength: field.metadata?.size || undefined,
+              }}
+              sx={fieldStyle}
+            />
+            {renderOriginalValueHint(field.sx3FieldName)}
+          </Box>
         );
     }
   };
@@ -362,9 +492,11 @@ export const EditDraftPage = () => {
       {/* Header */}
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-          <Edit fontSize="large" color="primary" />
+          <Edit fontSize="large" color={isAlteration ? 'secondary' : 'primary'} />
           <Typography variant="h4" component="h1" fontWeight={600}>
-            {t.registration.editDraft}: {template.label}
+            {isAlteration
+              ? `${t.registration.alteration.editTitle}: ${template.label}`
+              : `${t.registration.editDraft}: ${template.label}`}
           </Typography>
         </Box>
         {template.description && (
@@ -373,6 +505,36 @@ export const EditDraftPage = () => {
           </Typography>
         )}
       </Box>
+
+      {/* Alteration Info Banner */}
+      {isAlteration && (
+        <Alert
+          severity="info"
+          icon={<CompareArrows />}
+          sx={{ mb: 3, borderRadius: 2 }}
+        >
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t.registration.alteration.alterationMode}
+          </Typography>
+          <Typography variant="body2">
+            {t.registration.alteration.alterationModeDesc}
+            {registration?.originalRecno && (
+              <Chip
+                label={`RECNO: ${registration.originalRecno}`}
+                size="small"
+                sx={{ ml: 1 }}
+              />
+            )}
+          </Typography>
+          {modifiedFields.size > 0 && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body2" color="warning.main">
+                {t.registration.alteration.fieldsModified.replace('{{count}}', String(modifiedFields.size))}
+              </Typography>
+            </Box>
+          )}
+        </Alert>
+      )}
 
       {/* Form */}
       <Paper

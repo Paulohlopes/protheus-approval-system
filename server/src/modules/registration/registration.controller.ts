@@ -19,6 +19,7 @@ import { RejectRegistrationDto } from './dto/reject-registration.dto';
 import { SendBackRegistrationDto } from './dto/send-back-registration.dto';
 import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
+import { CreateAlterationDto } from './dto/create-alteration.dto';
 import { RegistrationStatus } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserInfo } from '../auth/interfaces/auth.interface';
@@ -69,6 +70,18 @@ export class RegistrationController {
       throw new UnauthorizedException('User not authenticated properly');
     }
     return this.registrationService.create(dto, user.id, user.email);
+  }
+
+  @Post('alteration')
+  @ApiOperation({ summary: 'Criar rascunho de alteração', description: 'Cria um rascunho para alteração de um registro existente no Protheus' })
+  @ApiResponse({ status: 201, description: 'Rascunho de alteração criado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 404, description: 'Registro não encontrado no Protheus' })
+  createAlteration(@Body() dto: CreateAlterationDto, @CurrentUser() user: UserInfo) {
+    if (!user?.id || !user?.email) {
+      throw new UnauthorizedException('User not authenticated properly');
+    }
+    return this.registrationService.createAlterationDraft(dto, user.id, user.email);
   }
 
   @Get()

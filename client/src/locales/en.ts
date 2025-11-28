@@ -463,6 +463,51 @@ export const en = {
     errorSave: 'Error saving draft. Please try again.',
     editDraft: 'Edit Draft',
     submitDraft: 'Submit for Approval',
+
+    // Alteration flow
+    alteration: {
+      // SelectType page
+      selectTypeTitle: 'Modify Registration',
+      selectTypeSubtitle: 'Select the registration type you want to modify',
+      newRegistration: 'New Registration',
+      alteration: 'Modification',
+      newTooltip: 'Create a new record in the system',
+      alterationTooltip: 'Modify an existing record in Protheus',
+      searchLabel: 'Search',
+
+      // SearchRecord page
+      searchTitle: 'Search Record for Modification',
+      searchSubtitle: 'Search and select a {{template}} record to modify',
+      filters: 'Search Filters',
+      field: 'Field',
+      operator: 'Operator',
+      value: 'Value',
+      opContains: 'Contains',
+      opEquals: 'Equals',
+      opNotEquals: 'Not equals',
+      opGreaterThan: 'Greater than',
+      opLessThan: 'Less than',
+      opGreaterOrEqual: 'Greater or equal',
+      opLessOrEqual: 'Less or equal',
+      searching: 'Searching...',
+      results: 'Results',
+      noResults: 'No records found',
+      selectForAlteration: 'Select for modification',
+      select: 'Select',
+      creatingDraft: 'Creating modification draft...',
+      draftCreated: 'Modification draft created successfully!',
+      errorSearch: 'Error searching records. Please try again.',
+      errorCreateDraft: 'Error creating modification draft. Please try again.',
+
+      // EditDraft page (alteration mode)
+      editTitle: 'Modify Registration',
+      alterationMode: 'Modification Mode',
+      alterationModeDesc: 'You are modifying an existing record in Protheus.',
+      fieldsModified: '{{count}} field(s) modified',
+      fieldModified: 'Field modified',
+      originalValue: 'Original value',
+      emptyValue: '(empty)',
+    },
   },
   admin: {
     // Page title

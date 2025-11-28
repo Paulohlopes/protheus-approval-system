@@ -224,6 +224,11 @@ model RegistrationRequest {
   // Form data
   formData        Json                // All form field values
 
+  // Operation type (NEW = new registration, ALTERATION = modify existing)
+  operationType   String              @default("NEW")
+  originalRecno   String?             // R_E_C_N_O_ of original record (for alterations)
+  originalFormData Json?              // Original data from Protheus (for comparison)
+
   // Workflow status
   status          RegistrationStatus  @default(DRAFT)
   currentLevel    Int                 @default(1)

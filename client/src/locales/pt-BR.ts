@@ -480,6 +480,51 @@ export const ptBR = {
     targetLevelDraft: 'Rascunho (solicitante pode editar)',
     targetLevelPrevious: 'Nível anterior de aprovação',
     statusReturned: 'Devolvido',
+
+    // Alteration flow
+    alteration: {
+      // SelectType page
+      selectTypeTitle: 'Alterar Cadastro',
+      selectTypeSubtitle: 'Selecione o tipo de cadastro que deseja alterar',
+      newRegistration: 'Novo Cadastro',
+      alteration: 'Alteração',
+      newTooltip: 'Criar um novo registro no sistema',
+      alterationTooltip: 'Modificar um registro existente no Protheus',
+      searchLabel: 'Buscar',
+
+      // SearchRecord page
+      searchTitle: 'Buscar Registro para Alteração',
+      searchSubtitle: 'Busque e selecione um registro de {{template}} para alterar',
+      filters: 'Filtros de Busca',
+      field: 'Campo',
+      operator: 'Operador',
+      value: 'Valor',
+      opContains: 'Contém',
+      opEquals: 'Igual a',
+      opNotEquals: 'Diferente de',
+      opGreaterThan: 'Maior que',
+      opLessThan: 'Menor que',
+      opGreaterOrEqual: 'Maior ou igual',
+      opLessOrEqual: 'Menor ou igual',
+      searching: 'Buscando...',
+      results: 'Resultados',
+      noResults: 'Nenhum registro encontrado',
+      selectForAlteration: 'Selecionar para alteração',
+      select: 'Selecionar',
+      creatingDraft: 'Criando rascunho de alteração...',
+      draftCreated: 'Rascunho de alteração criado com sucesso!',
+      errorSearch: 'Erro ao buscar registros. Por favor, tente novamente.',
+      errorCreateDraft: 'Erro ao criar rascunho de alteração. Por favor, tente novamente.',
+
+      // EditDraft page (alteration mode)
+      editTitle: 'Alterar Cadastro',
+      alterationMode: 'Modo Alteração',
+      alterationModeDesc: 'Você está alterando um registro existente no Protheus.',
+      fieldsModified: '{{count}} campo(s) modificado(s)',
+      fieldModified: 'Campo modificado',
+      originalValue: 'Valor original',
+      emptyValue: '(vazio)',
+    },
   },
   admin: {
     // Page title

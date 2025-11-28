@@ -152,8 +152,45 @@ export class ProtheusIntegrationService {
   }
 
   /**
+   * Update existing record in Protheus via REST API (PUT)
+   */
+  async updateRecord(tableName: string, recno: string, formData: Record<string, any>): Promise<void> {
+    this.logger.log(`Updating record in Protheus table ${tableName}, RECNO: ${recno}`);
+
+    const token = await this.getToken();
+    const baseUrl = this.configService.get('PROTHEUS_API_URL');
+    const endpoint = this.getEndpoint(tableName);
+    const protheusData = this.mapFormDataToProtheus(tableName, formData);
+
+    try {
+      await firstValueFrom(
+        this.httpService.put(`${baseUrl}${endpoint}/${recno}`, protheusData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+      );
+
+      this.logger.log(`Successfully updated record in Protheus. RECNO: ${recno}`);
+    } catch (error) {
+      this.logger.error(`Failed to update record in Protheus`, {
+        tableName,
+        recno,
+        error: error.message,
+        response: error.response?.data,
+      });
+
+      throw new Error(
+        `Protheus API error: ${error.response?.data?.message || error.message}`,
+      );
+    }
+  }
+
+  /**
    * Sync registration request to Protheus
    * This is called after a registration is fully approved
+   * Handles both NEW registrations (POST) and ALTERATIONS (PUT)
    */
   async syncToProtheus(registrationId: string): Promise<void> {
     this.logger.log(`Syncing registration ${registrationId} to Protheus`);
@@ -171,6 +208,9 @@ export class ProtheusIntegrationService {
       throw new Error(`Registration ${registrationId} is not approved`);
     }
 
+    const isAlteration = registration.operationType === 'ALTERATION';
+    this.logger.log(`Operation type: ${registration.operationType}`);
+
     // Update status to SYNCING
     await this.prisma.registrationRequest.update({
       where: { id: registrationId },
@@ -180,8 +220,22 @@ export class ProtheusIntegrationService {
     });
 
     try {
-      // Create record in Protheus
-      const recno = await this.createRecord(registration.tableName, registration.formData as any);
+      let recno: string;
+
+      if (isAlteration && registration.originalRecno) {
+        // ALTERATION: Update existing record in Protheus
+        await this.updateRecord(
+          registration.tableName,
+          registration.originalRecno,
+          registration.formData as any,
+        );
+        recno = registration.originalRecno;
+        this.logger.log(`Updated existing record in Protheus. RECNO: ${recno}`);
+      } else {
+        // NEW: Create new record in Protheus
+        recno = await this.createRecord(registration.tableName, registration.formData as any);
+        this.logger.log(`Created new record in Protheus. RECNO: ${recno}`);
+      }
 
       // Update registration with success
       await this.prisma.registrationRequest.update({
@@ -194,6 +248,7 @@ export class ProtheusIntegrationService {
           syncLog: {
             syncedAt: new Date().toISOString(),
             recno,
+            operationType: registration.operationType,
             success: true,
           },
         },
@@ -212,6 +267,7 @@ export class ProtheusIntegrationService {
           syncLog: {
             syncedAt: new Date().toISOString(),
             error: error.message,
+            operationType: registration.operationType,
             success: false,
           },
         },

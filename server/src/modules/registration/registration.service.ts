@@ -8,8 +8,10 @@ import { RejectRegistrationDto } from './dto/reject-registration.dto';
 import { SendBackRegistrationDto } from './dto/send-back-registration.dto';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
+import { CreateAlterationDto } from './dto/create-alteration.dto';
 import { ProtheusIntegrationService } from '../protheus-integration/protheus-integration.service';
 import { ApprovalGroupsService } from '../approval-groups/approval-groups.service';
+import { ProtheusDataService } from '../protheus-data/protheus-data.service';
 
 // ==========================================
 // LOG-08: STATE MACHINE - Valid Status Transitions
@@ -53,6 +55,7 @@ export class RegistrationService {
     private readonly prisma: PrismaService,
     private readonly protheusIntegrationService: ProtheusIntegrationService,
     private readonly approvalGroupsService: ApprovalGroupsService,
+    private readonly protheusDataService: ProtheusDataService,
   ) {}
 
   // ==========================================
@@ -371,6 +374,72 @@ export class RegistrationService {
     });
 
     this.logger.log(`Created registration draft ${registration.id}`);
+    return registration;
+  }
+
+  /**
+   * Create alteration draft (modification of existing Protheus record)
+   */
+  async createAlterationDraft(dto: CreateAlterationDto, userId: string, userEmail: string) {
+    this.logger.log(`Creating alteration draft for template ${dto.templateId}, RECNO ${dto.originalRecno} by user ${userId}`);
+
+    // Validate user info from JWT
+    if (!userId || !userEmail) {
+      throw new BadRequestException('User information is missing. Please re-authenticate.');
+    }
+
+    // Get template with fields for validation
+    const template = await this.prisma.formTemplate.findUnique({
+      where: { id: dto.templateId },
+      include: {
+        fields: {
+          where: { isVisible: true, isEnabled: true },
+        },
+      },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Template ${dto.templateId} not found`);
+    }
+
+    // Fetch original record from Protheus
+    const originalRecord = await this.protheusDataService.getRecordByRecno(
+      template.tableName,
+      dto.originalRecno,
+    );
+
+    // Use provided formData or original data
+    const formData = dto.formData || originalRecord.data;
+
+    // Validate formData against template fields
+    const validationErrors = this.validateFormData(formData, template.fields);
+    if (validationErrors.length > 0) {
+      throw new BadRequestException({
+        message: 'Form validation failed',
+        errors: validationErrors,
+      });
+    }
+
+    // Create registration with alteration type
+    const registration = await this.prisma.registrationRequest.create({
+      data: {
+        templateId: dto.templateId,
+        tableName: template.tableName,
+        requestedById: userId,
+        requestedByEmail: userEmail,
+        formData,
+        operationType: 'ALTERATION',
+        originalRecno: dto.originalRecno,
+        originalFormData: originalRecord.data,
+        status: RegistrationStatus.DRAFT,
+        currentLevel: 1,
+      },
+      include: {
+        template: true,
+      },
+    });
+
+    this.logger.log(`Created alteration draft ${registration.id} for RECNO ${dto.originalRecno}`);
     return registration;
   }
 

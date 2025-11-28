@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ApprovalGroupsModule } from './modules/approval-groups/approval-groups.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { HealthModule } from './modules/health/health.module';
+import { ProtheusDataModule } from './modules/protheus-data/protheus-data.module';
 import { LoggerModule } from './common/logger';
 import { ProtheusJwtAuthGuard } from './modules/auth/guards/protheus-jwt-auth.guard';
 import { Sx3 } from './modules/sx3/entities/sx3.entity';
@@ -84,6 +85,7 @@ import { Sx3 } from './modules/sx3/entities/sx3.entity';
     Sx3Module,
     FormTemplateModule,
     ProtheusIntegrationModule,
+    ProtheusDataModule,
     RegistrationModule,
     ApprovalGroupsModule,
   ],

@@ -463,6 +463,51 @@ export const es = {
     errorSave: 'Error al guardar borrador. Por favor, inténtelo de nuevo.',
     editDraft: 'Editar Borrador',
     submitDraft: 'Enviar para Aprobación',
+
+    // Alteration flow
+    alteration: {
+      // SelectType page
+      selectTypeTitle: 'Modificar Registro',
+      selectTypeSubtitle: 'Seleccione el tipo de registro que desea modificar',
+      newRegistration: 'Nuevo Registro',
+      alteration: 'Modificación',
+      newTooltip: 'Crear un nuevo registro en el sistema',
+      alterationTooltip: 'Modificar un registro existente en Protheus',
+      searchLabel: 'Buscar',
+
+      // SearchRecord page
+      searchTitle: 'Buscar Registro para Modificación',
+      searchSubtitle: 'Busque y seleccione un registro de {{template}} para modificar',
+      filters: 'Filtros de Búsqueda',
+      field: 'Campo',
+      operator: 'Operador',
+      value: 'Valor',
+      opContains: 'Contiene',
+      opEquals: 'Igual a',
+      opNotEquals: 'Diferente de',
+      opGreaterThan: 'Mayor que',
+      opLessThan: 'Menor que',
+      opGreaterOrEqual: 'Mayor o igual',
+      opLessOrEqual: 'Menor o igual',
+      searching: 'Buscando...',
+      results: 'Resultados',
+      noResults: 'Ningún registro encontrado',
+      selectForAlteration: 'Seleccionar para modificación',
+      select: 'Seleccionar',
+      creatingDraft: 'Creando borrador de modificación...',
+      draftCreated: '¡Borrador de modificación creado con éxito!',
+      errorSearch: 'Error al buscar registros. Por favor, inténtelo de nuevo.',
+      errorCreateDraft: 'Error al crear borrador de modificación. Por favor, inténtelo de nuevo.',
+
+      // EditDraft page (alteration mode)
+      editTitle: 'Modificar Registro',
+      alterationMode: 'Modo Modificación',
+      alterationModeDesc: 'Está modificando un registro existente en Protheus.',
+      fieldsModified: '{{count}} campo(s) modificado(s)',
+      fieldModified: 'Campo modificado',
+      originalValue: 'Valor original',
+      emptyValue: '(vacío)',
+    },
   },
   admin: {
     // Page title
