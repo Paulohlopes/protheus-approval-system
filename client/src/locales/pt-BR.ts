@@ -464,23 +464,6 @@ export const ptBR = {
     editDraft: 'Editar Rascunho',
     submitDraft: 'Enviar para Aprovação',
 
-    // Send back
-    sendBack: 'Devolver',
-    sendBackTitle: 'Devolver Solicitação',
-    sendBackToDraft: 'Devolver para Rascunho',
-    sendBackToPreviousLevel: 'Devolver para Nível Anterior',
-    sendBackToLevel: 'Devolver para Nível {{level}}',
-    sendBackReason: 'Motivo da Devolução',
-    sendBackReasonPlaceholder: 'Informe o motivo da devolução...',
-    sendBackReasonRequired: 'O motivo da devolução é obrigatório',
-    sendingBack: 'Devolvendo...',
-    successSentBack: 'Solicitação devolvida com sucesso!',
-    errorSendBack: 'Erro ao devolver solicitação. Por favor, tente novamente.',
-    selectTargetLevel: 'Selecione o destino da devolução',
-    targetLevelDraft: 'Rascunho (solicitante pode editar)',
-    targetLevelPrevious: 'Nível anterior de aprovação',
-    statusReturned: 'Devolvido',
-
     // Alteration flow
     alteration: {
       // SelectType page
