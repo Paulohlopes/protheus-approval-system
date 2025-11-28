@@ -1410,6 +1410,7 @@ export class RegistrationService {
                 requestId: id,
                 level: targetLevel,
                 approverId: approverIdItem,
+                approverEmail: '', // TODO: Get from user
                 action: ApprovalAction.PENDING,
               },
             });
