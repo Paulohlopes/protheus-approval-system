@@ -15,6 +15,7 @@ export class DataSourceService {
   private readonly allowedTables = [
     'SA1010', // Clientes
     'SA2010', // Fornecedores
+    'SA3010', // Vendedores
     'SB1010', // Produtos
     'SB2010', // Saldos em Estoque
     'SC5010', // Pedidos de Venda
@@ -35,6 +36,8 @@ export class DataSourceService {
     'SM0010', // Cadastro de Empresas
     'SYA010', // Países
     'CC2010', // Estados
+    'SYS_COMPANY', // Empresas do Sistema
+    'SYS_USR', // Usuários do Sistema
   ];
 
   // Forbidden SQL commands
