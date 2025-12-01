@@ -1216,12 +1216,14 @@ const TemplateManager: React.FC = () => {
         <DialogTitle>
           Configurar Campo
           {selectedField && (
-            <Typography variant="body2" color="text.secondary">
-              {selectedField.label} ({selectedField.fieldName || selectedField.sx3FieldName})
+            <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary" component="span">
+                {selectedField.label} ({selectedField.fieldName || selectedField.sx3FieldName})
+              </Typography>
               {!selectedField.isCustomField && (
-                <Chip label="Campo do Protheus" size="small" sx={{ ml: 1 }} />
+                <Chip label="Campo do Protheus" size="small" />
               )}
-            </Typography>
+            </Box>
           )}
         </DialogTitle>
         <DialogContent>
