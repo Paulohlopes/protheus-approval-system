@@ -43,6 +43,10 @@ export class DataSourceConfigDto {
 
   @IsOptional()
   @IsString()
+  keyField?: string; // Field to use as unique key for React rendering (e.g., "R_E_C_N_O_")
+
+  @IsOptional()
+  @IsString()
   valueField?: string; // Field to use as value (e.g., "A1_COD")
 
   @IsOptional()
@@ -57,6 +61,7 @@ export class DataSourceConfigDto {
 
 // Response DTO for options
 export class DataSourceOptionDto {
+  key?: string; // Unique key for React rendering (optional, defaults to value)
   value: string;
   label: string;
 }

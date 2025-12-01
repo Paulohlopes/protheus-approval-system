@@ -123,6 +123,7 @@ export class DataSourceService {
       throw new BadRequestException('SQL query is required');
     }
 
+    const keyField = config.keyField; // Optional: unique field for React keys
     const valueField = config.valueField || 'value';
     const labelField = config.labelField || 'label';
 
@@ -174,10 +175,21 @@ export class DataSourceService {
       try {
         const results = await queryRunner.query(query);
 
-        return results.map((row: any) => ({
-          value: String(row[valueField] ?? '').trim(),
-          label: String(row[labelField] ?? row[valueField] ?? '').trim(),
-        }));
+        return results.map((row: any, index: number) => {
+          const value = String(row[valueField] ?? '').trim();
+          const label = String(row[labelField] ?? row[valueField] ?? '').trim();
+
+          // Generate unique key: use keyField if provided, otherwise fallback to value+index
+          let key: string | undefined;
+          if (keyField && row[keyField] !== undefined) {
+            key = String(row[keyField]).trim();
+          } else {
+            // Fallback: combine value with index to ensure uniqueness
+            key = `${value}_${index}`;
+          }
+
+          return { key, value, label };
+        });
       } finally {
         await queryRunner.release();
       }

@@ -101,6 +101,7 @@ interface CustomFieldFormData {
   dataSourceType: DataSourceType | '';
   fixedOptions: string; // For fixed type, newline-separated value|label pairs
   sqlQuery: string;
+  sqlKeyField: string; // Unique key field for React rendering
   sqlValueField: string;
   sqlLabelField: string;
   sx5Table: string;
@@ -154,6 +155,7 @@ const TemplateManager: React.FC = () => {
     dataSourceType: '',
     fixedOptions: '',
     sqlQuery: '',
+    sqlKeyField: '',
     sqlValueField: '',
     sqlLabelField: '',
     sx5Table: '',
@@ -179,6 +181,7 @@ const TemplateManager: React.FC = () => {
       dataSourceType: '',
       fixedOptions: '',
       sqlQuery: '',
+      sqlKeyField: '',
       sqlValueField: '',
       sqlLabelField: '',
       sx5Table: '',
@@ -302,6 +305,7 @@ const TemplateManager: React.FC = () => {
       dataSourceType: (field.dataSourceType as DataSourceType) || '',
       fixedOptions: fixedOptionsText,
       sqlQuery: dataSourceConfig?.sqlQuery || '',
+      sqlKeyField: dataSourceConfig?.keyField || '',
       sqlValueField: dataSourceConfig?.valueField || '',
       sqlLabelField: dataSourceConfig?.labelField || '',
       sx5Table: dataSourceConfig?.sx5Table || '',
@@ -352,6 +356,7 @@ const TemplateManager: React.FC = () => {
           dataSourceConfig = {
             type: 'sql',
             sqlQuery: customFieldData.sqlQuery,
+            keyField: customFieldData.sqlKeyField || undefined,
             valueField: customFieldData.sqlValueField,
             labelField: customFieldData.sqlLabelField,
           };
@@ -435,6 +440,7 @@ const TemplateManager: React.FC = () => {
           dataSourceConfig = {
             type: 'sql',
             sqlQuery: customFieldData.sqlQuery,
+            keyField: customFieldData.sqlKeyField || undefined,
             valueField: customFieldData.sqlValueField,
             labelField: customFieldData.sqlLabelField,
           };
@@ -1057,14 +1063,22 @@ const TemplateManager: React.FC = () => {
                       onChange={(e) => setCustomFieldData({ ...customFieldData, sqlQuery: e.target.value })}
                       helperText="Use apenas tabelas permitidas. A consulta será executada no banco do Protheus."
                     />
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                      <TextField
+                        label="Campo Chave (Único)"
+                        fullWidth
+                        placeholder="Ex: R_E_C_N_O_"
+                        value={customFieldData.sqlKeyField}
+                        onChange={(e) => setCustomFieldData({ ...customFieldData, sqlKeyField: e.target.value })}
+                        helperText="Coluna única para identificar cada registro"
+                      />
                       <TextField
                         label="Campo do Valor"
                         fullWidth
                         placeholder="Ex: codigo"
                         value={customFieldData.sqlValueField}
                         onChange={(e) => setCustomFieldData({ ...customFieldData, sqlValueField: e.target.value })}
-                        helperText="Nome da coluna que será o valor"
+                        helperText="Coluna que será armazenada"
                       />
                       <TextField
                         label="Campo do Rótulo"
@@ -1072,7 +1086,7 @@ const TemplateManager: React.FC = () => {
                         placeholder="Ex: descricao"
                         value={customFieldData.sqlLabelField}
                         onChange={(e) => setCustomFieldData({ ...customFieldData, sqlLabelField: e.target.value })}
-                        helperText="Nome da coluna que será exibida"
+                        helperText="Coluna que será exibida"
                       />
                     </Box>
                   </>
@@ -1355,14 +1369,22 @@ const TemplateManager: React.FC = () => {
                       onChange={(e) => setCustomFieldData({ ...customFieldData, sqlQuery: e.target.value })}
                       helperText="Use apenas tabelas permitidas. A consulta será executada no banco do Protheus."
                     />
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                      <TextField
+                        label="Campo Chave (Único)"
+                        fullWidth
+                        placeholder="Ex: R_E_C_N_O_"
+                        value={customFieldData.sqlKeyField}
+                        onChange={(e) => setCustomFieldData({ ...customFieldData, sqlKeyField: e.target.value })}
+                        helperText="Coluna única para identificar cada registro"
+                      />
                       <TextField
                         label="Campo do Valor"
                         fullWidth
                         placeholder="Ex: codigo"
                         value={customFieldData.sqlValueField}
                         onChange={(e) => setCustomFieldData({ ...customFieldData, sqlValueField: e.target.value })}
-                        helperText="Nome da coluna que será o valor"
+                        helperText="Coluna que será armazenada"
                       />
                       <TextField
                         label="Campo do Rótulo"
@@ -1370,7 +1392,7 @@ const TemplateManager: React.FC = () => {
                         placeholder="Ex: descricao"
                         value={customFieldData.sqlLabelField}
                         onChange={(e) => setCustomFieldData({ ...customFieldData, sqlLabelField: e.target.value })}
-                        helperText="Nome da coluna que será exibida"
+                        helperText="Coluna que será exibida"
                       />
                     </Box>
                   </>

@@ -67,7 +67,7 @@ export const RadioField: React.FC<RadioFieldProps> = ({
         >
           {options.map((option) => (
             <FormControlLabel
-              key={option.value}
+              key={option.key || option.value}
               value={option.value}
               control={<Radio />}
               label={option.label}

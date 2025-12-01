@@ -98,7 +98,7 @@ export const MultiselectField: React.FC<MultiselectFieldProps> = ({
         }
       >
         {options.map((option) => (
-          <MenuItem key={option.value} value={option.value}>
+          <MenuItem key={option.key || option.value} value={option.value}>
             <Checkbox checked={value.includes(option.value)} />
             <ListItemText primary={option.label} />
           </MenuItem>

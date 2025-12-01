@@ -70,6 +70,7 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
 export type DataSourceType = 'fixed' | 'sql' | 'sx5';
 
 export interface DataSourceOption {
+  key?: string; // Unique key for React rendering (optional, defaults to value)
   value: string;
   label: string;
 }
@@ -78,8 +79,9 @@ export interface DataSourceConfig {
   type: DataSourceType;
   fixedOptions?: DataSourceOption[];
   sqlQuery?: string;
-  valueField?: string;
-  labelField?: string;
+  keyField?: string; // Field that uniquely identifies each row (for React keys)
+  valueField?: string; // Field that contains the value to be stored
+  labelField?: string; // Field that contains the display label
   sx5Table?: string;
 }
 

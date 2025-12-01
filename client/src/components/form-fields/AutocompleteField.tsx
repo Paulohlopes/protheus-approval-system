@@ -89,6 +89,7 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
         inputValue={inputValue}
         onInputChange={(_, newInputValue) => setInputValue(newInputValue)}
         options={localOptions}
+        getOptionKey={(option) => option.key || option.value}
         getOptionLabel={(option) => option.label || option.value}
         isOptionEqualToValue={(option, val) => option.value === val.value}
         loading={loading}

@@ -208,7 +208,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
                 <em>Selecione...</em>
               </MenuItem>
               {options.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
+                <MenuItem key={option.key || option.value} value={option.value}>
                   {option.label}
                 </MenuItem>
               ))}
