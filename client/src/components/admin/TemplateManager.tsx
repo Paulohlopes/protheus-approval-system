@@ -48,28 +48,70 @@ import {
   VerticalAlignTop,
 } from '@mui/icons-material';
 import { adminService } from '../../services/adminService';
-import type { FormTemplate, FormField } from '../../types/registration';
+import { dataSourceService } from '../../services/dataSourceService';
+import type { FormTemplate, FormField, DataSourceOption, FieldType, DataSourceType } from '../../types/registration';
 import type { CreateFormTemplateDto } from '../../types/admin';
 
 // Custom field types available
-const CUSTOM_FIELD_TYPES = [
+const CUSTOM_FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: 'string', label: 'Texto' },
   { value: 'number', label: 'Número' },
   { value: 'date', label: 'Data' },
   { value: 'boolean', label: 'Sim/Não' },
-  { value: 'select', label: 'Lista de Opções' },
   { value: 'textarea', label: 'Texto Longo' },
+  { value: 'select', label: 'Lista de Opções' },
+  { value: 'checkbox', label: 'Checkbox' },
+  { value: 'radio', label: 'Radio Buttons' },
+  { value: 'autocomplete', label: 'Autocomplete (Busca)' },
+  { value: 'multiselect', label: 'Seleção Múltipla' },
+  { value: 'attachment', label: 'Anexos' },
+];
+
+// Data source types
+const DATA_SOURCE_TYPES: { value: DataSourceType; label: string }[] = [
+  { value: 'fixed', label: 'Lista Fixa' },
+  { value: 'sql', label: 'Consulta SQL' },
+  { value: 'sx5', label: 'Tabela SX5 (Genéricos)' },
+];
+
+// Field types that need data source configuration
+const FIELD_TYPES_WITH_DATA_SOURCE: FieldType[] = ['select', 'radio', 'autocomplete', 'multiselect'];
+
+// Allowed MIME types for attachments
+const ALLOWED_MIME_TYPES = [
+  { value: 'application/pdf', label: 'PDF' },
+  { value: 'image/jpeg', label: 'JPEG' },
+  { value: 'image/png', label: 'PNG' },
+  { value: 'image/gif', label: 'GIF' },
+  { value: 'application/msword', label: 'DOC' },
+  { value: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', label: 'DOCX' },
+  { value: 'application/vnd.ms-excel', label: 'XLS' },
+  { value: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', label: 'XLSX' },
 ];
 
 interface CustomFieldFormData {
   fieldName: string;
   label: string;
-  fieldType: string;
+  fieldType: FieldType;
   isRequired: boolean;
   fieldGroup: string;
   placeholder: string;
   helpText: string;
-  options: string; // For select type, comma-separated options
+  // Data source configuration
+  dataSourceType: DataSourceType | '';
+  fixedOptions: string; // For fixed type, newline-separated value|label pairs
+  sqlQuery: string;
+  sqlValueField: string;
+  sqlLabelField: string;
+  sx5Table: string;
+  // Validation rules
+  minLength: string;
+  maxLength: string;
+  regex: string;
+  // Attachment config
+  allowedTypes: string[];
+  maxSize: string; // MB
+  maxFiles: string;
 }
 
 const TemplateManager: React.FC = () => {
@@ -93,6 +135,9 @@ const TemplateManager: React.FC = () => {
     isActive: true,
   });
 
+  // State for SX5 tables options
+  const [sx5Tables, setSx5Tables] = useState<DataSourceOption[]>([]);
+
   // Form state for custom field
   const [customFieldData, setCustomFieldData] = useState<CustomFieldFormData>({
     fieldName: '',
@@ -102,7 +147,21 @@ const TemplateManager: React.FC = () => {
     fieldGroup: 'Campos Customizados',
     placeholder: '',
     helpText: '',
-    options: '',
+    // Data source
+    dataSourceType: '',
+    fixedOptions: '',
+    sqlQuery: '',
+    sqlValueField: '',
+    sqlLabelField: '',
+    sx5Table: '',
+    // Validation
+    minLength: '',
+    maxLength: '',
+    regex: '',
+    // Attachment
+    allowedTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+    maxSize: '10',
+    maxFiles: '5',
   });
 
   const resetCustomFieldForm = () => {
@@ -114,9 +173,25 @@ const TemplateManager: React.FC = () => {
       fieldGroup: 'Campos Customizados',
       placeholder: '',
       helpText: '',
-      options: '',
+      dataSourceType: '',
+      fixedOptions: '',
+      sqlQuery: '',
+      sqlValueField: '',
+      sqlLabelField: '',
+      sx5Table: '',
+      minLength: '',
+      maxLength: '',
+      regex: '',
+      allowedTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+      maxSize: '10',
+      maxFiles: '5',
     });
   };
+
+  // Load SX5 tables for selection
+  useEffect(() => {
+    dataSourceService.getAvailableSx5Tables().then(setSx5Tables).catch(console.error);
+  }, []);
 
   // Load templates on mount
   useEffect(() => {
@@ -197,10 +272,58 @@ const TemplateManager: React.FC = () => {
     try {
       setSavingCustomField(true);
 
-      // Build metadata for select type
-      const metadata: any = {};
-      if (customFieldData.fieldType === 'select' && customFieldData.options) {
-        metadata.options = customFieldData.options.split(',').map(opt => opt.trim()).filter(Boolean);
+      // Build data source config for fields that need it
+      let dataSourceType: DataSourceType | undefined;
+      let dataSourceConfig: any = undefined;
+
+      if (FIELD_TYPES_WITH_DATA_SOURCE.includes(customFieldData.fieldType) && customFieldData.dataSourceType) {
+        dataSourceType = customFieldData.dataSourceType as DataSourceType;
+
+        if (customFieldData.dataSourceType === 'fixed') {
+          // Parse fixed options from text (format: value|label per line)
+          const fixedOptions = customFieldData.fixedOptions
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+              const [value, label] = line.split('|').map(s => s.trim());
+              return { value: value || '', label: label || value || '' };
+            })
+            .filter(opt => opt.value);
+
+          dataSourceConfig = { fixedOptions };
+        } else if (customFieldData.dataSourceType === 'sql') {
+          dataSourceConfig = {
+            sqlQuery: customFieldData.sqlQuery,
+            valueField: customFieldData.sqlValueField,
+            labelField: customFieldData.sqlLabelField,
+          };
+        } else if (customFieldData.dataSourceType === 'sx5') {
+          dataSourceConfig = {
+            sx5Table: customFieldData.sx5Table,
+          };
+        }
+      }
+
+      // Build validation rules
+      const validationRules: any = {};
+      if (customFieldData.minLength) {
+        validationRules.minLength = parseInt(customFieldData.minLength, 10);
+      }
+      if (customFieldData.maxLength) {
+        validationRules.maxLength = parseInt(customFieldData.maxLength, 10);
+      }
+      if (customFieldData.regex) {
+        validationRules.regex = customFieldData.regex;
+      }
+
+      // Build attachment config for attachment type
+      let attachmentConfig: any = undefined;
+      if (customFieldData.fieldType === 'attachment') {
+        attachmentConfig = {
+          allowedTypes: customFieldData.allowedTypes,
+          maxSize: parseInt(customFieldData.maxSize, 10) * 1024 * 1024, // Convert MB to bytes
+          maxFiles: parseInt(customFieldData.maxFiles, 10),
+        };
       }
 
       await adminService.createCustomField(selectedTemplate.id, {
@@ -211,7 +334,10 @@ const TemplateManager: React.FC = () => {
         fieldGroup: customFieldData.fieldGroup || 'Campos Customizados',
         placeholder: customFieldData.placeholder || undefined,
         helpText: customFieldData.helpText || undefined,
-        metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+        dataSourceType,
+        dataSourceConfig: dataSourceConfig ? dataSourceConfig : undefined,
+        validationRules: Object.keys(validationRules).length > 0 ? validationRules : undefined,
+        attachmentConfig,
       });
 
       setCustomFieldDialogOpen(false);
@@ -622,7 +748,7 @@ const TemplateManager: React.FC = () => {
       <Dialog
         open={customFieldDialogOpen}
         onClose={() => setCustomFieldDialogOpen(false)}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
       >
         <DialogTitle>
@@ -635,66 +761,80 @@ const TemplateManager: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Nome do Campo (ID)"
-              fullWidth
-              required
-              placeholder="Ex: observacao, justificativa"
-              value={customFieldData.fieldName}
-              onChange={(e) => setCustomFieldData({
-                ...customFieldData,
-                fieldName: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-              })}
-              helperText="Identificador único do campo (sem espaços ou caracteres especiais)"
-            />
-            <TextField
-              label="Rótulo (Label)"
-              fullWidth
-              required
-              placeholder="Ex: Observação, Justificativa"
-              value={customFieldData.label}
-              onChange={(e) => setCustomFieldData({ ...customFieldData, label: e.target.value })}
-              helperText="Nome exibido para o usuário"
-            />
-            <FormControl fullWidth>
-              <InputLabel>Tipo do Campo</InputLabel>
-              <Select
-                value={customFieldData.fieldType}
-                label="Tipo do Campo"
-                onChange={(e) => setCustomFieldData({ ...customFieldData, fieldType: e.target.value })}
-              >
-                {CUSTOM_FIELD_TYPES.map((type) => (
-                  <MenuItem key={type.value} value={type.value}>
-                    {type.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {customFieldData.fieldType === 'select' && (
+            {/* Basic Info Section */}
+            <Typography variant="subtitle2" color="primary">Informações Básicas</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
               <TextField
-                label="Opções"
+                label="Nome do Campo (ID)"
                 fullWidth
-                placeholder="Ex: Opção 1, Opção 2, Opção 3"
-                value={customFieldData.options}
-                onChange={(e) => setCustomFieldData({ ...customFieldData, options: e.target.value })}
-                helperText="Separe as opções por vírgula"
+                required
+                placeholder="Ex: observacao, justificativa"
+                value={customFieldData.fieldName}
+                onChange={(e) => setCustomFieldData({
+                  ...customFieldData,
+                  fieldName: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+                })}
+                helperText="Identificador único do campo"
               />
-            )}
-            <TextField
-              label="Grupo"
-              fullWidth
-              placeholder="Campos Customizados"
-              value={customFieldData.fieldGroup}
-              onChange={(e) => setCustomFieldData({ ...customFieldData, fieldGroup: e.target.value })}
-              helperText="Agrupamento visual do campo no formulário"
-            />
-            <TextField
-              label="Placeholder"
-              fullWidth
-              placeholder="Ex: Digite aqui..."
-              value={customFieldData.placeholder}
-              onChange={(e) => setCustomFieldData({ ...customFieldData, placeholder: e.target.value })}
-            />
+              <TextField
+                label="Rótulo (Label)"
+                fullWidth
+                required
+                placeholder="Ex: Observação, Justificativa"
+                value={customFieldData.label}
+                onChange={(e) => setCustomFieldData({ ...customFieldData, label: e.target.value })}
+                helperText="Nome exibido para o usuário"
+              />
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <FormControl fullWidth>
+                <InputLabel>Tipo do Campo</InputLabel>
+                <Select
+                  value={customFieldData.fieldType}
+                  label="Tipo do Campo"
+                  onChange={(e) => setCustomFieldData({
+                    ...customFieldData,
+                    fieldType: e.target.value as FieldType,
+                    dataSourceType: '', // Reset data source when type changes
+                  })}
+                >
+                  {CUSTOM_FIELD_TYPES.map((type) => (
+                    <MenuItem key={type.value} value={type.value}>
+                      {type.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Grupo"
+                fullWidth
+                placeholder="Campos Customizados"
+                value={customFieldData.fieldGroup}
+                onChange={(e) => setCustomFieldData({ ...customFieldData, fieldGroup: e.target.value })}
+                helperText="Agrupamento visual no formulário"
+              />
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <TextField
+                label="Placeholder"
+                fullWidth
+                placeholder="Ex: Digite aqui..."
+                value={customFieldData.placeholder}
+                onChange={(e) => setCustomFieldData({ ...customFieldData, placeholder: e.target.value })}
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={customFieldData.isRequired}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, isRequired: e.target.checked })}
+                  />
+                }
+                label="Campo Obrigatório"
+              />
+            </Box>
+
             <TextField
               label="Texto de Ajuda"
               fullWidth
@@ -704,15 +844,193 @@ const TemplateManager: React.FC = () => {
               value={customFieldData.helpText}
               onChange={(e) => setCustomFieldData({ ...customFieldData, helpText: e.target.value })}
             />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={customFieldData.isRequired}
-                  onChange={(e) => setCustomFieldData({ ...customFieldData, isRequired: e.target.checked })}
-                />
-              }
-              label="Campo Obrigatório"
-            />
+
+            {/* Data Source Section - Only for select, radio, autocomplete, multiselect */}
+            {FIELD_TYPES_WITH_DATA_SOURCE.includes(customFieldData.fieldType) && (
+              <>
+                <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
+                  Fonte de Dados
+                </Typography>
+                <FormControl fullWidth>
+                  <InputLabel>Tipo da Fonte</InputLabel>
+                  <Select
+                    value={customFieldData.dataSourceType}
+                    label="Tipo da Fonte"
+                    onChange={(e) => setCustomFieldData({
+                      ...customFieldData,
+                      dataSourceType: e.target.value as DataSourceType | '',
+                    })}
+                  >
+                    <MenuItem value="">
+                      <em>Selecione...</em>
+                    </MenuItem>
+                    {DATA_SOURCE_TYPES.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>
+                        {type.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Fixed Options */}
+                {customFieldData.dataSourceType === 'fixed' && (
+                  <TextField
+                    label="Opções (uma por linha)"
+                    fullWidth
+                    multiline
+                    rows={4}
+                    placeholder="valor1|Rótulo 1&#10;valor2|Rótulo 2&#10;valor3|Rótulo 3"
+                    value={customFieldData.fixedOptions}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, fixedOptions: e.target.value })}
+                    helperText="Formato: valor|rótulo (se não houver |, o valor será usado como rótulo)"
+                  />
+                )}
+
+                {/* SQL Query */}
+                {customFieldData.dataSourceType === 'sql' && (
+                  <>
+                    <TextField
+                      label="Consulta SQL"
+                      fullWidth
+                      multiline
+                      rows={3}
+                      placeholder="SELECT codigo, descricao FROM tabela WHERE ativo = 1"
+                      value={customFieldData.sqlQuery}
+                      onChange={(e) => setCustomFieldData({ ...customFieldData, sqlQuery: e.target.value })}
+                      helperText="Use apenas tabelas permitidas. A consulta será executada no banco do Protheus."
+                    />
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                      <TextField
+                        label="Campo do Valor"
+                        fullWidth
+                        placeholder="Ex: codigo"
+                        value={customFieldData.sqlValueField}
+                        onChange={(e) => setCustomFieldData({ ...customFieldData, sqlValueField: e.target.value })}
+                        helperText="Nome da coluna que será o valor"
+                      />
+                      <TextField
+                        label="Campo do Rótulo"
+                        fullWidth
+                        placeholder="Ex: descricao"
+                        value={customFieldData.sqlLabelField}
+                        onChange={(e) => setCustomFieldData({ ...customFieldData, sqlLabelField: e.target.value })}
+                        helperText="Nome da coluna que será exibida"
+                      />
+                    </Box>
+                  </>
+                )}
+
+                {/* SX5 Table */}
+                {customFieldData.dataSourceType === 'sx5' && (
+                  <FormControl fullWidth>
+                    <InputLabel>Tabela SX5</InputLabel>
+                    <Select
+                      value={customFieldData.sx5Table}
+                      label="Tabela SX5"
+                      onChange={(e) => setCustomFieldData({ ...customFieldData, sx5Table: e.target.value })}
+                    >
+                      <MenuItem value="">
+                        <em>Selecione...</em>
+                      </MenuItem>
+                      {sx5Tables.map((table) => (
+                        <MenuItem key={table.value} value={table.value}>
+                          {table.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              </>
+            )}
+
+            {/* Attachment Config Section */}
+            {customFieldData.fieldType === 'attachment' && (
+              <>
+                <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
+                  Configuração de Anexos
+                </Typography>
+                <FormControl fullWidth>
+                  <InputLabel>Tipos de Arquivo Permitidos</InputLabel>
+                  <Select
+                    multiple
+                    value={customFieldData.allowedTypes}
+                    label="Tipos de Arquivo Permitidos"
+                    onChange={(e) => setCustomFieldData({
+                      ...customFieldData,
+                      allowedTypes: e.target.value as string[],
+                    })}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as string[]).map((value) => {
+                          const mimeType = ALLOWED_MIME_TYPES.find(m => m.value === value);
+                          return <Chip key={value} label={mimeType?.label || value} size="small" />;
+                        })}
+                      </Box>
+                    )}
+                  >
+                    {ALLOWED_MIME_TYPES.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>
+                        <Checkbox checked={customFieldData.allowedTypes.includes(type.value)} />
+                        <ListItemText primary={type.label} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    label="Tamanho Máximo (MB)"
+                    type="number"
+                    fullWidth
+                    value={customFieldData.maxSize}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, maxSize: e.target.value })}
+                    inputProps={{ min: 1, max: 50 }}
+                  />
+                  <TextField
+                    label="Quantidade Máxima de Arquivos"
+                    type="number"
+                    fullWidth
+                    value={customFieldData.maxFiles}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, maxFiles: e.target.value })}
+                    inputProps={{ min: 1, max: 20 }}
+                  />
+                </Box>
+              </>
+            )}
+
+            {/* Validation Rules Section */}
+            {['string', 'text', 'textarea'].includes(customFieldData.fieldType) && (
+              <>
+                <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
+                  Regras de Validação (Opcional)
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                  <TextField
+                    label="Tamanho Mínimo"
+                    type="number"
+                    fullWidth
+                    value={customFieldData.minLength}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, minLength: e.target.value })}
+                    inputProps={{ min: 0 }}
+                  />
+                  <TextField
+                    label="Tamanho Máximo"
+                    type="number"
+                    fullWidth
+                    value={customFieldData.maxLength}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, maxLength: e.target.value })}
+                    inputProps={{ min: 0 }}
+                  />
+                  <TextField
+                    label="Regex"
+                    fullWidth
+                    placeholder="Ex: ^[A-Z]+$"
+                    value={customFieldData.regex}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, regex: e.target.value })}
+                  />
+                </Box>
+              </>
+            )}
+
             <Alert severity="info" sx={{ mt: 1 }}>
               Campos customizados são apenas para uso interno no sistema de aprovação.
               Eles não serão sincronizados com o Protheus.

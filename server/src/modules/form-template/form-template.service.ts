@@ -1,10 +1,12 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Sx3Service } from '../sx3/sx3.service';
+import { DataSourceService } from './services/data-source.service';
 import { CreateFormTemplateDto } from './dto/create-form-template.dto';
 import { UpdateFormTemplateDto } from './dto/update-form-template.dto';
 import { UpdateFormFieldDto } from './dto/update-form-field.dto';
 import { ReorderFieldsDto } from './dto/reorder-fields.dto';
+import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
 
 @Injectable()
 export class FormTemplateService {
@@ -13,6 +15,7 @@ export class FormTemplateService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sx3Service: Sx3Service,
+    private readonly dataSourceService: DataSourceService,
   ) {}
 
   /**
@@ -311,19 +314,7 @@ export class FormTemplateService {
    * Create a custom field in the template
    * Custom fields are not from SX3 and will not be synced to Protheus
    */
-  async createCustomField(
-    templateId: string,
-    dto: {
-      fieldName: string;
-      label: string;
-      fieldType: string;
-      isRequired?: boolean;
-      fieldGroup?: string;
-      placeholder?: string;
-      helpText?: string;
-      metadata?: any;
-    },
-  ) {
+  async createCustomField(templateId: string, dto: CreateCustomFieldDto) {
     this.logger.log(`Creating custom field ${dto.fieldName} for template ${templateId}`);
 
     const template = await this.prisma.formTemplate.findUnique({
@@ -350,7 +341,7 @@ export class FormTemplateService {
       -1,
     );
 
-    // Create the custom field
+    // Create the custom field with all new options
     await this.prisma.formField.create({
       data: {
         templateId,
@@ -367,6 +358,14 @@ export class FormTemplateService {
         fieldGroup: dto.fieldGroup || 'Campos Customizados',
         placeholder: dto.placeholder,
         helpText: dto.helpText,
+        // New fields for data source
+        dataSourceType: dto.dataSourceType,
+        dataSourceConfig: dto.dataSourceConfig as any,
+        // Validation rules
+        validationRules: dto.validationRules as any,
+        // Attachment config
+        attachmentConfig: dto.attachmentConfig as any,
+        // Additional metadata
         metadata: dto.metadata,
       },
     });
@@ -405,5 +404,79 @@ export class FormTemplateService {
     this.logger.log(`Field ${fieldId} deleted from template ${templateId}`);
 
     return { success: true };
+  }
+
+  // ==========================================
+  // DATA SOURCE METHODS
+  // ==========================================
+
+  /**
+   * Get options for a field's data source
+   */
+  async getFieldOptions(
+    templateId: string,
+    fieldId: string,
+    filters?: Record<string, string>,
+  ) {
+    const field = await this.prisma.formField.findFirst({
+      where: {
+        id: fieldId,
+        templateId,
+      },
+    });
+
+    if (!field) {
+      throw new NotFoundException(`Field ${fieldId} not found in template ${templateId}`);
+    }
+
+    if (!field.dataSourceType || !field.dataSourceConfig) {
+      return [];
+    }
+
+    return this.dataSourceService.getOptions(
+      field.dataSourceType,
+      field.dataSourceConfig as any,
+      filters,
+    );
+  }
+
+  /**
+   * Validate a field value using SQL validation
+   */
+  async validateFieldValue(
+    templateId: string,
+    fieldId: string,
+    value: string,
+  ): Promise<{ valid: boolean; message?: string }> {
+    const field = await this.prisma.formField.findFirst({
+      where: {
+        id: fieldId,
+        templateId,
+      },
+    });
+
+    if (!field) {
+      throw new NotFoundException(`Field ${fieldId} not found in template ${templateId}`);
+    }
+
+    const validationRules = field.validationRules as any;
+
+    if (!validationRules?.sqlValidation?.query) {
+      return { valid: true };
+    }
+
+    const result = await this.dataSourceService.validateWithSql(
+      validationRules.sqlValidation.query,
+      value,
+    );
+
+    if (!result.valid) {
+      return {
+        valid: false,
+        message: validationRules.sqlValidation.errorMessage || 'Valor inválido',
+      };
+    }
+
+    return { valid: true };
   }
 }

@@ -30,15 +30,127 @@ export interface FormTemplate {
   updatedAt: string;
 }
 
+// ==========================================
+// FIELD TYPES
+// ==========================================
+
+export type FieldType =
+  | 'string'
+  | 'number'
+  | 'date'
+  | 'boolean'
+  | 'text'
+  | 'textarea'
+  | 'select'
+  | 'checkbox'
+  | 'radio'
+  | 'autocomplete'
+  | 'multiselect'
+  | 'attachment';
+
+export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
+  string: 'Texto',
+  number: 'Número',
+  date: 'Data',
+  boolean: 'Sim/Não',
+  text: 'Texto Longo',
+  textarea: 'Texto Longo',
+  select: 'Lista de Opções',
+  checkbox: 'Checkbox',
+  radio: 'Radio Buttons',
+  autocomplete: 'Autocomplete (Busca)',
+  multiselect: 'Seleção Múltipla',
+  attachment: 'Anexos',
+};
+
+// ==========================================
+// DATA SOURCE CONFIGURATION
+// ==========================================
+
+export type DataSourceType = 'fixed' | 'sql' | 'sx5';
+
+export interface DataSourceOption {
+  value: string;
+  label: string;
+}
+
+export interface DataSourceConfig {
+  type: DataSourceType;
+  fixedOptions?: DataSourceOption[];
+  sqlQuery?: string;
+  valueField?: string;
+  labelField?: string;
+  sx5Table?: string;
+}
+
+// ==========================================
+// VALIDATION RULES
+// ==========================================
+
+export type DependsOnCondition = 'equals' | 'notEquals' | 'contains' | 'isNotEmpty';
+
+export interface SqlValidation {
+  query: string;
+  errorMessage: string;
+}
+
+export interface DependsOn {
+  fieldName: string;
+  condition: DependsOnCondition;
+  value?: string;
+  filterField?: string;
+}
+
+export interface ValidationRules {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  regex?: string;
+  mask?: string;
+  min?: number;
+  max?: number;
+  sqlValidation?: SqlValidation;
+  dependsOn?: DependsOn;
+}
+
+// ==========================================
+// ATTACHMENT CONFIGURATION
+// ==========================================
+
+export interface AttachmentConfig {
+  allowedTypes: string[];
+  maxSize?: number; // bytes (default: 10MB)
+  maxFiles?: number; // default: 5
+}
+
+export interface FieldAttachment {
+  id: string;
+  registrationId: string;
+  fieldName: string;
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedById?: string;
+  uploadedAt: string;
+}
+
+// ==========================================
+// FORM FIELD
+// ==========================================
+
 export interface FormField {
   id: string;
   templateId: string;
-  sx3FieldName: string;
+  sx3FieldName?: string;
+  fieldName?: string;
   label: string;
-  fieldType: 'string' | 'number' | 'date' | 'boolean' | 'text';
+  fieldType: FieldType;
   isRequired: boolean;
   isVisible: boolean;
   isEnabled: boolean;
+  isCustomField?: boolean;
+  isSyncField?: boolean;
   fieldOrder: number;
   fieldGroup?: string;
   // Multi-language labels
@@ -49,7 +161,14 @@ export interface FormField {
   descriptionPtBR?: string;
   descriptionEn?: string;
   descriptionEs?: string;
-  validationRules?: any;
+  // Data source configuration (for select, radio, autocomplete, multiselect)
+  dataSourceType?: DataSourceType;
+  dataSourceConfig?: DataSourceConfig;
+  // Validation rules
+  validationRules?: ValidationRules;
+  // Attachment configuration
+  attachmentConfig?: AttachmentConfig;
+  // Additional metadata
   metadata?: {
     size?: number;
     decimals?: number;
@@ -58,7 +177,10 @@ export interface FormField {
     validation?: string;
     when?: string;
     defaultValue?: string;
+    options?: string[]; // Legacy: for simple select options
   };
+  placeholder?: string;
+  helpText?: string;
   createdAt: string;
   updatedAt: string;
 }

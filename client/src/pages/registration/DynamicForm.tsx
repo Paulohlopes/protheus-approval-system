@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -6,10 +6,6 @@ import {
   Paper,
   Typography,
   Button,
-  TextField,
-  FormControl,
-  FormControlLabel,
-  Checkbox,
   CircularProgress,
   Divider,
   Stack,
@@ -25,10 +21,11 @@ import {
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
 import { useLanguage } from '../../contexts/LanguageContext';
-import type { FormTemplate, FormField, SupportedLanguage } from '../../types/registration';
+import { FieldRenderer } from '../../components/form-fields';
+import type { FormTemplate, FormField, SupportedLanguage, FieldAttachment } from '../../types/registration';
 import { getFieldLabel } from '../../types/registration';
 
-type FormValue = string | number | boolean | null;
+type FormValue = string | number | boolean | string[] | null;
 
 export const DynamicFormPage = () => {
   const { templateId } = useParams<{ templateId: string }>();
@@ -38,6 +35,8 @@ export const DynamicFormPage = () => {
   const [fields, setFields] = useState<FormField[]>([]);
   const [formData, setFormData] = useState<Record<string, FormValue>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [attachments, setAttachments] = useState<Record<string, FieldAttachment[]>>({});
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -66,19 +65,30 @@ export const DynamicFormPage = () => {
       setFields(visibleFields);
 
       const initialData: Record<string, FormValue> = {};
+      const initialAttachments: Record<string, FieldAttachment[]> = {};
+
       visibleFields.forEach((field) => {
+        const fieldKey = field.fieldName || field.sx3FieldName || field.id;
         switch (field.fieldType) {
           case 'boolean':
-            initialData[field.sx3FieldName] = false;
+          case 'checkbox':
+            initialData[fieldKey] = false;
             break;
           case 'number':
-            initialData[field.sx3FieldName] = null;
+            initialData[fieldKey] = null;
+            break;
+          case 'multiselect':
+            initialData[fieldKey] = [];
+            break;
+          case 'attachment':
+            initialAttachments[fieldKey] = [];
             break;
           default:
-            initialData[field.sx3FieldName] = '';
+            initialData[fieldKey] = '';
         }
       });
       setFormData(initialData);
+      setAttachments(initialAttachments);
       setErrors({});
     } catch (error) {
       console.error('Error loading template:', error);
@@ -88,30 +98,68 @@ export const DynamicFormPage = () => {
     }
   };
 
-  const handleChange = (fieldName: string, value: FormValue) => {
+  const handleChange = (fieldKey: string, value: FormValue) => {
     setFormData((prev) => ({
       ...prev,
-      [fieldName]: value,
+      [fieldKey]: value,
     }));
-    if (errors[fieldName]) {
+    if (errors[fieldKey]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
-        delete newErrors[fieldName];
+        delete newErrors[fieldKey];
         return newErrors;
       });
     }
   };
 
+  const handleAttachmentsChange = (fieldKey: string, newAttachments: FieldAttachment[]) => {
+    setAttachments((prev) => ({
+      ...prev,
+      [fieldKey]: newAttachments,
+    }));
+    // Clear error if attachments were added
+    if (newAttachments.length > 0 && errors[fieldKey]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldKey];
+        return newErrors;
+      });
+    }
+  };
+
+  // Calculate dependency values for all fields
+  const dependencyValues = useMemo(() => {
+    const values: Record<string, any> = {};
+    fields.forEach((field) => {
+      const fieldKey = field.fieldName || field.sx3FieldName || field.id;
+      values[fieldKey] = formData[fieldKey];
+    });
+    return values;
+  }, [fields, formData]);
+
   const validateForm = useCallback((): boolean => {
     const newErrors: Record<string, string> = {};
 
     fields.forEach((field) => {
-      const value = formData[field.sx3FieldName];
+      const fieldKey = field.fieldName || field.sx3FieldName || field.id;
+      const value = formData[fieldKey];
       const label = getFieldLabel(field, language as SupportedLanguage);
 
       if (field.isRequired) {
-        if (value === null || value === undefined || value === '') {
-          newErrors[field.sx3FieldName] = formatMessage(t.validation.required, { field: label });
+        // Handle different field types for required validation
+        if (field.fieldType === 'attachment') {
+          const fieldAttachments = attachments[fieldKey] || [];
+          if (fieldAttachments.length === 0) {
+            newErrors[fieldKey] = formatMessage(t.validation.required, { field: label });
+            return;
+          }
+        } else if (field.fieldType === 'multiselect') {
+          if (!Array.isArray(value) || value.length === 0) {
+            newErrors[fieldKey] = formatMessage(t.validation.required, { field: label });
+            return;
+          }
+        } else if (value === null || value === undefined || value === '') {
+          newErrors[fieldKey] = formatMessage(t.validation.required, { field: label });
           return;
         }
       }
@@ -120,21 +168,42 @@ export const DynamicFormPage = () => {
         switch (field.fieldType) {
           case 'number':
             if (typeof value === 'string' && isNaN(Number(value))) {
-              newErrors[field.sx3FieldName] = formatMessage(t.validation.invalidNumber, { field: label });
+              newErrors[fieldKey] = formatMessage(t.validation.invalidNumber, { field: label });
             }
             break;
           case 'date':
             if (typeof value === 'string') {
               const date = new Date(value);
               if (isNaN(date.getTime())) {
-                newErrors[field.sx3FieldName] = formatMessage(t.validation.invalidDate, { field: label });
+                newErrors[fieldKey] = formatMessage(t.validation.invalidDate, { field: label });
               }
             }
             break;
         }
 
+        // Check max length from metadata
         if (field.metadata?.size && typeof value === 'string' && value.length > field.metadata.size) {
-          newErrors[field.sx3FieldName] = formatMessage(t.validation.maxLength, { field: label, max: field.metadata.size });
+          newErrors[fieldKey] = formatMessage(t.validation.maxLength, { field: label, max: field.metadata.size });
+        }
+
+        // Check validation rules
+        if (field.validationRules) {
+          if (field.validationRules.minLength && typeof value === 'string' && value.length < field.validationRules.minLength) {
+            newErrors[fieldKey] = `${label} deve ter pelo menos ${field.validationRules.minLength} caracteres`;
+          }
+          if (field.validationRules.maxLength && typeof value === 'string' && value.length > field.validationRules.maxLength) {
+            newErrors[fieldKey] = `${label} deve ter no máximo ${field.validationRules.maxLength} caracteres`;
+          }
+          if (field.validationRules.regex && typeof value === 'string') {
+            try {
+              const regex = new RegExp(field.validationRules.regex);
+              if (!regex.test(value)) {
+                newErrors[fieldKey] = `${label} não corresponde ao formato esperado`;
+              }
+            } catch {
+              // Invalid regex - skip validation
+            }
+          }
         }
       }
     });
@@ -147,115 +216,49 @@ export const DynamicFormPage = () => {
     }
 
     return true;
-  }, [fields, formData, language, t, formatMessage]);
+  }, [fields, formData, attachments, language, t, formatMessage]);
 
   const renderField = (field: FormField) => {
-    const value = formData[field.sx3FieldName];
-    const hasError = !!errors[field.sx3FieldName];
-    const errorMessage = errors[field.sx3FieldName];
-    const label = getLabel(field);
+    const fieldKey = field.fieldName || field.sx3FieldName || field.id;
+    const value = formData[fieldKey];
+    const fieldAttachments = attachments[fieldKey] || [];
+    const errorMessage = errors[fieldKey];
 
-    switch (field.fieldType) {
-      case 'number':
-        return (
-          <TextField
-            fullWidth
-            type="number"
-            label={label}
-            value={value === null ? '' : String(value)}
-            onChange={(e) => {
-              const numValue = e.target.value === '' ? null : parseFloat(e.target.value);
-              handleChange(field.sx3FieldName, numValue);
-            }}
-            required={field.isRequired}
-            error={hasError}
-            helperText={errorMessage || (field.metadata?.mask ? `${t.common.format}: ${field.metadata.mask}` : undefined)}
-            inputProps={{
-              step: field.metadata?.decimals ? `0.${'0'.repeat(field.metadata.decimals - 1)}1` : '1',
-            }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
-        );
-
-      case 'date':
-        return (
-          <TextField
-            fullWidth
-            type="date"
-            label={label}
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
-            required={field.isRequired}
-            error={hasError}
-            helperText={errorMessage}
-            InputLabelProps={{ shrink: true }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
-        );
-
-      case 'boolean':
-        return (
-          <FormControl error={hasError}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={value === true}
-                  onChange={(e) => handleChange(field.sx3FieldName, e.target.checked)}
-                  color="primary"
-                />
-              }
-              label={label}
-            />
-            {hasError && (
-              <Typography variant="caption" color="error">
-                {errorMessage}
-              </Typography>
-            )}
-          </FormControl>
-        );
-
-      case 'text':
-        return (
-          <TextField
-            fullWidth
-            multiline
-            rows={4}
-            label={label}
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
-            required={field.isRequired}
-            error={hasError}
-            helperText={errorMessage}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
-        );
-
-      case 'string':
-      default:
-        return (
-          <TextField
-            fullWidth
-            label={label}
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => handleChange(field.sx3FieldName, e.target.value)}
-            required={field.isRequired}
-            error={hasError}
-            helperText={errorMessage || (field.metadata?.mask ? `${t.common.format}: ${field.metadata.mask}` : undefined)}
-            inputProps={{
-              maxLength: field.metadata?.size || undefined,
-            }}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-          />
-        );
-    }
+    return (
+      <FieldRenderer
+        field={field}
+        value={value}
+        onChange={(newValue) => handleChange(fieldKey, newValue)}
+        error={errorMessage}
+        disabled={submitting || saving}
+        templateId={templateId}
+        registrationId={registrationId || undefined}
+        dependencyValues={dependencyValues}
+        attachments={fieldAttachments}
+        onAttachmentsChange={(newAttachments) => handleAttachmentsChange(fieldKey, newAttachments)}
+      />
+    );
   };
 
   const prepareFormData = () => {
     const preparedData: Record<string, any> = {};
     fields.forEach((field) => {
-      const value = formData[field.sx3FieldName];
-      if (value !== null && value !== undefined && value !== '') {
-        preparedData[field.sx3FieldName] = value;
+      const fieldKey = field.fieldName || field.sx3FieldName || field.id;
+      const value = formData[fieldKey];
+
+      // Handle different field types
+      if (field.fieldType === 'attachment') {
+        // Attachments are stored separately, just track attachment IDs
+        const fieldAttachments = attachments[fieldKey] || [];
+        if (fieldAttachments.length > 0) {
+          preparedData[fieldKey] = fieldAttachments.map(a => a.id);
+        }
+      } else if (field.fieldType === 'multiselect') {
+        if (Array.isArray(value) && value.length > 0) {
+          preparedData[fieldKey] = value;
+        }
+      } else if (value !== null && value !== undefined && value !== '') {
+        preparedData[fieldKey] = value;
       }
     });
     return preparedData;
@@ -269,10 +272,13 @@ export const DynamicFormPage = () => {
 
       const preparedData = prepareFormData();
 
-      await registrationService.createRegistration({
+      const registration = await registrationService.createRegistration({
         templateId,
         formData: preparedData,
       });
+
+      // Store registrationId for subsequent attachment uploads
+      setRegistrationId(registration.id);
 
       toast.success(t.registration.successSaved);
       navigate('/registration/my-requests');
@@ -282,6 +288,21 @@ export const DynamicFormPage = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Create a draft registration to get a registrationId for attachments
+  const ensureRegistrationId = async (): Promise<string> => {
+    if (registrationId) return registrationId;
+
+    if (!templateId) throw new Error('Template ID is required');
+
+    const registration = await registrationService.createRegistration({
+      templateId,
+      formData: {},
+    });
+
+    setRegistrationId(registration.id);
+    return registration.id;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -298,12 +319,20 @@ export const DynamicFormPage = () => {
 
       const preparedData = prepareFormData();
 
-      const registration = await registrationService.createRegistration({
-        templateId,
-        formData: preparedData,
-      });
+      let regId = registrationId;
 
-      await registrationService.submitRegistration(registration.id);
+      // If we already have a registration (from draft), update it, otherwise create new
+      if (regId) {
+        await registrationService.updateRegistration(regId, { formData: preparedData });
+      } else {
+        const registration = await registrationService.createRegistration({
+          templateId,
+          formData: preparedData,
+        });
+        regId = registration.id;
+      }
+
+      await registrationService.submitRegistration(regId);
 
       toast.success(t.registration.successSubmitted);
       navigate('/registration/my-requests');
@@ -373,16 +402,22 @@ export const DynamicFormPage = () => {
             </Typography>
             <Divider sx={{ mb: 3 }} />
             <Grid container spacing={3}>
-              {groupFields.map((field) => (
-                <Grid
-                  item
-                  xs={12}
-                  md={field.fieldType === 'text' || field.fieldType === 'boolean' ? 12 : 6}
-                  key={field.id}
-                >
-                  {renderField(field)}
-                </Grid>
-              ))}
+              {groupFields.map((field) => {
+                // Full width for textarea, multiselect, attachment, and checkbox/boolean
+                const fullWidthTypes = ['text', 'textarea', 'boolean', 'checkbox', 'multiselect', 'attachment'];
+                const isFullWidth = fullWidthTypes.includes(field.fieldType);
+
+                return (
+                  <Grid
+                    item
+                    xs={12}
+                    md={isFullWidth ? 12 : 6}
+                    key={field.id}
+                  >
+                    {renderField(field)}
+                  </Grid>
+                );
+              })}
             </Grid>
           </Box>
         ))}

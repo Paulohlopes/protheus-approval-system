@@ -10,14 +10,19 @@ import {
   ParseBoolPipe,
 } from '@nestjs/common';
 import { FormTemplateService } from './form-template.service';
+import { DataSourceService } from './services/data-source.service';
 import { CreateFormTemplateDto } from './dto/create-form-template.dto';
 import { UpdateFormTemplateDto } from './dto/update-form-template.dto';
 import { UpdateFormFieldDto } from './dto/update-form-field.dto';
 import { ReorderFieldsDto } from './dto/reorder-fields.dto';
+import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
 
 @Controller('form-templates')
 export class FormTemplateController {
-  constructor(private readonly formTemplateService: FormTemplateService) {}
+  constructor(
+    private readonly formTemplateService: FormTemplateService,
+    private readonly dataSourceService: DataSourceService,
+  ) {}
 
   /**
    * Create new form template from SX3 structure
@@ -109,16 +114,7 @@ export class FormTemplateController {
   @Post(':id/custom-fields')
   createCustomField(
     @Param('id') id: string,
-    @Body() dto: {
-      fieldName: string;
-      label: string;
-      fieldType: string;
-      isRequired?: boolean;
-      fieldGroup?: string;
-      placeholder?: string;
-      helpText?: string;
-      metadata?: any;
-    },
+    @Body() dto: CreateCustomFieldDto,
   ) {
     return this.formTemplateService.createCustomField(id, dto);
   }
@@ -132,5 +128,49 @@ export class FormTemplateController {
     @Param('fieldId') fieldId: string,
   ) {
     return this.formTemplateService.deleteField(id, fieldId);
+  }
+
+  // ==========================================
+  // DATA SOURCE ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get options for a field's data source
+   */
+  @Get(':id/fields/:fieldId/options')
+  async getFieldOptions(
+    @Param('id') templateId: string,
+    @Param('fieldId') fieldId: string,
+    @Query() filters: Record<string, string>,
+  ) {
+    return this.formTemplateService.getFieldOptions(templateId, fieldId, filters);
+  }
+
+  /**
+   * Validate a field value using SQL validation
+   */
+  @Post(':id/fields/:fieldId/validate')
+  async validateFieldValue(
+    @Param('id') templateId: string,
+    @Param('fieldId') fieldId: string,
+    @Body() body: { value: string },
+  ) {
+    return this.formTemplateService.validateFieldValue(templateId, fieldId, body.value);
+  }
+
+  /**
+   * Get list of allowed tables for SQL queries
+   */
+  @Get('data-sources/allowed-tables')
+  getAllowedTables() {
+    return this.dataSourceService.getAllowedTables();
+  }
+
+  /**
+   * Get available SX5 tables for selection
+   */
+  @Get('data-sources/sx5-tables')
+  getAvailableSx5Tables() {
+    return this.dataSourceService.getAvailableSx5Tables();
   }
 }

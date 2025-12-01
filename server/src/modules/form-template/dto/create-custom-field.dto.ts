@@ -1,54 +1,45 @@
 import {
-  IsBoolean,
-  IsOptional,
   IsString,
-  IsInt,
-  IsObject,
+  IsOptional,
+  IsBoolean,
   IsEnum,
+  IsObject,
   ValidateNested,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { FieldType } from './update-form-field.dto';
 import { DataSourceType, DataSourceConfigDto } from './data-source.dto';
 import { ValidationRulesDto } from './validation-rules.dto';
 import { AttachmentConfigDto } from './attachment-config.dto';
 
-// Supported field types
-export enum FieldType {
-  STRING = 'string',
-  NUMBER = 'number',
-  DATE = 'date',
-  BOOLEAN = 'boolean',
-  TEXT = 'text',
-  TEXTAREA = 'textarea',
-  SELECT = 'select',
-  CHECKBOX = 'checkbox',
-  RADIO = 'radio',
-  AUTOCOMPLETE = 'autocomplete',
-  MULTISELECT = 'multiselect',
-  ATTACHMENT = 'attachment',
-}
+export class CreateCustomFieldDto {
+  @IsString()
+  @IsNotEmpty()
+  fieldName: string; // Unique field name
 
-export class UpdateFormFieldDto {
-  @IsOptional()
-  @IsBoolean()
-  isVisible?: boolean;
+  @IsString()
+  @IsNotEmpty()
+  label: string; // Display label
+
+  @IsEnum(FieldType)
+  fieldType: FieldType;
 
   @IsOptional()
   @IsBoolean()
-  isEnabled?: boolean;
-
-  @IsOptional()
-  @IsInt()
-  fieldOrder?: number;
+  isRequired?: boolean;
 
   @IsOptional()
   @IsString()
-  fieldGroup?: string;
+  fieldGroup?: string; // Default: "Campos Customizados"
 
-  // Field type (can be changed for custom fields)
   @IsOptional()
-  @IsEnum(FieldType)
-  fieldType?: FieldType;
+  @IsString()
+  placeholder?: string;
+
+  @IsOptional()
+  @IsString()
+  helpText?: string;
 
   // Data source configuration (for select, radio, autocomplete, multiselect)
   @IsOptional()
@@ -72,15 +63,7 @@ export class UpdateFormFieldDto {
   @Type(() => AttachmentConfigDto)
   attachmentConfig?: AttachmentConfigDto;
 
-  // Other field properties
-  @IsOptional()
-  @IsString()
-  placeholder?: string;
-
-  @IsOptional()
-  @IsString()
-  helpText?: string;
-
+  // Additional metadata
   @IsOptional()
   @IsObject()
   metadata?: any;

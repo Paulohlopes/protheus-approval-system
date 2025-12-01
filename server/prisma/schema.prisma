@@ -108,7 +108,7 @@ model FormField {
   sx3FieldName    String?       // B1_COD, B1_DESC, etc (null for custom fields)
   fieldName       String?       // Unique field name (sx3FieldName or custom name) - temporarily nullable for migration
   label           String        // X3_TITULO or custom label
-  fieldType       String        // string, number, date, boolean, select, textarea
+  fieldType       String        // string, number, date, boolean, select, textarea, checkbox, radio, autocomplete, multiselect, attachment
   isRequired      Boolean       // X3_OBRIGAT == 'S' or custom requirement
   isVisible       Boolean       // Admin configures this
   isEnabled       Boolean       @default(true)
@@ -131,11 +131,18 @@ model FormField {
   fieldOrder      Int
   fieldGroup      String?       // "Dados Básicos", "Estoque", "Campos Customizados", etc
 
+  // Data source configuration (for select, radio, autocomplete, multiselect)
+  dataSourceType   String?      // 'fixed' | 'sql' | 'sx5'
+  dataSourceConfig Json?        // { fixedOptions: [], sqlQuery: '', valueField: '', labelField: '', sx5Table: '' }
+
   // Additional configuration
-  validationRules Json?         // Custom validation rules
+  validationRules Json?         // { required, minLength, maxLength, regex, mask, sqlValidation, dependsOn }
   metadata        Json?         // { size, decimals, mask, lookup, options (for select) }
   placeholder     String?       // Placeholder text for input
   helpText        String?       // Help text shown below field
+
+  // Attachment configuration (for attachment type)
+  attachmentConfig Json?        // { allowedTypes: [], maxSize: number, maxFiles: number }
 
   // Timestamps
   createdAt       DateTime      @default(now())
@@ -143,6 +150,32 @@ model FormField {
 
   @@map("form_fields")
   @@index([templateId])
+}
+
+// ==========================================
+// FIELD ATTACHMENTS
+// ==========================================
+
+model FieldAttachment {
+  id             String    @id @default(uuid())
+  registrationId String    // Links to RegistrationRequest.id
+  fieldName      String    // Field name that this attachment belongs to
+
+  // File information
+  fileName       String    // Stored file name (hashed)
+  originalName   String    // Original file name from upload
+  mimeType       String    // MIME type (e.g., application/pdf)
+  fileSize       Int       // File size in bytes
+  filePath       String    // Full path to file on disk
+
+  // Audit fields
+  uploadedById   String    // User who uploaded
+  uploadedAt     DateTime  @default(now())
+  deletedAt      DateTime? // Soft delete timestamp
+
+  @@map("field_attachments")
+  @@index([registrationId, fieldName])
+  @@index([uploadedById])
 }
 
 // ==========================================
