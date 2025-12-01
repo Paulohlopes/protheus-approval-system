@@ -25,8 +25,9 @@ export class FixedOptionDto {
 }
 
 export class DataSourceConfigDto {
+  @IsOptional()
   @IsEnum(DataSourceType)
-  type: DataSourceType;
+  type?: DataSourceType;
 
   // For 'fixed' type - list of options
   @IsOptional()

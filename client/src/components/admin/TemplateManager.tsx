@@ -347,15 +347,17 @@ const TemplateManager: React.FC = () => {
             })
             .filter(opt => opt.value);
 
-          dataSourceConfig = { fixedOptions };
+          dataSourceConfig = { type: 'fixed', fixedOptions };
         } else if (customFieldData.dataSourceType === 'sql') {
           dataSourceConfig = {
+            type: 'sql',
             sqlQuery: customFieldData.sqlQuery,
             valueField: customFieldData.sqlValueField,
             labelField: customFieldData.sqlLabelField,
           };
         } else if (customFieldData.dataSourceType === 'sx5') {
           dataSourceConfig = {
+            type: 'sx5',
             sx5Table: customFieldData.sx5Table,
           };
         }
@@ -428,15 +430,17 @@ const TemplateManager: React.FC = () => {
             })
             .filter(opt => opt.value);
 
-          dataSourceConfig = { fixedOptions };
+          dataSourceConfig = { type: 'fixed', fixedOptions };
         } else if (customFieldData.dataSourceType === 'sql') {
           dataSourceConfig = {
+            type: 'sql',
             sqlQuery: customFieldData.sqlQuery,
             valueField: customFieldData.sqlValueField,
             labelField: customFieldData.sqlLabelField,
           };
         } else if (customFieldData.dataSourceType === 'sx5') {
           dataSourceConfig = {
+            type: 'sx5',
             sx5Table: customFieldData.sx5Table,
           };
         }
