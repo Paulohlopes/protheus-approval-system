@@ -191,10 +191,17 @@ const TemplateManager: React.FC = () => {
     });
   };
 
-  // Load SX5 tables for selection
-  useEffect(() => {
-    dataSourceService.getAvailableSx5Tables().then(setSx5Tables).catch(console.error);
-  }, []);
+  // Load SX5 tables only when needed (lazy loading)
+  const loadSx5Tables = async () => {
+    if (sx5Tables.length === 0) {
+      try {
+        const tables = await dataSourceService.getAvailableSx5Tables();
+        setSx5Tables(tables);
+      } catch (err) {
+        console.error('Erro ao carregar tabelas SX5:', err);
+      }
+    }
+  };
 
   // Load templates on mount
   useEffect(() => {
@@ -307,6 +314,11 @@ const TemplateManager: React.FC = () => {
       maxSize: field.attachmentConfig?.maxSize ? String(field.attachmentConfig.maxSize / (1024 * 1024)) : '10',
       maxFiles: field.attachmentConfig?.maxFiles?.toString() || '5',
     });
+
+    // Load SX5 tables if field uses sx5 data source
+    if (field.dataSourceType === 'sx5') {
+      loadSx5Tables();
+    }
 
     setEditFieldDialogOpen(true);
   };
@@ -991,10 +1003,17 @@ const TemplateManager: React.FC = () => {
                   <Select
                     value={customFieldData.dataSourceType}
                     label="Tipo da Fonte"
-                    onChange={(e) => setCustomFieldData({
-                      ...customFieldData,
-                      dataSourceType: e.target.value as DataSourceType | '',
-                    })}
+                    onChange={(e) => {
+                      const newType = e.target.value as DataSourceType | '';
+                      setCustomFieldData({
+                        ...customFieldData,
+                        dataSourceType: newType,
+                      });
+                      // Load SX5 tables when sx5 is selected
+                      if (newType === 'sx5') {
+                        loadSx5Tables();
+                      }
+                    }}
                   >
                     <MenuItem value="">
                       <em>Selecione...</em>
@@ -1280,10 +1299,17 @@ const TemplateManager: React.FC = () => {
                   <Select
                     value={customFieldData.dataSourceType}
                     label="Tipo da Fonte"
-                    onChange={(e) => setCustomFieldData({
-                      ...customFieldData,
-                      dataSourceType: e.target.value as DataSourceType | '',
-                    })}
+                    onChange={(e) => {
+                      const newType = e.target.value as DataSourceType | '';
+                      setCustomFieldData({
+                        ...customFieldData,
+                        dataSourceType: newType,
+                      });
+                      // Load SX5 tables when sx5 is selected
+                      if (newType === 'sx5') {
+                        loadSx5Tables();
+                      }
+                    }}
                   >
                     <MenuItem value="">
                       <em>Nenhuma (usar opções do SX3)</em>
