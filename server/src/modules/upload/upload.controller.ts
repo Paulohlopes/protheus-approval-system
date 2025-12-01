@@ -17,6 +17,16 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { UploadService } from './upload.service';
 
+// Type for multer file
+interface MulterFile {
+  fieldname: string;
+  originalname: string;
+  encoding: string;
+  mimetype: string;
+  size: number;
+  buffer: Buffer;
+}
+
 // 100MB max for initial validation (actual limit per field is in attachmentConfig)
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
@@ -39,7 +49,7 @@ export class UploadController {
         validators: [new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE })],
       }),
     )
-    file: Express.Multer.File,
+    file: MulterFile,
     @Req() req: any,
   ) {
     this.logger.log(

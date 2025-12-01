@@ -290,7 +290,7 @@ export class UploadService {
     }
 
     const field = registration.template.fields[0];
-    return field.attachmentConfig as AttachmentConfigDto | null;
+    return field.attachmentConfig as unknown as AttachmentConfigDto | null;
   }
 
   /**
