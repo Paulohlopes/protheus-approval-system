@@ -150,6 +150,8 @@ model FormField {
 
   @@map("form_fields")
   @@index([templateId])
+  @@index([templateId, fieldOrder])  // For sorted field queries
+  @@index([templateId, isVisible, isEnabled])  // For visible/enabled field queries
 }
 
 // ==========================================

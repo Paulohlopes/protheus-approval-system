@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   Box,
   Paper,
@@ -115,6 +115,142 @@ interface CustomFieldFormData {
   maxFiles: string;
 }
 
+// Memoized Field List Item component to prevent unnecessary re-renders
+interface FieldListItemProps {
+  field: FormField;
+  templateId: string;
+  index: number;
+  totalFields: number;
+  onToggleVisibility: (templateId: string, fieldId: string, isVisible: boolean) => void;
+  onMoveField: (templateId: string, fieldId: string, direction: 'up' | 'down') => void;
+  onEdit: (template: FormTemplate, field: FormField) => void;
+  onDelete: (templateId: string, fieldId: string) => void;
+  template: FormTemplate;
+}
+
+const FieldListItem = memo(({
+  field,
+  templateId,
+  index,
+  totalFields,
+  onToggleVisibility,
+  onMoveField,
+  onEdit,
+  onDelete,
+  template
+}: FieldListItemProps) => {
+  return (
+    <ListItem
+      sx={{
+        bgcolor: field.isCustomField ? 'primary.lighter' : 'background.paper',
+        mb: 0.5,
+        borderRadius: 1,
+        border: field.isCustomField ? '1px solid' : 'none',
+        borderColor: 'primary.light',
+      }}
+      secondaryAction={
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Tooltip title={field.isVisible ? 'Ocultar campo' : 'Mostrar campo'}>
+            <IconButton
+              size="small"
+              onClick={() => onToggleVisibility(templateId, field.id, !field.isVisible)}
+            >
+              {field.isVisible ? <Visibility fontSize="small" /> : <VisibilityOff fontSize="small" />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Mover para cima">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => onMoveField(templateId, field.id, 'up')}
+                disabled={index === 0}
+              >
+                <KeyboardArrowUp fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Mover para baixo">
+            <span>
+              <IconButton
+                size="small"
+                onClick={() => onMoveField(templateId, field.id, 'down')}
+                disabled={index === totalFields - 1}
+              >
+                <KeyboardArrowDown fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Editar campo">
+            <IconButton
+              size="small"
+              onClick={() => onEdit(template, field)}
+            >
+              <Edit fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {field.isCustomField && (
+            <Tooltip title="Deletar campo">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => onDelete(templateId, field.id)}
+              >
+                <Delete fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+      }
+    >
+      <Checkbox
+        checked={field.isVisible}
+        onChange={(e) => onToggleVisibility(templateId, field.id, e.target.checked)}
+        size="small"
+      />
+      <ListItemText
+        primary={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" fontWeight={field.isVisible ? 500 : 400}>
+              {field.label}
+            </Typography>
+            {field.isRequired && (
+              <Chip label="Obrigatório" size="small" color="error" variant="outlined" />
+            )}
+            {field.isCustomField && (
+              <Chip label="Customizado" size="small" color="primary" variant="outlined" />
+            )}
+            {field.dataSourceType && (
+              <Chip
+                label={field.dataSourceType === 'sql' ? 'SQL' : field.dataSourceType === 'sx5' ? 'SX5' : 'Lista'}
+                size="small"
+                color="info"
+                variant="outlined"
+              />
+            )}
+          </Box>
+        }
+        secondary={
+          <Typography variant="caption" color="text.secondary">
+            {field.fieldName || field.sx3FieldName} • {field.fieldType}
+            {field.fieldGroup && ` • ${field.fieldGroup}`}
+          </Typography>
+        }
+      />
+    </ListItem>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison for optimization
+  return prevProps.field.id === nextProps.field.id &&
+         prevProps.field.isVisible === nextProps.field.isVisible &&
+         prevProps.field.fieldOrder === nextProps.field.fieldOrder &&
+         prevProps.field.label === nextProps.field.label &&
+         prevProps.field.isRequired === nextProps.field.isRequired &&
+         prevProps.index === nextProps.index &&
+         prevProps.totalFields === nextProps.totalFields;
+});
+
+FieldListItem.displayName = 'FieldListItem';
+
 const TemplateManager: React.FC = () => {
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,7 +331,7 @@ const TemplateManager: React.FC = () => {
   };
 
   // Load SX5 tables only when needed (lazy loading)
-  const loadSx5Tables = async () => {
+  const loadSx5Tables = useCallback(async () => {
     if (sx5Tables.length === 0) {
       try {
         const tables = await dataSourceService.getAvailableSx5Tables();
@@ -204,14 +340,9 @@ const TemplateManager: React.FC = () => {
         console.error('Erro ao carregar tabelas SX5:', err);
       }
     }
-  };
+  }, [sx5Tables.length]);
 
-  // Load templates on mount
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -222,9 +353,14 @@ const TemplateManager: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleCreateTemplate = async () => {
+  // Load templates on mount
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
+
+  const handleCreateTemplate = useCallback(async () => {
     try {
       await adminService.createTemplate(formData);
       setCreateDialogOpen(false);
@@ -233,9 +369,9 @@ const TemplateManager: React.FC = () => {
     } catch (err: any) {
       setError(err.message || 'Erro ao criar template');
     }
-  };
+  }, [formData, loadTemplates]);
 
-  const handleDeleteTemplate = async (id: string) => {
+  const handleDeleteTemplate = useCallback(async (id: string) => {
     if (!window.confirm('Tem certeza que deseja deletar este template?')) {
       return;
     }
@@ -246,9 +382,9 @@ const TemplateManager: React.FC = () => {
     } catch (err: any) {
       setError(err.message || 'Erro ao deletar template');
     }
-  };
+  }, [loadTemplates]);
 
-  const handleSyncWithSx3 = async (templateId: string) => {
+  const handleSyncWithSx3 = useCallback(async (templateId: string) => {
     try {
       setSyncing(templateId);
       await adminService.syncTemplateWithSx3(templateId);
@@ -258,9 +394,9 @@ const TemplateManager: React.FC = () => {
     } finally {
       setSyncing(null);
     }
-  };
+  }, [loadTemplates]);
 
-  const handleToggleFieldVisibility = async (
+  const handleToggleFieldVisibility = useCallback(async (
     templateId: string,
     fieldId: string,
     isVisible: boolean
@@ -271,13 +407,13 @@ const TemplateManager: React.FC = () => {
     } catch (err: any) {
       setError(err.message || 'Erro ao atualizar campo');
     }
-  };
+  }, [loadTemplates]);
 
-  const handleOpenCustomFieldDialog = (template: FormTemplate) => {
+  const handleOpenCustomFieldDialog = useCallback((template: FormTemplate) => {
     setSelectedTemplate(template);
     resetCustomFieldForm();
     setCustomFieldDialogOpen(true);
-  };
+  }, []);
 
   // Open edit field dialog
   const handleOpenEditFieldDialog = (template: FormTemplate, field: FormField) => {
@@ -498,7 +634,7 @@ const TemplateManager: React.FC = () => {
     }
   };
 
-  const handleDeleteField = async (templateId: string, fieldId: string) => {
+  const handleDeleteField = useCallback(async (templateId: string, fieldId: string) => {
     if (!window.confirm('Tem certeza que deseja deletar este campo?')) {
       return;
     }
@@ -509,9 +645,18 @@ const TemplateManager: React.FC = () => {
     } catch (err: any) {
       setError(err.message || 'Erro ao deletar campo');
     }
-  };
+  }, [loadTemplates]);
 
-  const handleMoveField = async (templateId: string, fieldId: string, direction: 'up' | 'down') => {
+  const saveFieldOrder = useCallback(async (templateId: string, fieldIds: string[]) => {
+    try {
+      await adminService.reorderTemplateFields(templateId, { fieldIds });
+      await loadTemplates();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao reordenar campos');
+    }
+  }, [loadTemplates]);
+
+  const handleMoveField = useCallback(async (templateId: string, fieldId: string, direction: 'up' | 'down') => {
     const template = templates.find(t => t.id === templateId);
     if (!template?.fields) return;
 
@@ -535,9 +680,9 @@ const TemplateManager: React.FC = () => {
       ];
       await saveFieldOrder(templateId, newOrder.map(f => f.id));
     }
-  };
+  }, [templates, saveFieldOrder]);
 
-  const handleMoveVisibleFieldsToTop = async (templateId: string) => {
+  const handleMoveVisibleFieldsToTop = useCallback(async (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
     if (!template?.fields) return;
 
@@ -547,35 +692,28 @@ const TemplateManager: React.FC = () => {
     const newOrder = [...visibleFields, ...hiddenFields];
 
     await saveFieldOrder(templateId, newOrder.map(f => f.id));
-  };
+  }, [templates, saveFieldOrder]);
 
-  const saveFieldOrder = async (templateId: string, fieldIds: string[]) => {
-    try {
-      await adminService.reorderTemplateFields(templateId, { fieldIds });
-      await loadTemplates();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao reordenar campos');
-    }
-  };
+  const toggleExpandTemplate = useCallback((templateId: string) => {
+    setExpandedTemplates(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(templateId)) {
+        newExpanded.delete(templateId);
+      } else {
+        newExpanded.add(templateId);
+      }
+      return newExpanded;
+    });
+  }, []);
 
-  const toggleExpandTemplate = (templateId: string) => {
-    const newExpanded = new Set(expandedTemplates);
-    if (newExpanded.has(templateId)) {
-      newExpanded.delete(templateId);
-    } else {
-      newExpanded.add(templateId);
-    }
-    setExpandedTemplates(newExpanded);
-  };
-
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
       label: '',
       description: '',
       tableName: '',
       isActive: true,
     });
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -728,105 +866,21 @@ const TemplateManager: React.FC = () => {
                           </Box>
                           {template.fields && template.fields.length > 0 ? (
                             <List dense>
-                              {template.fields
+                              {[...template.fields]
                                 .sort((a, b) => a.fieldOrder - b.fieldOrder)
-                                .map((field: any) => (
-                                  <ListItem
+                                .map((field: FormField, index: number, arr: FormField[]) => (
+                                  <FieldListItem
                                     key={field.id}
-                                    sx={{
-                                      bgcolor: field.isCustomField ? 'primary.lighter' : 'background.paper',
-                                      mb: 0.5,
-                                      borderRadius: 1,
-                                      border: field.isCustomField ? '1px solid' : 'none',
-                                      borderColor: 'primary.light',
-                                    }}
-                                    secondaryAction={
-                                      <Stack direction="row" spacing={0.5} alignItems="center">
-                                        <Tooltip title="Mover para cima">
-                                          <IconButton
-                                            size="small"
-                                            onClick={() => handleMoveField(template.id, field.id, 'up')}
-                                          >
-                                            <KeyboardArrowUp fontSize="small" />
-                                          </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Mover para baixo">
-                                          <IconButton
-                                            size="small"
-                                            onClick={() => handleMoveField(template.id, field.id, 'down')}
-                                          >
-                                            <KeyboardArrowDown fontSize="small" />
-                                          </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Configurar campo">
-                                          <IconButton
-                                            size="small"
-                                            color="primary"
-                                            onClick={() => handleOpenEditFieldDialog(template, field)}
-                                          >
-                                            <Edit fontSize="small" />
-                                          </IconButton>
-                                        </Tooltip>
-                                        <FormControlLabel
-                                          control={
-                                            <Switch
-                                            checked={field.isVisible}
-                                            onChange={(e) =>
-                                              handleToggleFieldVisibility(
-                                                template.id,
-                                                field.id,
-                                                e.target.checked
-                                              )
-                                            }
-                                            size="small"
-                                          />
-                                        }
-                                        label="Visível"
-                                      />
-                                        {field.isCustomField && (
-                                          <Tooltip title="Deletar campo">
-                                            <IconButton
-                                              size="small"
-                                              color="error"
-                                              onClick={() => handleDeleteField(template.id, field.id)}
-                                            >
-                                              <Delete fontSize="small" />
-                                            </IconButton>
-                                          </Tooltip>
-                                        )}
-                                      </Stack>
-                                    }
-                                  >
-                                    <ListItemText
-                                      primary={
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                          <Typography variant="body2" fontWeight={500}>
-                                            {field.label}
-                                          </Typography>
-                                          <Chip
-                                            label={field.fieldName || field.sx3FieldName}
-                                            size="small"
-                                            variant="outlined"
-                                          />
-                                          {field.isCustomField && (
-                                            <Chip
-                                              label="Customizado"
-                                              size="small"
-                                              color="primary"
-                                            />
-                                          )}
-                                          {field.isRequired && (
-                                            <Chip
-                                              label="Obrigatório"
-                                              size="small"
-                                              color="warning"
-                                            />
-                                          )}
-                                        </Box>
-                                      }
-                                      secondary={`Tipo: ${field.fieldType} | Grupo: ${field.fieldGroup || 'Nenhum'}${field.helpText ? ` | ${field.helpText}` : ''}`}
-                                    />
-                                  </ListItem>
+                                    field={field}
+                                    templateId={template.id}
+                                    index={index}
+                                    totalFields={arr.length}
+                                    onToggleVisibility={handleToggleFieldVisibility}
+                                    onMoveField={handleMoveField}
+                                    onEdit={handleOpenEditFieldDialog}
+                                    onDelete={handleDeleteField}
+                                    template={template}
+                                  />
                                 ))}
                             </List>
                           ) : (

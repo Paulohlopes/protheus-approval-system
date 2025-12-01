@@ -154,28 +154,30 @@ export class FormTemplateService {
    * Update template
    */
   async update(id: string, dto: UpdateFormTemplateDto) {
-    // Check if exists
-    await this.findOne(id);
-
-    return this.prisma.formTemplate.update({
-      where: { id },
-      data: dto,
-      include: {
-        fields: {
-          orderBy: { fieldOrder: 'asc' },
+    // Update directly - Prisma throws P2025 if not found
+    try {
+      return await this.prisma.formTemplate.update({
+        where: { id },
+        data: dto,
+        include: {
+          fields: {
+            orderBy: { fieldOrder: 'asc' },
+          },
         },
-      },
-    });
+      });
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`Template ${id} not found`);
+      }
+      throw error;
+    }
   }
 
   /**
    * Delete template
    */
   async remove(id: string) {
-    // Check if exists
-    await this.findOne(id);
-
-    // Check if has workflows or requests
+    // Single query to check existence and get counts
     const template = await this.prisma.formTemplate.findUnique({
       where: { id },
       include: {
@@ -187,6 +189,10 @@ export class FormTemplateService {
         },
       },
     });
+
+    if (!template) {
+      throw new NotFoundException(`Template ${id} not found`);
+    }
 
     if (template._count.workflows > 0 || template._count.requests > 0) {
       throw new BadRequestException(
@@ -203,33 +209,19 @@ export class FormTemplateService {
    * Update form field
    */
   async updateField(templateId: string, fieldId: string, dto: UpdateFormFieldDto) {
-    // Check if template exists
-    await this.findOne(templateId);
-
-    // Check if field exists and belongs to template
-    const field = await this.prisma.formField.findUnique({
-      where: { id: fieldId },
+    // Single query to check field exists and belongs to template
+    const field = await this.prisma.formField.findFirst({
+      where: { id: fieldId, templateId },
     });
 
-    if (!field || field.templateId !== templateId) {
+    if (!field) {
       throw new NotFoundException(`Field ${fieldId} not found in template ${templateId}`);
     }
 
-    // Convert DTO to plain object for Prisma (JSON fields need plain objects)
-    const updateData: any = { ...dto };
-    if (dto.dataSourceConfig) {
-      updateData.dataSourceConfig = JSON.parse(JSON.stringify(dto.dataSourceConfig));
-    }
-    if (dto.validationRules) {
-      updateData.validationRules = JSON.parse(JSON.stringify(dto.validationRules));
-    }
-    if (dto.attachmentConfig) {
-      updateData.attachmentConfig = JSON.parse(JSON.stringify(dto.attachmentConfig));
-    }
-
+    // Prisma handles JSON serialization automatically
     return this.prisma.formField.update({
       where: { id: fieldId },
-      data: updateData,
+      data: dto,
     });
   }
 
@@ -239,13 +231,10 @@ export class FormTemplateService {
   async reorderFields(templateId: string, dto: ReorderFieldsDto) {
     this.logger.log(`Reordering ${dto.fieldIds.length} fields for template ${templateId}`);
 
-    // Check if template exists
-    await this.findOne(templateId);
-
-    // Update field order
+    // Update field order in transaction (validates templateId via where clause)
     const updates = dto.fieldIds.map((fieldId, index) =>
-      this.prisma.formField.update({
-        where: { id: fieldId },
+      this.prisma.formField.updateMany({
+        where: { id: fieldId, templateId },
         data: { fieldOrder: index },
       }),
     );
@@ -254,8 +243,14 @@ export class FormTemplateService {
 
     this.logger.log(`Reordered ${dto.fieldIds.length} fields`);
 
-    // Return updated template
-    return this.findOne(templateId);
+    // Return updated template with fields
+    return this.prisma.formTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        fields: { orderBy: { fieldOrder: 'asc' } },
+        workflows: true,
+      },
+    });
   }
 
   /**

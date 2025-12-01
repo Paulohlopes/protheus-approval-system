@@ -390,30 +390,24 @@ export class DataSourceService {
 
   /**
    * Get list of available SX5 tables
+   * Optimized: Uses GROUP BY instead of correlated subquery
    */
   async getAvailableSx5Tables(): Promise<DataSourceOptionDto[]> {
     const query = `
-      SELECT DISTINCT X5_TABELA as value,
-        (SELECT TOP 1 X5_DESCRI FROM SX5010 s2 WHERE s2.X5_TABELA = s1.X5_TABELA AND D_E_L_E_T_ = '') as label
-      FROM SX5010 s1
+      SELECT X5_TABELA as value, MIN(X5_DESCRI) as label
+      FROM SX5010
       WHERE D_E_L_E_T_ = ''
+      GROUP BY X5_TABELA
       ORDER BY X5_TABELA
     `;
 
     try {
-      const queryRunner = this.dataSource.createQueryRunner();
-      await queryRunner.connect();
+      const results = await this.dataSource.query(query);
 
-      try {
-        const results = await queryRunner.query(query);
-
-        return results.map((row: any) => ({
-          value: String(row.value || '').trim(),
-          label: `${row.value} - ${String(row.label || '').trim().substring(0, 50)}`,
-        }));
-      } finally {
-        await queryRunner.release();
-      }
+      return results.map((row: any) => ({
+        value: String(row.value || '').trim(),
+        label: `${row.value} - ${String(row.label || '').trim().substring(0, 50)}`,
+      }));
     } catch (error) {
       this.logger.error(`Error getting SX5 tables: ${error.message}`);
       return [];
