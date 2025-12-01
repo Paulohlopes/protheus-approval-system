@@ -75,6 +75,12 @@ export interface DataSourceOption {
   label: string;
 }
 
+export interface DataSourceResponse {
+  options: DataSourceOption[];
+  warning?: string; // Warning message (e.g., duplicate values detected)
+  duplicateCount?: number; // Number of duplicate values found
+}
+
 export interface DataSourceConfig {
   type: DataSourceType;
   fixedOptions?: DataSourceOption[];

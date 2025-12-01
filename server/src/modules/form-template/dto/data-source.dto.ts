@@ -65,3 +65,10 @@ export class DataSourceOptionDto {
   value: string;
   label: string;
 }
+
+// Response DTO for options with metadata
+export class DataSourceResponseDto {
+  options: DataSourceOptionDto[];
+  warning?: string; // Warning message (e.g., duplicate values detected)
+  duplicateCount?: number; // Number of duplicate values found
+}

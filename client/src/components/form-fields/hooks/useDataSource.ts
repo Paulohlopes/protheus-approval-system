@@ -13,6 +13,8 @@ interface UseDataSourceResult {
   options: DataSourceOption[];
   loading: boolean;
   error: string | null;
+  warning: string | null;
+  duplicateCount: number;
   fetchOptions: (filters?: Record<string, string>) => Promise<DataSourceOption[]>;
   clearOptions: () => void;
 }
@@ -26,6 +28,8 @@ export function useDataSource({
   const [options, setOptions] = useState<DataSourceOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [duplicateCount, setDuplicateCount] = useState(0);
 
   const fetchOptions = useCallback(
     async (filters?: Record<string, string>): Promise<DataSourceOption[]> => {
@@ -33,6 +37,8 @@ export function useDataSource({
       if (dataSourceType === 'fixed' && dataSourceConfig?.fixedOptions) {
         const fixedOptions = dataSourceConfig.fixedOptions;
         setOptions(fixedOptions);
+        setWarning(null);
+        setDuplicateCount(0);
         return fixedOptions;
       }
 
@@ -50,8 +56,16 @@ export function useDataSource({
           fieldId,
           filters,
         );
-        setOptions(result);
-        return result;
+        setOptions(result.options);
+        setWarning(result.warning || null);
+        setDuplicateCount(result.duplicateCount || 0);
+
+        // Log warning to console for developers
+        if (result.warning) {
+          console.warn(`[DataSource] ${result.warning}`);
+        }
+
+        return result.options;
       } catch (err: any) {
         const errorMessage = err.response?.data?.message || err.message || 'Erro ao buscar opções';
         setError(errorMessage);
@@ -66,12 +80,16 @@ export function useDataSource({
   const clearOptions = useCallback(() => {
     setOptions([]);
     setError(null);
+    setWarning(null);
+    setDuplicateCount(0);
   }, []);
 
   return {
     options,
     loading,
     error,
+    warning,
+    duplicateCount,
     fetchOptions,
     clearOptions,
   };

@@ -1,5 +1,5 @@
 import { backendApi } from './api';
-import type { DataSourceOption } from '../types/registration';
+import type { DataSourceOption, DataSourceResponse } from '../types/registration';
 
 export const dataSourceService = {
   /**
@@ -9,11 +9,15 @@ export const dataSourceService = {
     templateId: string,
     fieldId: string,
     filters?: Record<string, string>,
-  ): Promise<DataSourceOption[]> {
+  ): Promise<DataSourceResponse> {
     const response = await backendApi.get(
       `/form-templates/${templateId}/fields/${fieldId}/options`,
       { params: filters },
     );
+    // Handle both old format (array) and new format (object with options)
+    if (Array.isArray(response.data)) {
+      return { options: response.data };
+    }
     return response.data;
   },
 

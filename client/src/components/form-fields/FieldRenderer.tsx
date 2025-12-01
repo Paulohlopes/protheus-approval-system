@@ -10,6 +10,7 @@ import {
   Switch,
   CircularProgress,
   Box,
+  Alert,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -56,7 +57,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     : undefined;
 
   // For select fields, use data source
-  const { options, loading, fetchOptions } = useDataSource({
+  const { options, loading, warning, fetchOptions } = useDataSource({
     templateId,
     fieldId: field.id,
     dataSourceType: field.dataSourceType,
@@ -191,32 +192,39 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       // If has data source with proper config, show loading or options
       if (field.dataSourceType && field.dataSourceConfig) {
         return (
-          <FormControl {...formControlProps}>
-            <InputLabel id={`${field.id}-label`}>{field.label}</InputLabel>
-            <Select
-              labelId={`${field.id}-label`}
-              value={value || ''}
-              onChange={(e) => onChange(e.target.value)}
-              label={field.label}
-              endAdornment={
-                loading ? (
-                  <CircularProgress size={20} sx={{ mr: 2 }} />
-                ) : null
-              }
-            >
-              <MenuItem value="">
-                <em>Selecione...</em>
-              </MenuItem>
-              {options.map((option) => (
-                <MenuItem key={option.key || option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-            {(error || field.helpText) && (
-              <FormHelperText>{error || field.helpText}</FormHelperText>
+          <Box>
+            {warning && (
+              <Alert severity="warning" sx={{ mb: 1, fontSize: '0.75rem' }}>
+                {warning}
+              </Alert>
             )}
-          </FormControl>
+            <FormControl {...formControlProps}>
+              <InputLabel id={`${field.id}-label`}>{field.label}</InputLabel>
+              <Select
+                labelId={`${field.id}-label`}
+                value={value || ''}
+                onChange={(e) => onChange(e.target.value)}
+                label={field.label}
+                endAdornment={
+                  loading ? (
+                    <CircularProgress size={20} sx={{ mr: 2 }} />
+                  ) : null
+                }
+              >
+                <MenuItem value="">
+                  <em>Selecione...</em>
+                </MenuItem>
+                {options.map((option) => (
+                  <MenuItem key={option.key || option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              {(error || field.helpText) && (
+                <FormHelperText>{error || field.helpText}</FormHelperText>
+              )}
+            </FormControl>
+          </Box>
         );
       }
 

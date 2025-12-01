@@ -5,6 +5,7 @@ import {
   DataSourceType,
   DataSourceConfigDto,
   DataSourceOptionDto,
+  DataSourceResponseDto,
 } from '../dto/data-source.dto';
 
 @Injectable()
@@ -74,13 +75,13 @@ export class DataSourceService {
     dataSourceType: DataSourceType | string,
     dataSourceConfig: DataSourceConfigDto | any,
     filters?: Record<string, string>,
-  ): Promise<DataSourceOptionDto[]> {
+  ): Promise<DataSourceResponseDto> {
     this.logger.log(`Getting options for data source type: ${dataSourceType}`);
 
     switch (dataSourceType) {
       case DataSourceType.FIXED:
       case 'fixed':
-        return this.getFixedOptions(dataSourceConfig);
+        return { options: this.getFixedOptions(dataSourceConfig) };
 
       case DataSourceType.SQL:
       case 'sql':
@@ -88,11 +89,11 @@ export class DataSourceService {
 
       case DataSourceType.SX5:
       case 'sx5':
-        return this.getSx5Options(dataSourceConfig.sx5Table, filters);
+        return { options: await this.getSx5Options(dataSourceConfig.sx5Table, filters) };
 
       default:
         this.logger.warn(`Unknown data source type: ${dataSourceType}`);
-        return [];
+        return { options: [] };
     }
   }
 
@@ -117,7 +118,7 @@ export class DataSourceService {
   private async executeSqlQuery(
     config: DataSourceConfigDto | any,
     filters?: Record<string, string>,
-  ): Promise<DataSourceOptionDto[]> {
+  ): Promise<DataSourceResponseDto> {
     // Validate required fields
     if (!config.sqlQuery) {
       throw new BadRequestException('SQL query is required');
@@ -175,21 +176,48 @@ export class DataSourceService {
       try {
         const results = await queryRunner.query(query);
 
-        return results.map((row: any, index: number) => {
+        // Track values to detect duplicates
+        const valueCount = new Map<string, number>();
+
+        const options = results.map((row: any, index: number) => {
           const value = String(row[valueField] ?? '').trim();
           const label = String(row[labelField] ?? row[valueField] ?? '').trim();
 
-          // Generate unique key: use keyField if provided, otherwise fallback to value+index
-          let key: string | undefined;
+          // Count occurrences of each value
+          valueCount.set(value, (valueCount.get(value) || 0) + 1);
+
+          // Generate unique key: always include index to guarantee uniqueness
+          // even if keyField has duplicate values
+          let key: string;
           if (keyField && row[keyField] !== undefined) {
-            key = String(row[keyField]).trim();
+            key = `${String(row[keyField]).trim()}_${index}`;
           } else {
-            // Fallback: combine value with index to ensure uniqueness
             key = `${value}_${index}`;
           }
 
           return { key, value, label };
         });
+
+        // Check for duplicate values
+        const duplicates = Array.from(valueCount.entries())
+          .filter(([_, count]) => count > 1);
+
+        const response: DataSourceResponseDto = { options };
+
+        if (duplicates.length > 0) {
+          const duplicateCount = duplicates.reduce((sum, [_, count]) => sum + count - 1, 0);
+          const duplicateValues = duplicates
+            .slice(0, 5) // Show only first 5 duplicates
+            .map(([val, count]) => `"${val}" (${count}x)`)
+            .join(', ');
+
+          response.warning = `Atenção: ${duplicates.length} valor(es) duplicado(s) encontrado(s): ${duplicateValues}${duplicates.length > 5 ? '...' : ''}. Verifique sua query SQL e use DISTINCT ou GROUP BY para evitar duplicatas.`;
+          response.duplicateCount = duplicateCount;
+
+          this.logger.warn(`Duplicate values detected in SQL query results: ${duplicateValues}`);
+        }
+
+        return response;
       } finally {
         await queryRunner.release();
       }

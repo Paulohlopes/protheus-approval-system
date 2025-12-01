@@ -5,6 +5,7 @@ import {
   CircularProgress,
   FormControl,
   FormHelperText,
+  Alert,
 } from '@mui/material';
 import { useDataSource } from './hooks/useDataSource';
 import type { FormField, DataSourceOption } from '../../types/registration';
@@ -32,7 +33,7 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [localOptions, setLocalOptions] = useState<DataSourceOption[]>([]);
 
-  const { options, loading, fetchOptions } = useDataSource({
+  const { options, loading, warning, fetchOptions } = useDataSource({
     templateId,
     fieldId: field.id,
     dataSourceType: field.dataSourceType,
@@ -83,6 +84,11 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
 
   return (
     <FormControl fullWidth error={!!error}>
+      {warning && (
+        <Alert severity="warning" sx={{ mb: 1, fontSize: '0.75rem' }}>
+          {warning}
+        </Alert>
+      )}
       <Autocomplete
         value={selectedOption}
         onChange={(_, newValue) => onChange(newValue?.value || null)}
