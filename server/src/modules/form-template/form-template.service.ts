@@ -218,10 +218,21 @@ export class FormTemplateService {
       throw new NotFoundException(`Field ${fieldId} not found in template ${templateId}`);
     }
 
-    // Prisma handles JSON serialization automatically
+    // Convert DTO to plain object for Prisma (JSON fields need plain objects)
+    const updateData: any = { ...dto };
+    if (dto.dataSourceConfig) {
+      updateData.dataSourceConfig = JSON.parse(JSON.stringify(dto.dataSourceConfig));
+    }
+    if (dto.validationRules) {
+      updateData.validationRules = JSON.parse(JSON.stringify(dto.validationRules));
+    }
+    if (dto.attachmentConfig) {
+      updateData.attachmentConfig = JSON.parse(JSON.stringify(dto.attachmentConfig));
+    }
+
     return this.prisma.formField.update({
       where: { id: fieldId },
-      data: dto,
+      data: updateData,
     });
   }
 
