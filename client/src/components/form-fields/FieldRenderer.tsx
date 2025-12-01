@@ -65,16 +65,17 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
 
   // Fetch options for select type
   useEffect(() => {
-    if (field.fieldType === 'select' && field.dataSourceType) {
+    // Only fetch if we have both dataSourceType AND proper configuration
+    if (field.fieldType === 'select' && field.dataSourceType && field.dataSourceConfig) {
       const filters: Record<string, string> = {};
       if (field.validationRules?.dependsOn?.filterField && dependencyValue) {
         filters[field.validationRules.dependsOn.filterField] = String(dependencyValue);
       }
       fetchOptions(filters);
     }
-  }, [field.fieldType, field.dataSourceType, fetchOptions, dependencyValue, field.validationRules?.dependsOn?.filterField]);
+  }, [field.fieldType, field.dataSourceType, field.dataSourceConfig, fetchOptions, dependencyValue, field.validationRules?.dependsOn?.filterField]);
 
-  // Common props
+  // Common props for TextField
   const commonProps = {
     fullWidth: true,
     label: field.label,
@@ -83,6 +84,14 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
     helperText: error || field.helpText,
     disabled: disabled || !field.isEnabled,
     placeholder: field.placeholder,
+  };
+
+  // Common props for FormControl (doesn't accept helperText, label, placeholder)
+  const formControlProps = {
+    fullWidth: true,
+    required: field.isRequired,
+    error: !!error,
+    disabled: disabled || !field.isEnabled,
   };
 
   switch (field.fieldType) {
@@ -179,10 +188,10 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       );
 
     case 'select':
-      // If has data source, show loading or options
-      if (field.dataSourceType) {
+      // If has data source with proper config, show loading or options
+      if (field.dataSourceType && field.dataSourceConfig) {
         return (
-          <FormControl {...commonProps}>
+          <FormControl {...formControlProps}>
             <InputLabel id={`${field.id}-label`}>{field.label}</InputLabel>
             <Select
               labelId={`${field.id}-label`}
@@ -214,7 +223,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
       // Legacy: use metadata.options
       const legacyOptions = field.metadata?.options || [];
       return (
-        <FormControl {...commonProps}>
+        <FormControl {...formControlProps}>
           <InputLabel id={`${field.id}-label`}>{field.label}</InputLabel>
           <Select
             labelId={`${field.id}-label`}
