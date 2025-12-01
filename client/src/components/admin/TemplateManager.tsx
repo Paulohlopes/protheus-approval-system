@@ -122,10 +122,13 @@ const TemplateManager: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [fieldsDialogOpen, setFieldsDialogOpen] = useState(false);
   const [customFieldDialogOpen, setCustomFieldDialogOpen] = useState(false);
+  const [editFieldDialogOpen, setEditFieldDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(null);
+  const [selectedField, setSelectedField] = useState<FormField | null>(null);
   const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(new Set());
   const [syncing, setSyncing] = useState<string | null>(null);
   const [savingCustomField, setSavingCustomField] = useState(false);
+  const [savingFieldEdit, setSavingFieldEdit] = useState(false);
 
   // Form state for create/edit template
   const [formData, setFormData] = useState<CreateFormTemplateDto>({
@@ -264,6 +267,129 @@ const TemplateManager: React.FC = () => {
     setSelectedTemplate(template);
     resetCustomFieldForm();
     setCustomFieldDialogOpen(true);
+  };
+
+  // Open edit field dialog
+  const handleOpenEditFieldDialog = (template: FormTemplate, field: FormField) => {
+    setSelectedTemplate(template);
+    setSelectedField(field);
+
+    // Convert field data to form data format
+    const dataSourceConfig = field.dataSourceConfig as any;
+    let fixedOptionsText = '';
+    if (dataSourceConfig?.fixedOptions) {
+      fixedOptionsText = dataSourceConfig.fixedOptions
+        .map((opt: any) => `${opt.value}|${opt.label}`)
+        .join('\n');
+    }
+
+    setCustomFieldData({
+      fieldName: field.fieldName || field.sx3FieldName || '',
+      label: field.label,
+      fieldType: field.fieldType as FieldType,
+      isRequired: field.isRequired,
+      fieldGroup: field.fieldGroup || '',
+      placeholder: field.placeholder || '',
+      helpText: field.helpText || '',
+      // Data source
+      dataSourceType: (field.dataSourceType as DataSourceType) || '',
+      fixedOptions: fixedOptionsText,
+      sqlQuery: dataSourceConfig?.sqlQuery || '',
+      sqlValueField: dataSourceConfig?.valueField || '',
+      sqlLabelField: dataSourceConfig?.labelField || '',
+      sx5Table: dataSourceConfig?.sx5Table || '',
+      // Validation
+      minLength: field.validationRules?.minLength?.toString() || '',
+      maxLength: field.validationRules?.maxLength?.toString() || '',
+      regex: field.validationRules?.regex || '',
+      // Attachment
+      allowedTypes: field.attachmentConfig?.allowedTypes || ['application/pdf', 'image/jpeg', 'image/png'],
+      maxSize: field.attachmentConfig?.maxSize ? String(field.attachmentConfig.maxSize / (1024 * 1024)) : '10',
+      maxFiles: field.attachmentConfig?.maxFiles?.toString() || '5',
+    });
+
+    setEditFieldDialogOpen(true);
+  };
+
+  // Save edited field
+  const handleSaveFieldEdit = async () => {
+    if (!selectedTemplate || !selectedField) return;
+
+    try {
+      setSavingFieldEdit(true);
+
+      // Build data source config
+      let dataSourceType: DataSourceType | undefined;
+      let dataSourceConfig: any = undefined;
+
+      if (FIELD_TYPES_WITH_DATA_SOURCE.includes(customFieldData.fieldType) && customFieldData.dataSourceType) {
+        dataSourceType = customFieldData.dataSourceType as DataSourceType;
+
+        if (customFieldData.dataSourceType === 'fixed') {
+          const fixedOptions = customFieldData.fixedOptions
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => {
+              const [value, label] = line.split('|').map(s => s.trim());
+              return { value: value || '', label: label || value || '' };
+            })
+            .filter(opt => opt.value);
+
+          dataSourceConfig = { fixedOptions };
+        } else if (customFieldData.dataSourceType === 'sql') {
+          dataSourceConfig = {
+            sqlQuery: customFieldData.sqlQuery,
+            valueField: customFieldData.sqlValueField,
+            labelField: customFieldData.sqlLabelField,
+          };
+        } else if (customFieldData.dataSourceType === 'sx5') {
+          dataSourceConfig = {
+            sx5Table: customFieldData.sx5Table,
+          };
+        }
+      }
+
+      // Build validation rules
+      const validationRules: any = {};
+      if (customFieldData.minLength) {
+        validationRules.minLength = parseInt(customFieldData.minLength, 10);
+      }
+      if (customFieldData.maxLength) {
+        validationRules.maxLength = parseInt(customFieldData.maxLength, 10);
+      }
+      if (customFieldData.regex) {
+        validationRules.regex = customFieldData.regex;
+      }
+
+      // Build attachment config
+      let attachmentConfig: any = undefined;
+      if (customFieldData.fieldType === 'attachment') {
+        attachmentConfig = {
+          allowedTypes: customFieldData.allowedTypes,
+          maxSize: parseInt(customFieldData.maxSize, 10) * 1024 * 1024,
+          maxFiles: parseInt(customFieldData.maxFiles, 10),
+        };
+      }
+
+      await adminService.updateTemplateField(selectedTemplate.id, selectedField.id, {
+        fieldType: customFieldData.fieldType,
+        fieldGroup: customFieldData.fieldGroup || undefined,
+        placeholder: customFieldData.placeholder || undefined,
+        helpText: customFieldData.helpText || undefined,
+        dataSourceType,
+        dataSourceConfig: dataSourceConfig || undefined,
+        validationRules: Object.keys(validationRules).length > 0 ? validationRules : undefined,
+        attachmentConfig,
+      });
+
+      setEditFieldDialogOpen(false);
+      setSelectedField(null);
+      await loadTemplates();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao salvar campo');
+    } finally {
+      setSavingFieldEdit(false);
+    }
   };
 
   const handleCreateCustomField = async () => {
@@ -608,6 +734,15 @@ const TemplateManager: React.FC = () => {
                                             onClick={() => handleMoveField(template.id, field.id, 'down')}
                                           >
                                             <KeyboardArrowDown fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Configurar campo">
+                                          <IconButton
+                                            size="small"
+                                            color="primary"
+                                            onClick={() => handleOpenEditFieldDialog(template, field)}
+                                          >
+                                            <Edit fontSize="small" />
                                           </IconButton>
                                         </Tooltip>
                                         <FormControlLabel
@@ -1045,6 +1180,302 @@ const TemplateManager: React.FC = () => {
             disabled={!customFieldData.fieldName || !customFieldData.label || savingCustomField}
           >
             {savingCustomField ? <CircularProgress size={20} /> : 'Criar Campo'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Field Dialog */}
+      <Dialog
+        open={editFieldDialogOpen}
+        onClose={() => {
+          setEditFieldDialogOpen(false);
+          setSelectedField(null);
+        }}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Configurar Campo
+          {selectedField && (
+            <Typography variant="body2" color="text.secondary">
+              {selectedField.label} ({selectedField.fieldName || selectedField.sx3FieldName})
+              {!selectedField.isCustomField && (
+                <Chip label="Campo do Protheus" size="small" sx={{ ml: 1 }} />
+              )}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {/* Field Info (read-only for Protheus fields) */}
+            <Typography variant="subtitle2" color="primary">Informações do Campo</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <TextField
+                label="Nome do Campo"
+                fullWidth
+                value={customFieldData.fieldName}
+                disabled
+                helperText={selectedField?.isCustomField ? '' : 'Campo do Protheus (não editável)'}
+              />
+              <TextField
+                label="Rótulo"
+                fullWidth
+                value={customFieldData.label}
+                disabled={!selectedField?.isCustomField}
+                onChange={(e) => setCustomFieldData({ ...customFieldData, label: e.target.value })}
+              />
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <FormControl fullWidth>
+                <InputLabel>Tipo do Campo</InputLabel>
+                <Select
+                  value={customFieldData.fieldType}
+                  label="Tipo do Campo"
+                  onChange={(e) => setCustomFieldData({
+                    ...customFieldData,
+                    fieldType: e.target.value as FieldType,
+                    dataSourceType: '',
+                  })}
+                >
+                  {CUSTOM_FIELD_TYPES.map((type) => (
+                    <MenuItem key={type.value} value={type.value}>
+                      {type.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Grupo"
+                fullWidth
+                value={customFieldData.fieldGroup}
+                onChange={(e) => setCustomFieldData({ ...customFieldData, fieldGroup: e.target.value })}
+                helperText="Agrupamento visual no formulário"
+              />
+            </Box>
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+              <TextField
+                label="Placeholder"
+                fullWidth
+                value={customFieldData.placeholder}
+                onChange={(e) => setCustomFieldData({ ...customFieldData, placeholder: e.target.value })}
+              />
+              <TextField
+                label="Texto de Ajuda"
+                fullWidth
+                value={customFieldData.helpText}
+                onChange={(e) => setCustomFieldData({ ...customFieldData, helpText: e.target.value })}
+              />
+            </Box>
+
+            {/* Data Source Section */}
+            {FIELD_TYPES_WITH_DATA_SOURCE.includes(customFieldData.fieldType) && (
+              <>
+                <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
+                  Fonte de Dados
+                </Typography>
+                <FormControl fullWidth>
+                  <InputLabel>Tipo da Fonte</InputLabel>
+                  <Select
+                    value={customFieldData.dataSourceType}
+                    label="Tipo da Fonte"
+                    onChange={(e) => setCustomFieldData({
+                      ...customFieldData,
+                      dataSourceType: e.target.value as DataSourceType | '',
+                    })}
+                  >
+                    <MenuItem value="">
+                      <em>Nenhuma (usar opções do SX3)</em>
+                    </MenuItem>
+                    {DATA_SOURCE_TYPES.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>
+                        {type.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Fixed Options */}
+                {customFieldData.dataSourceType === 'fixed' && (
+                  <TextField
+                    label="Opções (uma por linha)"
+                    fullWidth
+                    multiline
+                    rows={4}
+                    placeholder="valor1|Rótulo 1&#10;valor2|Rótulo 2&#10;valor3|Rótulo 3"
+                    value={customFieldData.fixedOptions}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, fixedOptions: e.target.value })}
+                    helperText="Formato: valor|rótulo (se não houver |, o valor será usado como rótulo)"
+                  />
+                )}
+
+                {/* SQL Query */}
+                {customFieldData.dataSourceType === 'sql' && (
+                  <>
+                    <TextField
+                      label="Consulta SQL"
+                      fullWidth
+                      multiline
+                      rows={3}
+                      placeholder="SELECT codigo, descricao FROM tabela WHERE ativo = 1"
+                      value={customFieldData.sqlQuery}
+                      onChange={(e) => setCustomFieldData({ ...customFieldData, sqlQuery: e.target.value })}
+                      helperText="Use apenas tabelas permitidas. A consulta será executada no banco do Protheus."
+                    />
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                      <TextField
+                        label="Campo do Valor"
+                        fullWidth
+                        placeholder="Ex: codigo"
+                        value={customFieldData.sqlValueField}
+                        onChange={(e) => setCustomFieldData({ ...customFieldData, sqlValueField: e.target.value })}
+                        helperText="Nome da coluna que será o valor"
+                      />
+                      <TextField
+                        label="Campo do Rótulo"
+                        fullWidth
+                        placeholder="Ex: descricao"
+                        value={customFieldData.sqlLabelField}
+                        onChange={(e) => setCustomFieldData({ ...customFieldData, sqlLabelField: e.target.value })}
+                        helperText="Nome da coluna que será exibida"
+                      />
+                    </Box>
+                  </>
+                )}
+
+                {/* SX5 Table */}
+                {customFieldData.dataSourceType === 'sx5' && (
+                  <FormControl fullWidth>
+                    <InputLabel>Tabela SX5</InputLabel>
+                    <Select
+                      value={customFieldData.sx5Table}
+                      label="Tabela SX5"
+                      onChange={(e) => setCustomFieldData({ ...customFieldData, sx5Table: e.target.value })}
+                    >
+                      <MenuItem value="">
+                        <em>Selecione...</em>
+                      </MenuItem>
+                      {sx5Tables.map((table) => (
+                        <MenuItem key={table.value} value={table.value}>
+                          {table.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              </>
+            )}
+
+            {/* Attachment Config Section */}
+            {customFieldData.fieldType === 'attachment' && (
+              <>
+                <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
+                  Configuração de Anexos
+                </Typography>
+                <FormControl fullWidth>
+                  <InputLabel>Tipos de Arquivo Permitidos</InputLabel>
+                  <Select
+                    multiple
+                    value={customFieldData.allowedTypes}
+                    label="Tipos de Arquivo Permitidos"
+                    onChange={(e) => setCustomFieldData({
+                      ...customFieldData,
+                      allowedTypes: e.target.value as string[],
+                    })}
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {(selected as string[]).map((value) => {
+                          const mimeType = ALLOWED_MIME_TYPES.find(m => m.value === value);
+                          return <Chip key={value} label={mimeType?.label || value} size="small" />;
+                        })}
+                      </Box>
+                    )}
+                  >
+                    {ALLOWED_MIME_TYPES.map((type) => (
+                      <MenuItem key={type.value} value={type.value}>
+                        <Checkbox checked={customFieldData.allowedTypes.includes(type.value)} />
+                        <ListItemText primary={type.label} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    label="Tamanho Máximo (MB)"
+                    type="number"
+                    fullWidth
+                    value={customFieldData.maxSize}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, maxSize: e.target.value })}
+                    inputProps={{ min: 1, max: 50 }}
+                  />
+                  <TextField
+                    label="Quantidade Máxima de Arquivos"
+                    type="number"
+                    fullWidth
+                    value={customFieldData.maxFiles}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, maxFiles: e.target.value })}
+                    inputProps={{ min: 1, max: 20 }}
+                  />
+                </Box>
+              </>
+            )}
+
+            {/* Validation Rules Section */}
+            {['string', 'text', 'textarea'].includes(customFieldData.fieldType) && (
+              <>
+                <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
+                  Regras de Validação (Opcional)
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                  <TextField
+                    label="Tamanho Mínimo"
+                    type="number"
+                    fullWidth
+                    value={customFieldData.minLength}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, minLength: e.target.value })}
+                    inputProps={{ min: 0 }}
+                  />
+                  <TextField
+                    label="Tamanho Máximo"
+                    type="number"
+                    fullWidth
+                    value={customFieldData.maxLength}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, maxLength: e.target.value })}
+                    inputProps={{ min: 0 }}
+                  />
+                  <TextField
+                    label="Regex"
+                    fullWidth
+                    placeholder="Ex: ^[A-Z]+$"
+                    value={customFieldData.regex}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, regex: e.target.value })}
+                  />
+                </Box>
+              </>
+            )}
+
+            {!selectedField?.isCustomField && (
+              <Alert severity="info" sx={{ mt: 1 }}>
+                Este é um campo do Protheus. As configurações de tipo, fonte de dados e validações
+                serão aplicadas apenas no sistema de aprovação, não afetando o Protheus.
+              </Alert>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setEditFieldDialogOpen(false);
+            setSelectedField(null);
+          }}>
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveFieldEdit}
+            disabled={savingFieldEdit}
+          >
+            {savingFieldEdit ? <CircularProgress size={20} /> : 'Salvar'}
           </Button>
         </DialogActions>
       </Dialog>
