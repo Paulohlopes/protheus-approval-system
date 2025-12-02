@@ -57,6 +57,36 @@ import FieldChangeHistory from '../../components/FieldChangeHistory';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 
+// Helper function to format field values for display
+const formatFieldValue = (value: any): string => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  // Handle arrays (multiselect fields)
+  if (Array.isArray(value)) {
+    return value.map(item => {
+      if (typeof item === 'object' && item !== null) {
+        return item.label || item.value || JSON.stringify(item);
+      }
+      return String(item);
+    }).join(', ');
+  }
+
+  // Handle objects (autocomplete fields with {value, label})
+  if (typeof value === 'object') {
+    // Check for common patterns
+    if (value.label) return String(value.label);
+    if (value.value) return String(value.value);
+    if (value.name) return String(value.name);
+    // Fallback to JSON for complex objects
+    return JSON.stringify(value);
+  }
+
+  // Handle primitive values
+  return String(value);
+};
+
 export const MyRequestsPage = () => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
@@ -493,7 +523,7 @@ export const MyRequestsPage = () => {
                           return Object.entries(selectedRequest.formData).map(([key, value]) => (
                             <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
                               <Typography variant="body2" color="text.secondary">{fieldLabels[key] || key}:</Typography>
-                              <Typography variant="body2">{String(value)}</Typography>
+                              <Typography variant="body2">{formatFieldValue(value)}</Typography>
                             </Box>
                           ));
                         })()}
