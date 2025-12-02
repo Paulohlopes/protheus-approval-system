@@ -61,17 +61,36 @@ import FieldChangeHistory from '../../components/FieldChangeHistory';
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 type ActionDialogType = 'approve' | 'reject' | 'sendBack' | null;
 
-// Helper function to parse formData if it's a string
+// Helper function to parse formData if it's a string or nested object
 const parseFormData = (formData: any): Record<string, any> => {
   if (!formData) return {};
-  if (typeof formData === 'string') {
+
+  let parsed = formData;
+
+  // If it's a string, parse it first
+  if (typeof parsed === 'string') {
     try {
-      return JSON.parse(formData);
+      parsed = JSON.parse(parsed);
     } catch {
       return {};
     }
   }
-  return formData;
+
+  // Check if formData is nested inside another object with 'formData' key
+  // This can happen with alteration registrations
+  if (parsed && typeof parsed === 'object' && 'formData' in parsed && Object.keys(parsed).length === 1) {
+    const nested = parsed.formData;
+    if (typeof nested === 'string') {
+      try {
+        return JSON.parse(nested);
+      } catch {
+        return {};
+      }
+    }
+    return nested || {};
+  }
+
+  return parsed;
 };
 
 // Helper function to format field values for display
