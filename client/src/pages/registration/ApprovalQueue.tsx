@@ -61,6 +61,19 @@ import FieldChangeHistory from '../../components/FieldChangeHistory';
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 type ActionDialogType = 'approve' | 'reject' | 'sendBack' | null;
 
+// Helper function to parse formData if it's a string
+const parseFormData = (formData: any): Record<string, any> => {
+  if (!formData) return {};
+  if (typeof formData === 'string') {
+    try {
+      return JSON.parse(formData);
+    } catch {
+      return {};
+    }
+  }
+  return formData;
+};
+
 // Helper function to format field values for display
 const formatFieldValue = (value: any): string => {
   if (value === null || value === undefined) {
@@ -184,7 +197,8 @@ export const ApprovalQueuePage = () => {
     if (fieldName in fieldChanges) {
       return fieldChanges[fieldName];
     }
-    return selectedRequest?.formData?.[fieldName] ?? '';
+    const parsedFormData = parseFormData(selectedRequest?.formData);
+    return parsedFormData[fieldName] ?? '';
   };
 
   const hasFieldChanges = (): boolean => {
@@ -526,7 +540,10 @@ export const ApprovalQueuePage = () => {
                         <Stack spacing={2}>
                           {/* Combine formData keys with editable fields that may not be in formData */}
                           {(() => {
-                            const formDataKeys = Object.keys(selectedRequest.formData || {});
+                            // Parse formData if it's a string (from backend serialization)
+                            const parsedFormData = parseFormData(selectedRequest.formData);
+
+                            const formDataKeys = Object.keys(parsedFormData);
                             const allKeys = [...new Set([...formDataKeys, ...editableFields])];
 
                             // Create a map of fieldName -> label from template fields
@@ -540,7 +557,7 @@ export const ApprovalQueuePage = () => {
                             });
 
                             return allKeys.map((key) => {
-                              const value = selectedRequest.formData?.[key];
+                              const value = parsedFormData[key];
                               const editable = isFieldEditable(key);
                               const currentValue = getFieldValue(key);
                               const wasChanged = key in fieldChanges;
@@ -594,6 +611,9 @@ export const ApprovalQueuePage = () => {
                       </Typography>
                       <Box component="ul" sx={{ m: 0, pl: 2, mt: 1 }}>
                         {(() => {
+                          // Parse formData if it's a string
+                          const parsedFormData = parseFormData(selectedRequest.formData);
+
                           // Create a map of fieldName -> label from template fields
                           const fieldLabels: Record<string, string> = {};
                           selectedRequest.template?.fields?.forEach((field: any) => {
@@ -606,7 +626,7 @@ export const ApprovalQueuePage = () => {
                           return Object.entries(fieldChanges).map(([key, newValue]) => (
                             <li key={key}>
                               <Typography variant="body2">
-                                <strong>{fieldLabels[key] || key}:</strong> {formatFieldValue(selectedRequest.formData[key])} → {formatFieldValue(newValue)}
+                                <strong>{fieldLabels[key] || key}:</strong> {formatFieldValue(parsedFormData[key])} → {formatFieldValue(newValue)}
                               </Typography>
                             </li>
                           ));

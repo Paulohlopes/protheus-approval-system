@@ -57,6 +57,19 @@ import FieldChangeHistory from '../../components/FieldChangeHistory';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 
+// Helper function to parse formData if it's a string
+const parseFormData = (formData: any): Record<string, any> => {
+  if (!formData) return {};
+  if (typeof formData === 'string') {
+    try {
+      return JSON.parse(formData);
+    } catch {
+      return {};
+    }
+  }
+  return formData;
+};
+
 // Helper function to format field values for display
 const formatFieldValue = (value: any): string => {
   if (value === null || value === undefined) {
@@ -511,6 +524,9 @@ export const MyRequestsPage = () => {
                     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                       <Stack spacing={1}>
                         {(() => {
+                          // Parse formData if it's a string
+                          const parsedFormData = parseFormData(selectedRequest.formData);
+
                           // Create a map of fieldName -> label from template fields
                           const fieldLabels: Record<string, string> = {};
                           selectedRequest.template?.fields?.forEach((field: any) => {
@@ -520,7 +536,7 @@ export const MyRequestsPage = () => {
                             }
                           });
 
-                          return Object.entries(selectedRequest.formData).map(([key, value]) => (
+                          return Object.entries(parsedFormData).map(([key, value]) => (
                             <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
                               <Typography variant="body2" color="text.secondary">{fieldLabels[key] || key}:</Typography>
                               <Typography variant="body2">{formatFieldValue(value)}</Typography>
