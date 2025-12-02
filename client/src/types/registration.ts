@@ -222,6 +222,8 @@ export function getFieldDescription(field: FormField, language: SupportedLanguag
   }
 }
 
+export type OperationType = 'NEW' | 'ALTERATION';
+
 export type RegistrationRequest = {
   id: string;
   templateId: string;
@@ -236,6 +238,9 @@ export type RegistrationRequest = {
   requestedByEmail: string;
   requestedAt: string;
   formData: Record<string, any>;
+  operationType?: OperationType;
+  originalRecno?: string;
+  originalFormData?: Record<string, any>;
   status: RegistrationStatus;
   currentLevel: number;
   workflowSnapshot?: any;

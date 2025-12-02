@@ -414,12 +414,17 @@ export const ptBR = {
 
     // Table headers
     tableType: 'Tipo',
+    tableOperation: 'Operação',
     tableDate: 'Data',
     tableStatus: 'Status',
     tableProtheus: 'Protheus',
     tableActions: 'Ações',
     tableRequester: 'Solicitante',
     tableLevel: 'Nível',
+
+    // Operation types
+    operationNew: 'Novo',
+    operationAlteration: 'Alteração',
 
     // DynamicForm
     formCancelButton: 'Cancelar',

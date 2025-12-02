@@ -46,6 +46,8 @@ import {
   Close,
   Delete,
   Send,
+  AddCircle,
+  EditNote,
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
@@ -321,6 +323,7 @@ export const MyRequestsPage = () => {
               <TableHead>
                 <TableRow sx={{ bgcolor: 'grey.50' }}>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableType}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableOperation}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableDate}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableStatus}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableProtheus}</TableCell>
@@ -328,7 +331,9 @@ export const MyRequestsPage = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {requests.map((request) => (
+                {requests.map((request) => {
+                  const isAlteration = request.operationType === 'ALTERATION';
+                  return (
                   <TableRow
                     key={request.id}
                     hover
@@ -343,6 +348,16 @@ export const MyRequestsPage = () => {
                           {t.registration.level} {request.currentLevel}
                         </Typography>
                       </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        icon={isAlteration ? <EditNote sx={{ fontSize: 16 }} /> : <AddCircle sx={{ fontSize: 16 }} />}
+                        label={isAlteration ? t.registration.operationAlteration : t.registration.operationNew}
+                        size="small"
+                        color={isAlteration ? 'warning' : 'success'}
+                        variant="outlined"
+                        sx={{ borderRadius: 1 }}
+                      />
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
@@ -422,7 +437,8 @@ export const MyRequestsPage = () => {
                       </Stack>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

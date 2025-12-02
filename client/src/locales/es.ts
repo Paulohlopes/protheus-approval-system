@@ -414,12 +414,17 @@ export const es = {
 
     // Table headers
     tableType: 'Tipo',
+    tableOperation: 'Operación',
     tableDate: 'Fecha',
     tableStatus: 'Estado',
     tableProtheus: 'Protheus',
     tableActions: 'Acciones',
     tableRequester: 'Solicitante',
     tableLevel: 'Nivel',
+
+    // Operation types
+    operationNew: 'Nuevo',
+    operationAlteration: 'Alteración',
 
     // DynamicForm
     formCancelButton: 'Cancelar',
