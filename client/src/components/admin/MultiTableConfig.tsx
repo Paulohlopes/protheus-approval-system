@@ -51,6 +51,10 @@ export const MultiTableConfig: React.FC<MultiTableConfigProps> = ({
   tables,
   onTablesChange,
 }) => {
+  // Debug log to help identify issues
+  console.log('[MultiTableConfig] tables received:', tables);
+  console.log('[MultiTableConfig] potentialParentTables will be:', tables.filter(t => t.relationType !== 'child'));
+
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<TemplateTable | null>(null);

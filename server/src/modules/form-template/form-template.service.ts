@@ -102,6 +102,12 @@ export class FormTemplateService {
     return this.prisma.formTemplate.findMany({
       include: {
         fields: includeFields ? { orderBy: { fieldOrder: 'asc' } } : false,
+        tables: {
+          orderBy: { tableOrder: 'asc' },
+          include: {
+            parentTable: true,
+          },
+        },
         _count: {
           select: {
             fields: true,
