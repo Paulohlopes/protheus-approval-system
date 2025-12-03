@@ -359,6 +359,17 @@ const TemplateManager: React.FC = () => {
     }
   }, []);
 
+  // Reset form helper - declare before handleCreateTemplate
+  const resetForm = useCallback(() => {
+    setFormData({
+      label: '',
+      description: '',
+      tableName: '',
+      isActive: true,
+      isMultiTable: false,
+    });
+  }, []);
+
   // Load templates on mount
   useEffect(() => {
     loadTemplates();
@@ -717,16 +728,6 @@ const TemplateManager: React.FC = () => {
         newExpanded.add(templateId);
       }
       return newExpanded;
-    });
-  }, []);
-
-  const resetForm = useCallback(() => {
-    setFormData({
-      label: '',
-      description: '',
-      tableName: '',
-      isActive: true,
-      isMultiTable: false,
     });
   }, []);
 
