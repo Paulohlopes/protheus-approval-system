@@ -388,12 +388,20 @@ export class RegistrationService {
       throw new BadRequestException('User information is missing. Please re-authenticate.');
     }
 
-    // Get template with fields for validation
+    // Get template with fields and tables for validation
     const template = await this.prisma.formTemplate.findUnique({
       where: { id: dto.templateId },
       include: {
         fields: {
           where: { isVisible: true, isEnabled: true },
+        },
+        tables: {
+          orderBy: { tableOrder: 'asc' },
+          include: {
+            fields: {
+              where: { isVisible: true, isEnabled: true },
+            },
+          },
         },
       },
     });
@@ -402,29 +410,50 @@ export class RegistrationService {
       throw new NotFoundException(`Template ${dto.templateId} not found`);
     }
 
+    // Determine the table name to use for fetching original record
+    let primaryTableName: string;
+    let fieldsToValidate: typeof template.fields;
+
+    if (template.isMultiTable && template.tables && template.tables.length > 0) {
+      // For multi-table templates, use the parent table
+      const parentTable = template.tables.find(t => t.relationType === 'parent');
+      const searchTable = parentTable || template.tables[0];
+      primaryTableName = searchTable.tableName;
+      fieldsToValidate = searchTable.fields || [];
+    } else {
+      // For single-table templates, use template.tableName
+      if (!template.tableName) {
+        throw new BadRequestException('Template has no table configured');
+      }
+      primaryTableName = template.tableName;
+      fieldsToValidate = template.fields;
+    }
+
     // Fetch original record from Protheus
     const originalRecord = await this.protheusDataService.getRecordByRecno(
-      template.tableName,
+      primaryTableName,
       dto.originalRecno,
     );
 
     // Use provided formData or original data
     const formData = dto.formData || originalRecord.data;
 
-    // Validate formData against template fields
-    const validationErrors = this.validateFormData(formData, template.fields);
-    if (validationErrors.length > 0) {
-      throw new BadRequestException({
-        message: 'Form validation failed',
-        errors: validationErrors,
-      });
+    // Validate formData against template fields (skip validation for alteration drafts with original data)
+    if (dto.formData) {
+      const validationErrors = this.validateFormData(formData, fieldsToValidate);
+      if (validationErrors.length > 0) {
+        throw new BadRequestException({
+          message: 'Form validation failed',
+          errors: validationErrors,
+        });
+      }
     }
 
     // Create registration with alteration type
     const registration = await this.prisma.registrationRequest.create({
       data: {
         templateId: dto.templateId,
-        tableName: template.tableName,
+        tableName: primaryTableName,
         requestedById: userId,
         requestedByEmail: userEmail,
         formData,
