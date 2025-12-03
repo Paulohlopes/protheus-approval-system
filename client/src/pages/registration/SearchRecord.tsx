@@ -91,7 +91,19 @@ export const SearchRecordPage = () => {
       setTemplate(data);
 
       // Get visible fields for filtering
-      const visibleFields = (data.fields || [])
+      let allFields: FormField[] = [];
+
+      if (data.isMultiTable && data.tables && data.tables.length > 0) {
+        // For multi-table templates, get fields from the parent table only (for search)
+        const parentTable = data.tables.find(t => t.relationType === 'parent');
+        const searchTable = parentTable || data.tables[0];
+        allFields = searchTable.fields || [];
+      } else {
+        // For single-table templates, use template fields
+        allFields = data.fields || [];
+      }
+
+      const visibleFields = allFields
         .filter((f) => f.isVisible && f.isEnabled)
         .sort((a, b) => a.fieldOrder - b.fieldOrder);
 
@@ -125,8 +137,20 @@ export const SearchRecordPage = () => {
           value: f.value,
         }));
 
+      // For multi-table templates, use the first parent table or first table
+      let searchTableName = template.tableName;
+      if (template.isMultiTable && template.tables && template.tables.length > 0) {
+        const parentTable = template.tables.find(t => t.relationType === 'parent');
+        searchTableName = parentTable?.tableName || template.tables[0].tableName;
+      }
+
+      if (!searchTableName) {
+        toast.error('Template não possui tabela configurada para pesquisa');
+        return;
+      }
+
       const result = await protheusDataService.searchRecords({
-        tableName: template.tableName,
+        tableName: searchTableName,
         filters: searchFilters,
         page: page + 1, // API uses 1-based pagination
         pageSize,
