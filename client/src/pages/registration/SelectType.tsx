@@ -182,7 +182,7 @@ export const SelectRegistrationTypePage = () => {
                           fontWeight: 700,
                         }}
                       >
-                        {template.tableName.substring(0, 2).toUpperCase()}
+                        {template.isMultiTable ? 'MT' : (template.tableName?.substring(0, 2).toUpperCase() || '??')}
                       </Avatar>
                       <Box sx={{ ml: 'auto' }}>
                         {operationType === 'NEW' ? (
@@ -200,9 +200,10 @@ export const SelectRegistrationTypePage = () => {
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
                       <Chip
                         icon={<Description sx={{ fontSize: 16 }} />}
-                        label={template.tableName}
+                        label={template.isMultiTable ? 'Multi-tabela' : (template.tableName || 'N/A')}
                         size="small"
                         variant="outlined"
+                        color={template.isMultiTable ? 'primary' : 'default'}
                         sx={{ borderRadius: 1 }}
                       />
                       {operationType === 'ALTERATION' && (
