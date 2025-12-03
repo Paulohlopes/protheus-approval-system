@@ -516,16 +516,17 @@ export const EditDraftPage = () => {
           <Typography variant="subtitle2" fontWeight={600}>
             {t.registration.alteration.alterationMode}
           </Typography>
-          <Typography variant="body2">
-            {t.registration.alteration.alterationModeDesc}
+          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+            <Typography variant="body2" component="span">
+              {t.registration.alteration.alterationModeDesc}
+            </Typography>
             {registration?.originalRecno && (
               <Chip
                 label={`RECNO: ${registration.originalRecno}`}
                 size="small"
-                sx={{ ml: 1 }}
               />
             )}
-          </Typography>
+          </Box>
           {modifiedFields.size > 0 && (
             <Box sx={{ mt: 1 }}>
               <Typography variant="body2" color="warning.main">
