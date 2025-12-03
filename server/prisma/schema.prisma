@@ -81,22 +81,65 @@ model ApprovalGroupMember {
 
 model FormTemplate {
   id          String      @id @default(uuid())
-  tableName   String      @unique  // SB1, SA1, SA2, DA0, DA1
+  tableName   String?     @unique  // SB1, SA1, SA2 - Deprecated: use TemplateTable for multi-table
   label       String                // "Cadastro de Produtos"
   description String?
   isActive    Boolean     @default(true)
   metadata    Json?
+
+  // Multi-table configuration
+  isMultiTable Boolean    @default(false)  // true = uses TemplateTable, false = uses tableName
 
   // Timestamps
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   // Relations
-  fields      FormField[]
+  tables      TemplateTable[]       // Multiple tables (for multi-table templates)
+  fields      FormField[]           // Fields (legacy for single-table or orphan fields)
   workflows   RegistrationWorkflow[]
   requests    RegistrationRequest[]
 
   @@map("form_templates")
+}
+
+// ==========================================
+// TEMPLATE TABLES (Multi-Table Support)
+// ==========================================
+
+model TemplateTable {
+  id              String       @id @default(uuid())
+  templateId      String
+  template        FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  tableName       String       // DA0, DA1, SA1, etc.
+  alias           String       // "header", "items", "main" - unique identifier
+  label           String       // "Cabeçalho", "Itens" - display name
+  tableOrder      Int          // Order for display and processing
+
+  // Relationship configuration
+  relationType    String?      // 'parent' | 'child' | 'independent' | null
+  parentTableId   String?      // ID of parent TemplateTable (when relationType = 'child')
+  parentTable     TemplateTable? @relation("TableHierarchy", fields: [parentTableId], references: [id])
+  childTables     TemplateTable[] @relation("TableHierarchy")
+  foreignKeyConfig Json?       // { parentField: "DA0_CODTAB", childField: "DA1_CODTAB" }
+
+  // Status
+  isActive        Boolean      @default(true)
+  metadata        Json?        // Additional configuration
+
+  // Timestamps
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  fields          FormField[]
+
+  @@unique([templateId, tableName])
+  @@unique([templateId, alias])
+  @@map("template_tables")
+  @@index([templateId])
+  @@index([templateId, tableOrder])
 }
 
 model FormField {
@@ -104,11 +147,15 @@ model FormField {
   templateId      String
   template        FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
+  // Multi-table support: link field to specific table
+  tableId         String?      // Links to TemplateTable (for multi-table templates)
+  table           TemplateTable? @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
   // Field definition from SX3 (optional for custom fields)
   sx3FieldName    String?       // B1_COD, B1_DESC, etc (null for custom fields)
   fieldName       String?       // Unique field name (sx3FieldName or custom name) - temporarily nullable for migration
   label           String        // X3_TITULO or custom label
-  fieldType       String        // string, number, date, boolean, select, textarea, checkbox, radio, autocomplete, multiselect, attachment
+  fieldType       String        // string, number, date, boolean, select, textarea, checkbox, radio, autocomplete, multiselect, attachment, lookup
   isRequired      Boolean       // X3_OBRIGAT == 'S' or custom requirement
   isVisible       Boolean       // Admin configures this
   isEnabled       Boolean       @default(true)
@@ -135,6 +182,9 @@ model FormField {
   dataSourceType   String?      // 'fixed' | 'sql' | 'sx5'
   dataSourceConfig Json?        // { fixedOptions: [], sqlQuery: '', valueField: '', labelField: '', sx5Table: '' }
 
+  // Lookup configuration (for lookup type)
+  lookupConfig    Json?         // { sourceTable, searchFields, returnFields, valueField, displayField, modalConfig }
+
   // Additional configuration
   validationRules Json?         // { required, minLength, maxLength, regex, mask, sqlValidation, dependsOn }
   metadata        Json?         // { size, decimals, mask, lookup, options (for select) }
@@ -150,6 +200,7 @@ model FormField {
 
   @@map("form_fields")
   @@index([templateId])
+  @@index([tableId])
   @@index([templateId, fieldOrder])  // For sorted field queries
   @@index([templateId, isVisible, isEnabled])  // For visible/enabled field queries
 }
@@ -248,7 +299,7 @@ model RegistrationRequest {
   id              String              @id @default(uuid())
   templateId      String
   template        FormTemplate        @relation(fields: [templateId], references: [id])
-  tableName       String              // Denormalized for quick access
+  tableName       String              // Denormalized for quick access (primary table)
 
   // Requester info
   requestedById   String
@@ -257,7 +308,13 @@ model RegistrationRequest {
   requestedAt     DateTime            @default(now())
 
   // Form data
+  // For single-table: { fieldName: value, ... }
+  // For multi-table: { tableAlias: { fieldName: value } | [{ fieldName: value }] }
   formData        Json                // All form field values
+
+  // Multi-table metadata (for tracking sync results per table)
+  // Structure: { tableAlias: { recno: "123", syncedAt: "..." }, items: [{ recno: "456" }, ...] }
+  tableData       Json?               // Sync results and metadata per table
 
   // Operation type (NEW = new registration, ALTERATION = modify existing)
   operationType   String              @default("NEW")
@@ -270,7 +327,7 @@ model RegistrationRequest {
   workflowSnapshot Json?              // Snapshot of workflow at submission
 
   // Protheus integration
-  protheusRecno   String?             // R_E_C_N_O_ from Protheus
+  protheusRecno   String?             // R_E_C_N_O_ from Protheus (primary table)
   syncedAt        DateTime?
   syncError       String?
   syncLog         Json?

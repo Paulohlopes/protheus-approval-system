@@ -3,25 +3,36 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
   Query,
   ParseBoolPipe,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { FormTemplateService } from './form-template.service';
 import { DataSourceService } from './services/data-source.service';
+import { LookupService } from './services/lookup.service';
 import { CreateFormTemplateDto } from './dto/create-form-template.dto';
 import { UpdateFormTemplateDto } from './dto/update-form-template.dto';
 import { UpdateFormFieldDto } from './dto/update-form-field.dto';
 import { ReorderFieldsDto } from './dto/reorder-fields.dto';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
+import {
+  CreateTemplateTableDto,
+  UpdateTemplateTableDto,
+  CreateMultiTableTemplateDto,
+} from './dto/template-table.dto';
+import { LookupConfigDto } from './dto/lookup-config.dto';
 
 @Controller('form-templates')
 export class FormTemplateController {
   constructor(
     private readonly formTemplateService: FormTemplateService,
     private readonly dataSourceService: DataSourceService,
+    private readonly lookupService: LookupService,
   ) {}
 
   /**
@@ -172,5 +183,137 @@ export class FormTemplateController {
   @Get('data-sources/sx5-tables')
   getAvailableSx5Tables() {
     return this.dataSourceService.getAvailableSx5Tables();
+  }
+
+  // ==========================================
+  // MULTI-TABLE TEMPLATE ENDPOINTS
+  // ==========================================
+
+  /**
+   * Create a new multi-table template
+   */
+  @Post('multi-table')
+  createMultiTableTemplate(@Body() dto: CreateMultiTableTemplateDto) {
+    return this.formTemplateService.createMultiTableTemplate(dto);
+  }
+
+  /**
+   * Add a table to an existing template
+   */
+  @Post(':id/tables')
+  addTableToTemplate(
+    @Param('id') id: string,
+    @Body() dto: CreateTemplateTableDto,
+  ) {
+    return this.formTemplateService.addTableToTemplate(id, dto);
+  }
+
+  /**
+   * Update a template table
+   */
+  @Patch(':id/tables/:tableId')
+  updateTemplateTable(
+    @Param('id') id: string,
+    @Param('tableId') tableId: string,
+    @Body() dto: UpdateTemplateTableDto,
+  ) {
+    return this.formTemplateService.updateTemplateTable(id, tableId, dto);
+  }
+
+  /**
+   * Remove a table from template
+   */
+  @Delete(':id/tables/:tableId')
+  removeTableFromTemplate(
+    @Param('id') id: string,
+    @Param('tableId') tableId: string,
+  ) {
+    return this.formTemplateService.removeTableFromTemplate(id, tableId);
+  }
+
+  /**
+   * Sync a specific table with SX3
+   */
+  @Post(':id/tables/:tableId/sync')
+  syncTableWithSx3(
+    @Param('id') id: string,
+    @Param('tableId') tableId: string,
+  ) {
+    return this.formTemplateService.syncTableWithSx3(id, tableId);
+  }
+
+  /**
+   * Get fields for a specific table
+   */
+  @Get(':id/tables/:tableId/fields')
+  getTableFields(
+    @Param('id') id: string,
+    @Param('tableId') tableId: string,
+  ) {
+    return this.formTemplateService.getTableFields(id, tableId);
+  }
+
+  // ==========================================
+  // LOOKUP ENDPOINTS
+  // ==========================================
+
+  /**
+   * Search records for lookup modal
+   */
+  @Post('lookup/search')
+  async searchLookup(
+    @Body() body: {
+      config: LookupConfigDto;
+      filters?: Record<string, string>;
+      page?: number;
+      limit?: number;
+    },
+  ) {
+    const { config, filters = {}, page = 0, limit = 20 } = body;
+
+    // Use custom query if provided, otherwise use standard search
+    if (config.customQuery) {
+      return this.lookupService.executeCustomQuery(
+        config.customQuery,
+        filters,
+        { page, limit },
+      );
+    }
+
+    return this.lookupService.search(config, filters, { page, limit });
+  }
+
+  /**
+   * Get a single record for lookup display
+   */
+  @Post('lookup/record')
+  async getLookupRecord(
+    @Body() body: {
+      config: LookupConfigDto;
+      value: string;
+    },
+  ) {
+    return this.lookupService.getRecord(body.config, body.value);
+  }
+
+  /**
+   * Validate a lookup value
+   */
+  @Post('lookup/validate')
+  async validateLookupValue(
+    @Body() body: {
+      config: LookupConfigDto;
+      value: string;
+    },
+  ) {
+    return this.lookupService.validateValue(body.config, body.value);
+  }
+
+  /**
+   * Get allowed tables for lookup
+   */
+  @Get('lookup/allowed-tables')
+  getLookupAllowedTables() {
+    return this.lookupService.getAllowedTables();
   }
 }

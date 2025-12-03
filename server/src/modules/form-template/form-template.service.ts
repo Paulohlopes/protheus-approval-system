@@ -7,6 +7,11 @@ import { UpdateFormTemplateDto } from './dto/update-form-template.dto';
 import { UpdateFormFieldDto } from './dto/update-form-field.dto';
 import { ReorderFieldsDto } from './dto/reorder-fields.dto';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
+import {
+  CreateTemplateTableDto,
+  UpdateTemplateTableDto,
+  CreateMultiTableTemplateDto,
+} from './dto/template-table.dto';
 
 @Injectable()
 export class FormTemplateService {
@@ -496,5 +501,402 @@ export class FormTemplateService {
     }
 
     return { valid: true };
+  }
+
+  // ==========================================
+  // MULTI-TABLE TEMPLATE METHODS
+  // ==========================================
+
+  /**
+   * Create a multi-table template
+   * This creates a template with multiple tables linked together
+   */
+  async createMultiTableTemplate(dto: CreateMultiTableTemplateDto) {
+    this.logger.log(`Creating multi-table template: ${dto.label}`);
+
+    // Validate tables
+    if (!dto.tables || dto.tables.length === 0) {
+      throw new BadRequestException('At least one table is required');
+    }
+
+    // Create template and tables in transaction
+    const template = await this.prisma.$transaction(async (tx) => {
+      // Create the template
+      const newTemplate = await tx.formTemplate.create({
+        data: {
+          label: dto.label,
+          description: dto.description,
+          isActive: dto.isActive ?? true,
+          isMultiTable: true,
+          tableName: null, // Multi-table templates don't have a single tableName
+        },
+      });
+
+      // Create tables with fields
+      for (let i = 0; i < dto.tables.length; i++) {
+        const tableDto = dto.tables[i];
+        const tableOrder = tableDto.tableOrder ?? i;
+
+        // Create the table
+        const newTable = await tx.templateTable.create({
+          data: {
+            templateId: newTemplate.id,
+            tableName: tableDto.tableName.toUpperCase(),
+            alias: tableDto.alias.toLowerCase(),
+            label: tableDto.label,
+            tableOrder,
+            relationType: tableDto.relationType || null,
+            parentTableId: tableDto.parentTableId || null,
+            foreignKeyConfig: tableDto.foreignKeyConfig as any || null,
+            isActive: tableDto.isActive ?? true,
+          },
+        });
+
+        // Get structure from SX3 and create fields
+        try {
+          const structure = await this.sx3Service.getTableStructure(tableDto.tableName);
+
+          for (let fieldIndex = 0; fieldIndex < structure.fields.length; fieldIndex++) {
+            const field = structure.fields[fieldIndex];
+            await tx.formField.create({
+              data: {
+                templateId: newTemplate.id,
+                tableId: newTable.id,
+                fieldName: field.fieldName,
+                sx3FieldName: field.fieldName,
+                label: field.label,
+                fieldType: field.fieldType,
+                isRequired: field.isRequired,
+                isVisible: field.isRequired,
+                isEnabled: true,
+                isCustomField: false,
+                isSyncField: true,
+                fieldOrder: fieldIndex,
+                fieldGroup: null,
+                labelPtBR: field.labelPtBR,
+                labelEn: field.labelEn,
+                labelEs: field.labelEs,
+                descriptionPtBR: field.descriptionPtBR,
+                descriptionEn: field.descriptionEn,
+                descriptionEs: field.descriptionEs,
+                validationRules: null,
+                metadata: {
+                  size: field.size,
+                  decimals: field.decimals,
+                  mask: field.mask,
+                  lookup: field.lookup,
+                  validation: field.validation,
+                  when: field.when,
+                  defaultValue: field.defaultValue,
+                },
+              },
+            });
+          }
+        } catch (error) {
+          this.logger.warn(`Could not load SX3 structure for table ${tableDto.tableName}: ${error.message}`);
+        }
+      }
+
+      return newTemplate;
+    });
+
+    this.logger.log(`Created multi-table template ${template.id}`);
+
+    // Return template with tables and fields
+    return this.findOne(template.id);
+  }
+
+  /**
+   * Add a table to an existing template
+   */
+  async addTableToTemplate(templateId: string, dto: CreateTemplateTableDto) {
+    this.logger.log(`Adding table ${dto.tableName} to template ${templateId}`);
+
+    const template = await this.prisma.formTemplate.findUnique({
+      where: { id: templateId },
+      include: { tables: true },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Template ${templateId} not found`);
+    }
+
+    // Check if table already exists
+    const existingTable = template.tables?.find(
+      (t) => t.tableName === dto.tableName.toUpperCase(),
+    );
+
+    if (existingTable) {
+      throw new BadRequestException(`Table ${dto.tableName} already exists in template`);
+    }
+
+    // Check alias uniqueness
+    const existingAlias = template.tables?.find(
+      (t) => t.alias === dto.alias.toLowerCase(),
+    );
+
+    if (existingAlias) {
+      throw new BadRequestException(`Alias ${dto.alias} already exists in template`);
+    }
+
+    // Get max table order
+    const maxOrder = template.tables?.reduce(
+      (max, t) => Math.max(max, t.tableOrder),
+      -1,
+    ) ?? -1;
+
+    // Create table with fields in transaction
+    await this.prisma.$transaction(async (tx) => {
+      // Create the table
+      const newTable = await tx.templateTable.create({
+        data: {
+          templateId,
+          tableName: dto.tableName.toUpperCase(),
+          alias: dto.alias.toLowerCase(),
+          label: dto.label,
+          tableOrder: dto.tableOrder ?? maxOrder + 1,
+          relationType: dto.relationType || null,
+          parentTableId: dto.parentTableId || null,
+          foreignKeyConfig: dto.foreignKeyConfig as any || null,
+          isActive: dto.isActive ?? true,
+        },
+      });
+
+      // Update template to multi-table if not already
+      if (!template.isMultiTable) {
+        await tx.formTemplate.update({
+          where: { id: templateId },
+          data: { isMultiTable: true },
+        });
+      }
+
+      // Get structure from SX3 and create fields
+      try {
+        const structure = await this.sx3Service.getTableStructure(dto.tableName);
+
+        for (let fieldIndex = 0; fieldIndex < structure.fields.length; fieldIndex++) {
+          const field = structure.fields[fieldIndex];
+          await tx.formField.create({
+            data: {
+              templateId,
+              tableId: newTable.id,
+              fieldName: field.fieldName,
+              sx3FieldName: field.fieldName,
+              label: field.label,
+              fieldType: field.fieldType,
+              isRequired: field.isRequired,
+              isVisible: field.isRequired,
+              isEnabled: true,
+              isCustomField: false,
+              isSyncField: true,
+              fieldOrder: fieldIndex,
+              fieldGroup: null,
+              labelPtBR: field.labelPtBR,
+              labelEn: field.labelEn,
+              labelEs: field.labelEs,
+              descriptionPtBR: field.descriptionPtBR,
+              descriptionEn: field.descriptionEn,
+              descriptionEs: field.descriptionEs,
+              validationRules: null,
+              metadata: {
+                size: field.size,
+                decimals: field.decimals,
+                mask: field.mask,
+                lookup: field.lookup,
+                validation: field.validation,
+                when: field.when,
+                defaultValue: field.defaultValue,
+              },
+            },
+          });
+        }
+      } catch (error) {
+        this.logger.warn(`Could not load SX3 structure for table ${dto.tableName}: ${error.message}`);
+      }
+    });
+
+    this.logger.log(`Added table ${dto.tableName} to template ${templateId}`);
+
+    return this.findOne(templateId);
+  }
+
+  /**
+   * Update a template table
+   */
+  async updateTemplateTable(
+    templateId: string,
+    tableId: string,
+    dto: UpdateTemplateTableDto,
+  ) {
+    this.logger.log(`Updating table ${tableId} in template ${templateId}`);
+
+    const table = await this.prisma.templateTable.findFirst({
+      where: { id: tableId, templateId },
+    });
+
+    if (!table) {
+      throw new NotFoundException(`Table ${tableId} not found in template ${templateId}`);
+    }
+
+    const updated = await this.prisma.templateTable.update({
+      where: { id: tableId },
+      data: {
+        alias: dto.alias?.toLowerCase(),
+        label: dto.label,
+        tableOrder: dto.tableOrder,
+        relationType: dto.relationType,
+        parentTableId: dto.parentTableId,
+        foreignKeyConfig: dto.foreignKeyConfig as any,
+        isActive: dto.isActive,
+      },
+    });
+
+    this.logger.log(`Updated table ${tableId} in template ${templateId}`);
+
+    return updated;
+  }
+
+  /**
+   * Remove a table from template
+   */
+  async removeTableFromTemplate(templateId: string, tableId: string) {
+    this.logger.log(`Removing table ${tableId} from template ${templateId}`);
+
+    const table = await this.prisma.templateTable.findFirst({
+      where: { id: tableId, templateId },
+      include: {
+        _count: { select: { childTables: true } },
+      },
+    });
+
+    if (!table) {
+      throw new NotFoundException(`Table ${tableId} not found in template ${templateId}`);
+    }
+
+    // Check for child tables
+    if (table._count.childTables > 0) {
+      throw new BadRequestException('Cannot delete table with child tables. Remove child tables first.');
+    }
+
+    // Delete table and its fields (cascade)
+    await this.prisma.templateTable.delete({
+      where: { id: tableId },
+    });
+
+    this.logger.log(`Removed table ${tableId} from template ${templateId}`);
+
+    return { success: true };
+  }
+
+  /**
+   * Sync a specific table with SX3
+   */
+  async syncTableWithSx3(templateId: string, tableId: string) {
+    this.logger.log(`Syncing table ${tableId} with SX3`);
+
+    const table = await this.prisma.templateTable.findFirst({
+      where: { id: tableId, templateId },
+      include: { fields: true },
+    });
+
+    if (!table) {
+      throw new NotFoundException(`Table ${tableId} not found in template ${templateId}`);
+    }
+
+    const structure = await this.sx3Service.getTableStructure(table.tableName);
+
+    // Create a map of SX3 fields for quick lookup
+    const sx3FieldsMap = new Map(
+      structure.fields.map((field) => [field.fieldName, field]),
+    );
+
+    // Update existing fields
+    const updates = table.fields
+      .filter((field) => !field.isCustomField)
+      .map((field) => {
+        const sx3Field = sx3FieldsMap.get(field.sx3FieldName || '');
+        if (!sx3Field) return null;
+
+        return this.prisma.formField.update({
+          where: { id: field.id },
+          data: {
+            label: sx3Field.label,
+            fieldType: sx3Field.fieldType,
+            isRequired: sx3Field.isRequired,
+            labelPtBR: sx3Field.labelPtBR,
+            labelEn: sx3Field.labelEn,
+            labelEs: sx3Field.labelEs,
+            descriptionPtBR: sx3Field.descriptionPtBR,
+            descriptionEn: sx3Field.descriptionEn,
+            descriptionEs: sx3Field.descriptionEs,
+            metadata: {
+              ...(typeof field.metadata === 'object' && field.metadata !== null ? field.metadata : {}),
+              size: sx3Field.size,
+              decimals: sx3Field.decimals,
+              mask: sx3Field.mask,
+              lookup: sx3Field.lookup,
+              validation: sx3Field.validation,
+              when: sx3Field.when,
+              defaultValue: sx3Field.defaultValue,
+            },
+          },
+        });
+      });
+
+    await this.prisma.$transaction(updates.filter((u) => u !== null));
+
+    this.logger.log(`Synced table ${tableId} with SX3`);
+
+    return this.prisma.templateTable.findUnique({
+      where: { id: tableId },
+      include: { fields: { orderBy: { fieldOrder: 'asc' } } },
+    });
+  }
+
+  /**
+   * Get fields for a specific table
+   */
+  async getTableFields(templateId: string, tableId: string) {
+    const table = await this.prisma.templateTable.findFirst({
+      where: { id: tableId, templateId },
+      include: {
+        fields: { orderBy: { fieldOrder: 'asc' } },
+      },
+    });
+
+    if (!table) {
+      throw new NotFoundException(`Table ${tableId} not found in template ${templateId}`);
+    }
+
+    return table.fields;
+  }
+
+  /**
+   * Find template by ID with tables
+   * Override findOne to include tables for multi-table templates
+   */
+  async findOne(id: string) {
+    const template = await this.prisma.formTemplate.findUnique({
+      where: { id },
+      include: {
+        tables: {
+          orderBy: { tableOrder: 'asc' },
+          include: {
+            fields: { orderBy: { fieldOrder: 'asc' } },
+            parentTable: true,
+          },
+        },
+        fields: {
+          orderBy: { fieldOrder: 'asc' },
+        },
+        workflows: true,
+      },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Template ${id} not found`);
+    }
+
+    return template;
   }
 }

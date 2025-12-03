@@ -21,11 +21,41 @@ export type ApprovalAction = (typeof ApprovalAction)[keyof typeof ApprovalAction
 
 export interface FormTemplate {
   id: string;
-  tableName: string;
+  tableName?: string; // Deprecated for multi-table, use tables instead
   label: string;
   description?: string;
   isActive: boolean;
+  isMultiTable?: boolean; // true = uses TemplateTable, false = uses tableName
+  tables?: TemplateTable[]; // Multi-table configuration
   fields?: FormField[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ==========================================
+// TEMPLATE TABLE (Multi-Table Support)
+// ==========================================
+
+export type TableRelationType = 'parent' | 'child' | 'independent';
+
+export interface ForeignKeyConfig {
+  parentField: string; // Field in parent table (e.g., DA0_CODTAB)
+  childField: string; // Field in child table (e.g., DA1_CODTAB)
+}
+
+export interface TemplateTable {
+  id: string;
+  templateId: string;
+  tableName: string; // DA0, DA1, SA1, etc.
+  alias: string; // "header", "items", "main"
+  label: string; // "Cabeçalho", "Itens"
+  tableOrder: number;
+  relationType?: TableRelationType;
+  parentTableId?: string;
+  parentTable?: TemplateTable;
+  foreignKeyConfig?: ForeignKeyConfig;
+  fields?: FormField[];
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,7 +76,8 @@ export type FieldType =
   | 'radio'
   | 'autocomplete'
   | 'multiselect'
-  | 'attachment';
+  | 'attachment'
+  | 'lookup';
 
 export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   string: 'Texto',
@@ -61,6 +92,7 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   autocomplete: 'Autocomplete (Busca)',
   multiselect: 'Seleção Múltipla',
   attachment: 'Anexos',
+  lookup: 'Lookup (Pesquisa)',
 };
 
 // ==========================================
@@ -131,6 +163,58 @@ export interface AttachmentConfig {
   maxFiles?: number; // default: 5
 }
 
+// ==========================================
+// LOOKUP CONFIGURATION
+// ==========================================
+
+export type LookupFilterOperator = 'equals' | 'like' | 'in';
+
+export interface LookupSearchField {
+  field: string; // Column name in source table (e.g., A1_COD)
+  label: string; // Display label (e.g., "Código")
+  width?: number; // Column width in pixels
+}
+
+export interface LookupReturnField {
+  sourceField: string; // Field from lookup table (e.g., A1_NOME)
+  targetField: string; // Field to fill in form (e.g., CLIENTE_NOME)
+}
+
+export interface LookupFilter {
+  field: string;
+  operator: LookupFilterOperator;
+  value: string | string[];
+}
+
+export interface LookupModalConfig {
+  title?: string;
+  width?: 'sm' | 'md' | 'lg' | 'xl';
+  showAdvancedFilters?: boolean;
+}
+
+export interface LookupConfig {
+  sourceTable: string; // Source table for lookup (e.g., SA1010)
+  searchFields: LookupSearchField[]; // Fields displayed in search modal
+  returnFields: LookupReturnField[]; // Fields to auto-fill on selection
+  valueField: string; // Field to store as value (e.g., A1_COD)
+  displayField: string; // Field to display in input (e.g., A1_NOME)
+  filters?: LookupFilter[]; // Fixed filters for the query
+  customQuery?: string; // Custom SQL query (optional)
+  modalConfig?: LookupModalConfig; // Modal configuration
+}
+
+export interface LookupSearchResponse {
+  data: Record<string, any>[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface LookupRecordResponse {
+  data: Record<string, any> | null;
+  found: boolean;
+}
+
 export interface FieldAttachment {
   id: string;
   registrationId: string;
@@ -150,6 +234,7 @@ export interface FieldAttachment {
 export interface FormField {
   id: string;
   templateId: string;
+  tableId?: string; // Links to TemplateTable (for multi-table templates)
   sx3FieldName?: string;
   fieldName?: string;
   label: string;
@@ -172,6 +257,8 @@ export interface FormField {
   // Data source configuration (for select, radio, autocomplete, multiselect)
   dataSourceType?: DataSourceType;
   dataSourceConfig?: DataSourceConfig;
+  // Lookup configuration (for lookup type)
+  lookupConfig?: LookupConfig;
   // Validation rules
   validationRules?: ValidationRules;
   // Attachment configuration
@@ -312,3 +399,69 @@ export type WorkflowLevel = {
     }>;
   }>;
 };
+
+// ==========================================
+// MULTI-TABLE FORM DATA
+// ==========================================
+
+/**
+ * Form data structure for multi-table templates
+ * - Single table: { fieldName: value, ... }
+ * - Multi-table: { tableAlias: { fieldName: value } | [{ fieldName: value }] }
+ *
+ * Example for DA0 (header) + DA1 (items):
+ * {
+ *   header: { DA0_CODTAB: "001", DA0_DESCRI: "Tabela Principal" },
+ *   items: [
+ *     { DA1_CODPRO: "PROD001", DA1_PRCVEN: 100.00 },
+ *     { DA1_CODPRO: "PROD002", DA1_PRCVEN: 150.00 }
+ *   ]
+ * }
+ */
+export type MultiTableFormData = {
+  [tableAlias: string]: Record<string, any> | Record<string, any>[];
+};
+
+/**
+ * Table sync data - tracks sync results per table
+ * Example:
+ * {
+ *   header: { recno: "123", syncedAt: "2024-01-01T10:00:00Z" },
+ *   items: [{ recno: "456" }, { recno: "457" }]
+ * }
+ */
+export type TableSyncData = {
+  [tableAlias: string]: { recno: string; syncedAt?: string } | { recno: string }[];
+};
+
+// ==========================================
+// TEMPLATE TABLE DTOs (for API calls)
+// ==========================================
+
+export interface CreateTemplateTableDto {
+  tableName: string;
+  alias: string;
+  label: string;
+  tableOrder?: number;
+  relationType?: TableRelationType;
+  parentTableId?: string;
+  foreignKeyConfig?: ForeignKeyConfig;
+  isActive?: boolean;
+}
+
+export interface UpdateTemplateTableDto {
+  alias?: string;
+  label?: string;
+  tableOrder?: number;
+  relationType?: TableRelationType;
+  parentTableId?: string;
+  foreignKeyConfig?: ForeignKeyConfig;
+  isActive?: boolean;
+}
+
+export interface CreateMultiTableTemplateDto {
+  label: string;
+  description?: string;
+  isActive?: boolean;
+  tables: CreateTemplateTableDto[];
+}

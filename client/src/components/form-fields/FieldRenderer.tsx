@@ -22,6 +22,7 @@ import { CheckboxField } from './CheckboxField';
 import { AutocompleteField } from './AutocompleteField';
 import { MultiselectField } from './MultiselectField';
 import { AttachmentField } from './AttachmentField';
+import { LookupField } from './LookupField';
 import { useDataSource } from './hooks/useDataSource';
 
 import type { FormField, FieldAttachment } from '../../types/registration';
@@ -30,6 +31,7 @@ interface FieldRendererProps {
   field: FormField;
   value: any;
   onChange: (value: any) => void;
+  onReturnFieldsChange?: (fields: Record<string, any>) => void; // For lookup fields
   error?: string;
   disabled?: boolean;
   templateId?: string;
@@ -43,6 +45,7 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
   field,
   value,
   onChange,
+  onReturnFieldsChange,
   error,
   disabled,
   templateId,
@@ -309,6 +312,19 @@ export const FieldRenderer: React.FC<FieldRendererProps> = ({
           onAttachmentsChange={onAttachmentsChange}
           error={error}
           disabled={disabled || !field.isEnabled}
+        />
+      );
+
+    case 'lookup':
+      return (
+        <LookupField
+          field={field}
+          value={value}
+          onChange={onChange}
+          onReturnFieldsChange={onReturnFieldsChange}
+          error={error}
+          disabled={disabled || !field.isEnabled}
+          templateId={templateId}
         />
       );
 

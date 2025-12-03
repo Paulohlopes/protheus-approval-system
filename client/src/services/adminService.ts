@@ -1,5 +1,11 @@
 import { backendApi } from './api';
-import type { FormTemplate } from '../types/registration';
+import type {
+  FormTemplate,
+  TemplateTable,
+  CreateTemplateTableDto,
+  UpdateTemplateTableDto,
+  CreateMultiTableTemplateDto,
+} from '../types/registration';
 import type {
   CreateFormTemplateDto,
   UpdateFormTemplateDto,
@@ -102,6 +108,61 @@ export const adminService = {
    */
   async syncTemplateWithSx3(templateId: string): Promise<FormTemplate> {
     const response = await backendApi.post(`/form-templates/${templateId}/sync`);
+    return response.data;
+  },
+
+  // ==========================================
+  // MULTI-TABLE TEMPLATES
+  // ==========================================
+
+  /**
+   * Create a multi-table template
+   */
+  async createMultiTableTemplate(data: CreateMultiTableTemplateDto): Promise<FormTemplate> {
+    const response = await backendApi.post('/form-templates/multi-table', data);
+    return response.data;
+  },
+
+  /**
+   * Add a table to an existing template
+   */
+  async addTableToTemplate(templateId: string, data: CreateTemplateTableDto): Promise<FormTemplate> {
+    const response = await backendApi.post(`/form-templates/${templateId}/tables`, data);
+    return response.data;
+  },
+
+  /**
+   * Update a template table
+   */
+  async updateTemplateTable(
+    templateId: string,
+    tableId: string,
+    data: UpdateTemplateTableDto
+  ): Promise<TemplateTable> {
+    const response = await backendApi.patch(`/form-templates/${templateId}/tables/${tableId}`, data);
+    return response.data;
+  },
+
+  /**
+   * Remove a table from template
+   */
+  async removeTableFromTemplate(templateId: string, tableId: string): Promise<void> {
+    await backendApi.delete(`/form-templates/${templateId}/tables/${tableId}`);
+  },
+
+  /**
+   * Sync a specific table with SX3
+   */
+  async syncTableWithSx3(templateId: string, tableId: string): Promise<TemplateTable> {
+    const response = await backendApi.post(`/form-templates/${templateId}/tables/${tableId}/sync`);
+    return response.data;
+  },
+
+  /**
+   * Get fields for a specific table
+   */
+  async getTableFields(templateId: string, tableId: string): Promise<any[]> {
+    const response = await backendApi.get(`/form-templates/${templateId}/tables/${tableId}/fields`);
     return response.data;
   },
 
