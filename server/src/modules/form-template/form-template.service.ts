@@ -115,27 +115,6 @@ export class FormTemplateService {
   }
 
   /**
-   * Find template by ID
-   */
-  async findOne(id: string) {
-    const template = await this.prisma.formTemplate.findUnique({
-      where: { id },
-      include: {
-        fields: {
-          orderBy: { fieldOrder: 'asc' },
-        },
-        workflows: true,
-      },
-    });
-
-    if (!template) {
-      throw new NotFoundException(`Template ${id} not found`);
-    }
-
-    return template;
-  }
-
-  /**
    * Find template by table name
    */
   async findByTableName(tableName: string) {
