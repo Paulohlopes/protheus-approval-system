@@ -23,12 +23,19 @@ export enum TableRelationType {
 // FOREIGN KEY CONFIG
 // ==========================================
 
-export class ForeignKeyConfigDto {
+export class ForeignKeyFieldDto {
   @IsString()
   parentField: string; // Field in parent table (e.g., DA0_CODTAB)
 
   @IsString()
   childField: string; // Field in child table (e.g., DA1_CODTAB)
+}
+
+export class ForeignKeyConfigDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ForeignKeyFieldDto)
+  fields: ForeignKeyFieldDto[]; // Array of FK field pairs (supports composite keys)
 }
 
 // ==========================================

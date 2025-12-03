@@ -22,6 +22,7 @@ import {
   Alert,
   Divider,
   Tooltip,
+  Paper,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -29,11 +30,13 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SyncIcon from '@mui/icons-material/Sync';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import LinkIcon from '@mui/icons-material/Link';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import type {
   TemplateTable,
   CreateTemplateTableDto,
   TableRelationType,
   ForeignKeyConfig,
+  ForeignKeyField,
 } from '../../types/registration';
 import { adminService } from '../../services/adminService';
 
@@ -105,8 +108,16 @@ export const MultiTableConfig: React.FC<MultiTableConfigProps> = ({
         setError('Selecione a tabela pai');
         return;
       }
-      if (!formData.foreignKeyConfig?.parentField || !formData.foreignKeyConfig?.childField) {
-        setError('Configure os campos de chave estrangeira');
+      if (!formData.foreignKeyConfig?.fields || formData.foreignKeyConfig.fields.length === 0) {
+        setError('Configure pelo menos um par de campos de chave estrangeira');
+        return;
+      }
+      // Validate all FK fields are filled
+      const hasEmptyFk = formData.foreignKeyConfig.fields.some(
+        (fk) => !fk.parentField || !fk.childField
+      );
+      if (hasEmptyFk) {
+        setError('Preencha todos os campos de chave estrangeira');
         return;
       }
     }
@@ -209,7 +220,45 @@ export const MultiTableConfig: React.FC<MultiTableConfigProps> = ({
     }
   };
 
-  const parentTables = tables.filter((t) => t.relationType === 'parent');
+  // Potential parent tables: tables that are 'parent', 'independent', or have no relationType yet
+  // Exclude tables that are already 'child' and exclude the table being edited
+  const potentialParentTables = tables.filter(
+    (t) => t.relationType !== 'child' && t.id !== editingTable?.id
+  );
+
+  // Helper to add a new FK field pair
+  const addFkField = () => {
+    setFormData((prev) => ({
+      ...prev,
+      foreignKeyConfig: {
+        fields: [...(prev.foreignKeyConfig?.fields || []), { parentField: '', childField: '' }],
+      },
+    }));
+  };
+
+  // Helper to update a FK field
+  const updateFkField = (index: number, field: 'parentField' | 'childField', value: string) => {
+    setFormData((prev) => {
+      const fields = [...(prev.foreignKeyConfig?.fields || [])];
+      fields[index] = { ...fields[index], [field]: value };
+      return {
+        ...prev,
+        foreignKeyConfig: { fields },
+      };
+    });
+  };
+
+  // Helper to remove a FK field pair
+  const removeFkField = (index: number) => {
+    setFormData((prev) => {
+      const fields = [...(prev.foreignKeyConfig?.fields || [])];
+      fields.splice(index, 1);
+      return {
+        ...prev,
+        foreignKeyConfig: { fields },
+      };
+    });
+  };
 
   const renderTableDialog = (isEdit: boolean) => {
     const dialogOpen = isEdit ? editDialogOpen : addDialogOpen;
@@ -318,7 +367,7 @@ export const MultiTableConfig: React.FC<MultiTableConfigProps> = ({
                     <MenuItem value="">
                       <em>Selecione...</em>
                     </MenuItem>
-                    {parentTables.map((t) => (
+                    {potentialParentTables.map((t) => (
                       <MenuItem key={t.id} value={t.id}>
                         {t.label} ({t.tableName})
                       </MenuItem>
@@ -326,40 +375,69 @@ export const MultiTableConfig: React.FC<MultiTableConfigProps> = ({
                   </Select>
                 </FormControl>
 
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <TextField
-                    label="Campo Pai (FK)"
-                    value={formData.foreignKeyConfig?.parentField || ''}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        foreignKeyConfig: {
-                          ...prev.foreignKeyConfig,
-                          parentField: e.target.value,
-                          childField: prev.foreignKeyConfig?.childField || '',
-                        },
-                      }))
-                    }
-                    required
-                    helperText="Ex: DA0_CODTAB"
-                  />
-                  <TextField
-                    label="Campo Filho (FK)"
-                    value={formData.foreignKeyConfig?.childField || ''}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        foreignKeyConfig: {
-                          ...prev.foreignKeyConfig,
-                          parentField: prev.foreignKeyConfig?.parentField || '',
-                          childField: e.target.value,
-                        },
-                      }))
-                    }
-                    required
-                    helperText="Ex: DA1_CODTAB"
-                  />
+                {potentialParentTables.length === 0 && (
+                  <Alert severity="warning">
+                    Nenhuma tabela disponível como pai. Adicione primeiro uma tabela com tipo "Pai" ou "Independente".
+                  </Alert>
+                )}
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Campos de Chave Estrangeira (FK)
+                  </Typography>
+                  <Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={addFkField}
+                  >
+                    Adicionar Campo
+                  </Button>
                 </Box>
+
+                {(!formData.foreignKeyConfig?.fields || formData.foreignKeyConfig.fields.length === 0) && (
+                  <Alert severity="info" sx={{ py: 0.5 }}>
+                    Clique em "Adicionar Campo" para configurar a chave estrangeira.
+                  </Alert>
+                )}
+
+                {formData.foreignKeyConfig?.fields?.map((fk, index) => (
+                  <Paper key={index} variant="outlined" sx={{ p: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                      <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                        <TextField
+                          label={`Campo Pai ${index + 1}`}
+                          value={fk.parentField}
+                          onChange={(e) => updateFkField(index, 'parentField', e.target.value.toUpperCase())}
+                          required
+                          size="small"
+                          placeholder="Ex: DA0_CODTAB"
+                        />
+                        <TextField
+                          label={`Campo Filho ${index + 1}`}
+                          value={fk.childField}
+                          onChange={(e) => updateFkField(index, 'childField', e.target.value.toUpperCase())}
+                          required
+                          size="small"
+                          placeholder="Ex: DA1_CODTAB"
+                        />
+                      </Box>
+                      <Tooltip title="Remover">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => removeFkField(index)}
+                        >
+                          <RemoveCircleOutlineIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Paper>
+                ))}
+
+                <Typography variant="caption" color="text.secondary">
+                  Configure os pares de campos que relacionam a tabela filho com a tabela pai.
+                  Para chaves compostas, adicione múltiplos pares de campos.
+                </Typography>
               </>
             )}
           </Stack>
@@ -433,9 +511,9 @@ export const MultiTableConfig: React.FC<MultiTableConfigProps> = ({
                     <Typography variant="caption" color="text.secondary">
                       Alias: <strong>{table.alias}</strong> | {table.fields?.length || 0} campos
                     </Typography>
-                    {table.foreignKeyConfig && (
+                    {table.foreignKeyConfig?.fields && table.foreignKeyConfig.fields.length > 0 && (
                       <Typography variant="caption" display="block" color="text.secondary">
-                        FK: {table.foreignKeyConfig.childField} → {table.foreignKeyConfig.parentField}
+                        FK: {table.foreignKeyConfig.fields.map((fk) => `${fk.childField} → ${fk.parentField}`).join(', ')}
                       </Typography>
                     )}
                   </Box>

@@ -38,9 +38,13 @@ export interface FormTemplate {
 
 export type TableRelationType = 'parent' | 'child' | 'independent';
 
-export interface ForeignKeyConfig {
+export interface ForeignKeyField {
   parentField: string; // Field in parent table (e.g., DA0_CODTAB)
   childField: string; // Field in child table (e.g., DA1_CODTAB)
+}
+
+export interface ForeignKeyConfig {
+  fields: ForeignKeyField[]; // Array of FK field pairs (supports composite keys)
 }
 
 export interface TemplateTable {
