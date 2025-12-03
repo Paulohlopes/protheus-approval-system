@@ -46,7 +46,9 @@ import {
   KeyboardArrowUp,
   KeyboardArrowDown,
   VerticalAlignTop,
+  TableChart,
 } from '@mui/icons-material';
+import { MultiTableConfig } from './MultiTableConfig';
 import { adminService } from '../../services/adminService';
 import { dataSourceService } from '../../services/dataSourceService';
 import type { FormTemplate, FormField, DataSourceOption, FieldType, DataSourceType } from '../../types/registration';
@@ -65,6 +67,7 @@ const CUSTOM_FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: 'autocomplete', label: 'Autocomplete (Busca)' },
   { value: 'multiselect', label: 'Seleção Múltipla' },
   { value: 'attachment', label: 'Anexos' },
+  { value: 'lookup', label: 'Lookup (Pesquisa F3)' },
 ];
 
 // Data source types
@@ -268,11 +271,12 @@ const TemplateManager: React.FC = () => {
   const [savingFieldEdit, setSavingFieldEdit] = useState(false);
 
   // Form state for create/edit template
-  const [formData, setFormData] = useState<CreateFormTemplateDto>({
+  const [formData, setFormData] = useState<CreateFormTemplateDto & { isMultiTable?: boolean }>({
     label: '',
     description: '',
     tableName: '',
     isActive: true,
+    isMultiTable: false,
   });
 
   // State for SX5 tables options
@@ -362,14 +366,24 @@ const TemplateManager: React.FC = () => {
 
   const handleCreateTemplate = useCallback(async () => {
     try {
-      await adminService.createTemplate(formData);
+      if (formData.isMultiTable) {
+        // Create multi-table template (without tables initially)
+        await adminService.createMultiTableTemplate({
+          label: formData.label,
+          description: formData.description,
+          isActive: formData.isActive,
+          tables: [], // User will add tables after creation
+        });
+      } else {
+        await adminService.createTemplate(formData);
+      }
       setCreateDialogOpen(false);
       resetForm();
       await loadTemplates();
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar template');
+      setError(err.response?.data?.message || err.message || 'Erro ao criar template');
     }
-  }, [formData, loadTemplates]);
+  }, [formData, loadTemplates, resetForm]);
 
   const handleDeleteTemplate = useCallback(async (id: string) => {
     if (!window.confirm('Tem certeza que deseja deletar este template?')) {
@@ -712,6 +726,7 @@ const TemplateManager: React.FC = () => {
       description: '',
       tableName: '',
       isActive: true,
+      isMultiTable: false,
     });
   }, []);
 
@@ -728,16 +743,29 @@ const TemplateManager: React.FC = () => {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">Templates de Formulários</Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => {
-            resetForm();
-            setCreateDialogOpen(true);
-          }}
-        >
-          Novo Template
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            startIcon={<TableChart />}
+            onClick={() => {
+              resetForm();
+              setFormData((prev) => ({ ...prev, isMultiTable: true }));
+              setCreateDialogOpen(true);
+            }}
+          >
+            Multi-Tabela
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => {
+              resetForm();
+              setCreateDialogOpen(true);
+            }}
+          >
+            Novo Template
+          </Button>
+        </Stack>
       </Box>
 
       {/* Error Alert */}
@@ -788,7 +816,22 @@ const TemplateManager: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip label={template.tableName} size="small" variant="outlined" />
+                      {template.isMultiTable ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                          <Chip
+                            icon={<TableChart fontSize="small" />}
+                            label="Multi-tabela"
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                          {template.tables?.map((t) => (
+                            <Chip key={t.id} label={t.tableName} size="small" variant="outlined" />
+                          ))}
+                        </Box>
+                      ) : (
+                        <Chip label={template.tableName || 'N/A'} size="small" variant="outlined" />
+                      )}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" color="text.secondary">
@@ -840,6 +883,17 @@ const TemplateManager: React.FC = () => {
                     <TableCell colSpan={7} sx={{ py: 0, borderBottom: 'none' }}>
                       <Collapse in={expandedTemplates.has(template.id)} timeout="auto">
                         <Box sx={{ p: 2, bgcolor: 'grey.50' }}>
+                          {/* Multi-Table Configuration Section */}
+                          {template.isMultiTable && (
+                            <Box sx={{ mb: 3 }}>
+                              <MultiTableConfig
+                                templateId={template.id}
+                                tables={template.tables || []}
+                                onTablesChange={loadTemplates}
+                              />
+                            </Box>
+                          )}
+
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                             <Typography variant="subtitle2">
                               Campos do Template ({template.fields?.filter(f => f.isVisible).length || 0} visíveis de {template.fields?.length || 0})
@@ -906,9 +960,17 @@ const TemplateManager: React.FC = () => {
 
       {/* Create Template Dialog */}
       <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Novo Template de Formulário</DialogTitle>
+        <DialogTitle>
+          {formData.isMultiTable ? 'Novo Template Multi-Tabela' : 'Novo Template de Formulário'}
+        </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
+            {formData.isMultiTable && (
+              <Alert severity="info">
+                Templates multi-tabela permitem vincular múltiplas tabelas do Protheus (ex: DA0 + DA1).
+                Após criar o template, adicione as tabelas na seção de configuração.
+              </Alert>
+            )}
             <TextField
               label="Nome"
               fullWidth
@@ -916,14 +978,17 @@ const TemplateManager: React.FC = () => {
               value={formData.label}
               onChange={(e) => setFormData({ ...formData, label: e.target.value })}
             />
-            <TextField
-              label="Nome da Tabela SX3"
-              fullWidth
-              required
-              placeholder="Ex: SB1 (Produtos), SA1 (Clientes)"
-              value={formData.tableName}
-              onChange={(e) => setFormData({ ...formData, tableName: e.target.value.toUpperCase() })}
-            />
+            {!formData.isMultiTable && (
+              <TextField
+                label="Nome da Tabela SX3"
+                fullWidth
+                required
+                placeholder="Ex: SB1 (Produtos), SA1 (Clientes)"
+                value={formData.tableName}
+                onChange={(e) => setFormData({ ...formData, tableName: e.target.value.toUpperCase() })}
+                helperText="Para múltiplas tabelas, use o botão 'Multi-Tabela'"
+              />
+            )}
             <TextField
               label="Descrição"
               fullWidth
@@ -948,9 +1013,9 @@ const TemplateManager: React.FC = () => {
           <Button
             variant="contained"
             onClick={handleCreateTemplate}
-            disabled={!formData.label || !formData.tableName}
+            disabled={!formData.label || (!formData.isMultiTable && !formData.tableName)}
           >
-            Criar Template
+            {formData.isMultiTable ? 'Criar Template Multi-Tabela' : 'Criar Template'}
           </Button>
         </DialogActions>
       </Dialog>

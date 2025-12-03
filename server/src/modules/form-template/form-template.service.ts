@@ -493,11 +493,6 @@ export class FormTemplateService {
   async createMultiTableTemplate(dto: CreateMultiTableTemplateDto) {
     this.logger.log(`Creating multi-table template: ${dto.label}`);
 
-    // Validate tables
-    if (!dto.tables || dto.tables.length === 0) {
-      throw new BadRequestException('At least one table is required');
-    }
-
     // Create template and tables in transaction
     const template = await this.prisma.$transaction(async (tx) => {
       // Create the template
@@ -510,6 +505,11 @@ export class FormTemplateService {
           tableName: null, // Multi-table templates don't have a single tableName
         },
       });
+
+      // If no tables provided, just return the template (user will add tables later)
+      if (!dto.tables || dto.tables.length === 0) {
+        return newTemplate;
+      }
 
       // Create tables with fields
       for (let i = 0; i < dto.tables.length; i++) {
