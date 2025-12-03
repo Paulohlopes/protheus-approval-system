@@ -507,16 +507,16 @@ export const MultiTableConfig: React.FC<MultiTableConfigProps> = ({
                   </Box>
                 }
                 secondary={
-                  <Box sx={{ mt: 0.5 }}>
-                    <Typography variant="caption" color="text.secondary">
+                  <span style={{ display: 'block', marginTop: 4 }}>
+                    <Typography variant="caption" color="text.secondary" component="span">
                       Alias: <strong>{table.alias}</strong> | {table.fields?.length || 0} campos
                     </Typography>
                     {table.foreignKeyConfig?.fields && table.foreignKeyConfig.fields.length > 0 && (
-                      <Typography variant="caption" display="block" color="text.secondary">
+                      <Typography variant="caption" component="span" display="block" color="text.secondary">
                         FK: {table.foreignKeyConfig.fields.map((fk) => `${fk.childField} → ${fk.parentField}`).join(', ')}
                       </Typography>
                     )}
-                  </Box>
+                  </span>
                 }
               />
               <ListItemSecondaryAction>
