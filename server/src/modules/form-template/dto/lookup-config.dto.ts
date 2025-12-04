@@ -13,11 +13,13 @@ import { Type } from 'class-transformer';
 // ==========================================
 
 export class LookupSearchFieldDto {
+  @IsOptional()
   @IsString()
-  field: string; // Column name in source table (e.g., A1_COD)
+  field?: string; // Column name in source table (e.g., A1_COD)
 
+  @IsOptional()
   @IsString()
-  label: string; // Display label (e.g., "Código")
+  label?: string; // Display label (e.g., "Código")
 
   @IsOptional()
   @IsNumber()
@@ -29,11 +31,13 @@ export class LookupSearchFieldDto {
 // ==========================================
 
 export class LookupReturnFieldDto {
+  @IsOptional()
   @IsString()
-  sourceField: string; // Field from lookup table (e.g., A1_NOME)
+  sourceField?: string; // Field from lookup table (e.g., A1_NOME)
 
+  @IsOptional()
   @IsString()
-  targetField: string; // Field to fill in form (e.g., CLIENTE_NOME)
+  targetField?: string; // Field to fill in form (e.g., CLIENTE_NOME)
 }
 
 // ==========================================
@@ -47,14 +51,16 @@ export enum LookupFilterOperator {
 }
 
 export class LookupFilterDto {
+  @IsOptional()
   @IsString()
-  field: string;
+  field?: string;
 
+  @IsOptional()
   @IsEnum(LookupFilterOperator)
-  operator: LookupFilterOperator;
+  operator?: LookupFilterOperator;
 
-  @IsString()
-  value: string | string[];
+  @IsOptional()
+  value?: string | string[];
 }
 
 // ==========================================
