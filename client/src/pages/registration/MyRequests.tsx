@@ -122,6 +122,23 @@ const formatFieldValue = (value: any): string => {
   return String(value);
 };
 
+// Check if formData represents a bulk import
+const isBulkFormData = (formData: any): boolean => {
+  return formData && formData._isBulk === true && Array.isArray(formData.items);
+};
+
+// Get display-relevant fields from bulk item (excluding metadata fields)
+const getBulkItemDisplayFields = (item: Record<string, any>): Record<string, any> => {
+  const excludeFields = ['_recno', '_originalData', '_operationType', '_index', '_rowNumber'];
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(item)) {
+    if (!excludeFields.includes(key) && !key.startsWith('_')) {
+      result[key] = value;
+    }
+  }
+  return result;
+};
+
 export const MyRequestsPage = () => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
@@ -598,28 +615,93 @@ export const MyRequestsPage = () => {
                       {t.registration.formData}
                     </Typography>
                     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                      <Stack spacing={1}>
-                        {(() => {
-                          // Parse formData if it's a string
-                          const parsedFormData = parseFormData(selectedRequest.formData);
+                      {(() => {
+                        // Parse formData if it's a string
+                        const parsedFormData = parseFormData(selectedRequest.formData);
 
-                          // Create a map of fieldName -> label from template fields
-                          const fieldLabels: Record<string, string> = {};
-                          selectedRequest.template?.fields?.forEach((field: any) => {
-                            const key = field.fieldName || field.sx3FieldName;
-                            if (key) {
-                              fieldLabels[key] = field.label || key;
-                            }
+                        // Create a map of fieldName -> label from template fields
+                        const fieldLabels: Record<string, string> = {};
+                        selectedRequest.template?.fields?.forEach((field: any) => {
+                          const key = field.fieldName || field.sx3FieldName;
+                          if (key) {
+                            fieldLabels[key] = field.label || key;
+                          }
+                        });
+
+                        // Check if this is a bulk import
+                        if (isBulkFormData(parsedFormData)) {
+                          const items = parsedFormData.items as Record<string, any>[];
+                          const itemCount = parsedFormData._itemCount || items.length;
+
+                          // Get all unique field keys from items (excluding metadata)
+                          const allFields = new Set<string>();
+                          items.forEach(item => {
+                            Object.keys(getBulkItemDisplayFields(item)).forEach(key => allFields.add(key));
                           });
+                          const fieldKeys = Array.from(allFields);
 
-                          return Object.entries(parsedFormData).map(([key, value]) => (
-                            <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                              <Typography variant="body2" color="text.secondary">{fieldLabels[key] || key}:</Typography>
-                              <Typography variant="body2">{formatFieldValue(value)}</Typography>
+                          return (
+                            <Box>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                                <Chip
+                                  label={`Importação em Lote - ${itemCount} itens`}
+                                  color="primary"
+                                  size="small"
+                                />
+                                {selectedRequest.operationType && (
+                                  <Chip
+                                    label={selectedRequest.operationType === 'NEW' ? 'Inclusão' : 'Alteração'}
+                                    color={selectedRequest.operationType === 'NEW' ? 'success' : 'warning'}
+                                    size="small"
+                                    variant="outlined"
+                                  />
+                                )}
+                              </Box>
+                              <TableContainer sx={{ maxHeight: 400 }}>
+                                <Table size="small" stickyHeader>
+                                  <TableHead>
+                                    <TableRow>
+                                      <TableCell sx={{ fontWeight: 'bold', bgcolor: 'grey.100' }}>#</TableCell>
+                                      {fieldKeys.map(key => (
+                                        <TableCell key={key} sx={{ fontWeight: 'bold', bgcolor: 'grey.100' }}>
+                                          {fieldLabels[key] || key}
+                                        </TableCell>
+                                      ))}
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {items.map((item, idx) => {
+                                      const displayFields = getBulkItemDisplayFields(item);
+                                      return (
+                                        <TableRow key={idx} hover>
+                                          <TableCell>{idx + 1}</TableCell>
+                                          {fieldKeys.map(key => (
+                                            <TableCell key={key}>
+                                              {formatFieldValue(displayFields[key])}
+                                            </TableCell>
+                                          ))}
+                                        </TableRow>
+                                      );
+                                    })}
+                                  </TableBody>
+                                </Table>
+                              </TableContainer>
                             </Box>
-                          ));
-                        })()}
-                      </Stack>
+                          );
+                        }
+
+                        // Regular single-item form data
+                        return (
+                          <Stack spacing={1}>
+                            {Object.entries(parsedFormData).map(([key, value]) => (
+                              <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <Typography variant="body2" color="text.secondary">{fieldLabels[key] || key}:</Typography>
+                                <Typography variant="body2">{formatFieldValue(value)}</Typography>
+                              </Box>
+                            ))}
+                          </Stack>
+                        );
+                      })()}
                     </Paper>
                   </Box>
                 </Box>
