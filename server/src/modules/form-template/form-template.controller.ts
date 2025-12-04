@@ -15,6 +15,7 @@ import {
 import { FormTemplateService } from './form-template.service';
 import { DataSourceService } from './services/data-source.service';
 import { LookupService } from './services/lookup.service';
+import { AllowedTablesService } from './services/allowed-tables.service';
 import { CreateFormTemplateDto } from './dto/create-form-template.dto';
 import { UpdateFormTemplateDto } from './dto/update-form-template.dto';
 import { UpdateFormFieldDto } from './dto/update-form-field.dto';
@@ -33,6 +34,7 @@ export class FormTemplateController {
     private readonly formTemplateService: FormTemplateService,
     private readonly dataSourceService: DataSourceService,
     private readonly lookupService: LookupService,
+    private readonly allowedTablesService: AllowedTablesService,
   ) {}
 
   /**
@@ -309,10 +311,75 @@ export class FormTemplateController {
   }
 
   /**
-   * Get allowed tables for lookup
+   * Get allowed tables for lookup (names only)
    */
   @Get('lookup/allowed-tables')
-  getLookupAllowedTables() {
+  async getLookupAllowedTables() {
     return this.lookupService.getAllowedTables();
+  }
+
+  // ==========================================
+  // ALLOWED TABLES MANAGEMENT ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get all allowed tables with details
+   */
+  @Get('allowed-tables')
+  async getAllAllowedTables() {
+    return this.allowedTablesService.findAll();
+  }
+
+  /**
+   * Get active allowed tables only
+   */
+  @Get('allowed-tables/active')
+  async getActiveAllowedTables() {
+    return this.allowedTablesService.findActive();
+  }
+
+  /**
+   * Get a single allowed table by ID
+   */
+  @Get('allowed-tables/:id')
+  async getAllowedTable(@Param('id') id: string) {
+    return this.allowedTablesService.findOne(id);
+  }
+
+  /**
+   * Create a new allowed table
+   */
+  @Post('allowed-tables')
+  async createAllowedTable(
+    @Body() body: { tableName: string; description?: string; isActive?: boolean },
+  ) {
+    return this.allowedTablesService.create(body);
+  }
+
+  /**
+   * Update an allowed table
+   */
+  @Put('allowed-tables/:id')
+  async updateAllowedTable(
+    @Param('id') id: string,
+    @Body() body: { tableName?: string; description?: string; isActive?: boolean },
+  ) {
+    return this.allowedTablesService.update(id, body);
+  }
+
+  /**
+   * Toggle allowed table active status
+   */
+  @Patch('allowed-tables/:id/toggle')
+  async toggleAllowedTable(@Param('id') id: string) {
+    return this.allowedTablesService.toggleActive(id);
+  }
+
+  /**
+   * Delete an allowed table
+   */
+  @Delete('allowed-tables/:id')
+  async deleteAllowedTable(@Param('id') id: string) {
+    return this.allowedTablesService.remove(id);
   }
 }

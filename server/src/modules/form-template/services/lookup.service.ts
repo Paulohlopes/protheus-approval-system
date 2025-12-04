@@ -6,37 +6,11 @@ import {
   LookupSearchResponseDto,
   LookupRecordResponseDto,
 } from '../dto/lookup-config.dto';
+import { AllowedTablesService } from './allowed-tables.service';
 
 @Injectable()
 export class LookupService {
   private readonly logger = new Logger(LookupService.name);
-
-  // Whitelist of allowed tables for lookup queries
-  private readonly allowedTables = [
-    'SA1010', // Clientes
-    'SA2010', // Fornecedores
-    'SA3010', // Vendedores
-    'SB1010', // Produtos
-    'SB2010', // Saldos em Estoque
-    'SC5010', // Pedidos de Venda
-    'SC6010', // Itens de Pedidos
-    'SC7010', // Pedidos de Compra
-    'SD1010', // Itens NF Entrada
-    'SD2010', // Itens NF Saída
-    'SE1010', // Contas a Receber
-    'SE2010', // Contas a Pagar
-    'SF1010', // NF Entrada
-    'SF2010', // NF Saída
-    'SX5010', // Tabelas Genéricas
-    'CTT010', // Centro de Custo
-    'CTD010', // Plano de Contas
-    'DA0010', // Tabela de Preços (header)
-    'DA1010', // Tabela de Preços (itens)
-    'SG1010', // Estrutura de Produtos
-    'SM0010', // Cadastro de Empresas
-    'SYA010', // Países
-    'CC2010', // Estados
-  ];
 
   // Forbidden SQL commands
   private readonly forbiddenCommands = [
@@ -63,6 +37,7 @@ export class LookupService {
   constructor(
     @InjectDataSource('protheusConnection')
     private dataSource: DataSource,
+    private allowedTablesService: AllowedTablesService,
   ) {}
 
   /**
@@ -82,7 +57,7 @@ export class LookupService {
 
     // Validate the SQL query
     try {
-      this.validateCustomQuery(config.sqlQuery);
+      await this.validateCustomQuery(config.sqlQuery);
     } catch (error) {
       this.logger.error(`Query validation failed: ${error.message}`);
       throw error;
@@ -181,7 +156,7 @@ export class LookupService {
     }
 
     // Validate the SQL query
-    this.validateCustomQuery(config.sqlQuery);
+    await this.validateCustomQuery(config.sqlQuery);
 
     // Build query to get single record
     const escapedValue = this.escapeValue(value);
@@ -263,7 +238,7 @@ export class LookupService {
   /**
    * Validate custom SQL query for security
    */
-  private validateCustomQuery(query: string): void {
+  private async validateCustomQuery(query: string): Promise<void> {
     if (!query || typeof query !== 'string') {
       throw new BadRequestException('Query SQL inválida');
     }
@@ -298,9 +273,12 @@ export class LookupService {
       tables.push(match[1].toUpperCase());
     }
 
+    // Get allowed tables from database
+    const allowedTables = await this.allowedTablesService.getAllowedTableNames();
+
     // Validate all tables are in whitelist
     for (const table of tables) {
-      if (!this.allowedTables.includes(table)) {
+      if (!allowedTables.includes(table)) {
         this.logger.warn(`Table ${table} not in whitelist`);
         throw new BadRequestException(`Tabela ${table} não permitida para consulta`);
       }
@@ -325,7 +303,7 @@ export class LookupService {
   /**
    * Get list of allowed tables for reference
    */
-  getAllowedTables(): string[] {
-    return [...this.allowedTables];
+  async getAllowedTables(): Promise<string[]> {
+    return this.allowedTablesService.getAllowedTableNames();
   }
 }

@@ -437,3 +437,18 @@ model TrackingSequence {
 
   @@map("tracking_sequences")
 }
+
+// ==========================================
+// ALLOWED TABLES FOR LOOKUP QUERIES
+// ==========================================
+
+model AllowedLookupTable {
+  id          String   @id @default(uuid())
+  tableName   String   @unique  // SA1010, SYS_COMPANY, etc.
+  description String?  // Clientes, Empresas/Filiais, etc.
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("allowed_lookup_tables")
+}
