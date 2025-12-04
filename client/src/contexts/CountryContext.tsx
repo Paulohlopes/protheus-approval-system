@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import axios from 'axios';
 import type { Country } from '../types/country';
-import countryService from '../services/countryService';
 
 interface CountryContextType {
   countries: Country[];
@@ -19,23 +19,32 @@ interface CountryProviderProps {
   children: ReactNode;
 }
 
+// Direct API URL (bypasses auth interceptors)
+const BACKEND_API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api';
+
 export const CountryProvider: React.FC<CountryProviderProps> = ({ children }) => {
   const [countries, setCountries] = useState<Country[]>([]);
   const [activeCountry, setActiveCountryState] = useState<Country | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load countries from backend
+  // Load countries from backend (using direct axios to bypass auth interceptors)
   const refreshCountries = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await countryService.findAll(true); // Only active countries
-      setCountries(data);
-      return data;
+      // Use direct axios call to bypass auth interceptors (this is a public endpoint)
+      const response = await axios.get<Country[]>(`${BACKEND_API_URL}/countries`, {
+        params: { activeOnly: true },
+      });
+      setCountries(response.data);
+      return response.data;
     } catch (err: any) {
       console.error('Error loading countries:', err);
-      setError(err.response?.data?.message || 'Erro ao carregar países');
+      // Don't show error for 401 - just means no countries available yet
+      if (err.response?.status !== 401) {
+        setError(err.response?.data?.message || 'Erro ao carregar países');
+      }
       return [];
     } finally {
       setIsLoading(false);

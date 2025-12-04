@@ -13,6 +13,7 @@ import {
 import { CountryService } from './country.service';
 import { ConnectionManagerService } from './connection-manager.service';
 import { CreateCountryDto, UpdateCountryDto, TestConnectionDto } from './dto';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('countries')
 export class CountryController {
@@ -22,8 +23,9 @@ export class CountryController {
   ) {}
 
   /**
-   * Get all countries
+   * Get all countries (public endpoint for country selector)
    */
+  @Public()
   @Get()
   findAll(
     @Query('activeOnly', new ParseBoolPipe({ optional: true })) activeOnly?: boolean,
@@ -40,8 +42,9 @@ export class CountryController {
   }
 
   /**
-   * Get default country
+   * Get default country (public endpoint)
    */
+  @Public()
   @Get('default')
   getDefault() {
     return this.countryService.getDefault();
