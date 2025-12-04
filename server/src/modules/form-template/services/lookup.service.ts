@@ -73,12 +73,20 @@ export class LookupService {
     searchTerm: string,
     pagination: { page: number; limit: number },
   ): Promise<LookupSearchResponseDto> {
+    this.logger.log(`Lookup search called with config: ${JSON.stringify(config)}`);
+    this.logger.log(`Search term: "${searchTerm}", pagination: ${JSON.stringify(pagination)}`);
+
     if (!config.sqlQuery) {
       throw new BadRequestException('Consulta SQL não configurada para este lookup');
     }
 
     // Validate the SQL query
-    this.validateCustomQuery(config.sqlQuery);
+    try {
+      this.validateCustomQuery(config.sqlQuery);
+    } catch (error) {
+      this.logger.error(`Query validation failed: ${error.message}`);
+      throw error;
+    }
 
     // Build query with search filter
     let baseQuery = config.sqlQuery;

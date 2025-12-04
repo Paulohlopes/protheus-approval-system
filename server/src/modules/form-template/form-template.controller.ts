@@ -269,9 +269,17 @@ export class FormTemplateController {
       limit?: number;
     },
   ) {
+    console.log('[LookupController] searchLookup called with body:', JSON.stringify(body, null, 2));
     const { config, search = '', page = 0, limit = 20 } = body;
 
-    return this.lookupService.search(config, search, { page, limit });
+    try {
+      const result = await this.lookupService.search(config, search, { page, limit });
+      console.log('[LookupController] searchLookup success, returning', result.data?.length, 'records');
+      return result;
+    } catch (error) {
+      console.error('[LookupController] searchLookup error:', error);
+      throw error;
+    }
   }
 
   /**
