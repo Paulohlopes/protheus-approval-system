@@ -41,6 +41,22 @@ export class SettingsService {
 
   /**
    * Encrypt a value using AES-256-GCM
+   * Public method for use by other services (e.g., CountryService)
+   */
+  encryptValue(plaintext: string): string {
+    return this.encrypt(plaintext);
+  }
+
+  /**
+   * Decrypt a value using AES-256-GCM
+   * Public method for use by other services (e.g., CountryService)
+   */
+  decryptValue(encryptedValue: string): string {
+    return this.decrypt(encryptedValue);
+  }
+
+  /**
+   * Encrypt a value using AES-256-GCM (internal)
    */
   private encrypt(plaintext: string): string {
     const key = this.getEncryptionKey();

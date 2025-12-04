@@ -15,6 +15,7 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { HealthModule } from './modules/health/health.module';
 import { ProtheusDataModule } from './modules/protheus-data/protheus-data.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { CountryModule } from './modules/country/country.module';
 import { LoggerModule } from './common/logger';
 import { ProtheusJwtAuthGuard } from './modules/auth/guards/protheus-jwt-auth.guard';
 import { Sx3 } from './modules/sx3/entities/sx3.entity';
@@ -80,9 +81,10 @@ import { Sx3 } from './modules/sx3/entities/sx3.entity';
 
     // Application Modules
     AuthModule,
-    SettingsModule, // SEC-01: Global settings with encryption
-    HealthModule,   // MAN-04: Health check endpoints
-    LoggerModule,   // MAN-03: Structured logging
+    SettingsModule,      // SEC-01: Global settings with encryption
+    CountryModule,       // Multi-country ERP connections
+    HealthModule,        // MAN-04: Health check endpoints
+    LoggerModule,        // MAN-03: Structured logging
     Sx3Module,
     FormTemplateModule,
     ProtheusIntegrationModule,

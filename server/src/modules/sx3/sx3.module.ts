@@ -1,12 +1,11 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { Sx3Controller } from './sx3.controller';
 import { Sx3Service } from './sx3.service';
-import { Sx3 } from './entities/sx3.entity';
+import { CountryModule } from '../country/country.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Sx3], 'protheusConnection'),
+    CountryModule, // For ConnectionManager and CountryService
   ],
   controllers: [Sx3Controller],
   providers: [Sx3Service],

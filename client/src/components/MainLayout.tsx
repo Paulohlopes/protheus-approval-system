@@ -44,11 +44,13 @@ import {
   AccountTree,
   Description,
   Storage,
+  Public,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageSelector from './LanguageSelector';
+import CountrySelector from './layout/CountrySelector';
 import CompanyLogo from './CompanyLogo';
 
 const drawerWidth = 240;
@@ -146,6 +148,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           icon: <Storage />,
           path: '/admin/allowed-tables',
         },
+        {
+          id: 'admin-countries',
+          title: t?.menu?.adminCountries || 'Países / Conexões',
+          icon: <Public />,
+          path: '/admin/countries',
+        },
       ],
     },
   ];
@@ -230,6 +238,20 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           }}>
             <CompanyLogo variant="full" size="small" />
           </Box>
+        </Box>
+
+        {/* Country Selector */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            px: 2,
+            py: 1,
+            borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+          }}
+        >
+          <CountrySelector size="small" variant="outlined" />
         </Box>
 
         <Divider />

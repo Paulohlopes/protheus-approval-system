@@ -1,57 +1,69 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { Sx3 } from './entities/sx3.entity';
 import { Sx3FieldDto, TableStructureDto } from './dto/sx3-field.dto';
+import { ConnectionManagerService } from '../country/connection-manager.service';
+import { CountryService } from '../country/country.service';
 
 @Injectable()
 export class Sx3Service {
   private readonly logger = new Logger(Sx3Service.name);
-  private cache: Map<string, Sx3FieldDto[]> = new Map();
+  // Cache per country: Map<countryId, Map<tableName, fields>>
+  private cache: Map<string, Map<string, Sx3FieldDto[]>> = new Map();
 
   constructor(
-    @InjectRepository(Sx3, 'protheusConnection')
-    private sx3Repository: Repository<Sx3>,
+    private readonly connectionManager: ConnectionManagerService,
+    private readonly countryService: CountryService,
   ) {}
 
   /**
-   * Get table structure from SX3
+   * Get table structure from SX3 for a specific country
    * Results are cached for performance
    */
-  async getTableStructure(tableName: string): Promise<TableStructureDto> {
-    this.logger.log(`Getting table structure for ${tableName}`);
+  async getTableStructure(tableName: string, countryId?: string): Promise<TableStructureDto> {
+    // Get country ID (use default if not provided)
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
+
+    this.logger.log(`Getting table structure for ${tableName} (country: ${country.code})`);
 
     // Check cache first
-    if (this.cache.has(tableName)) {
-      this.logger.debug(`Cache hit for table ${tableName}`);
+    const countryCache = this.cache.get(resolvedCountryId) || new Map();
+    if (countryCache.has(tableName)) {
+      this.logger.debug(`Cache hit for table ${tableName} (country: ${country.code})`);
       return {
         tableName,
-        fields: this.cache.get(tableName),
+        fields: countryCache.get(tableName),
       };
     }
 
+    // Get connection for the country
+    const connection = await this.connectionManager.getConnection(resolvedCountryId);
+
+    // Build SX3 table name with suffix
+    const sx3Table = `SX3${country.tableSuffix}`;
+
     // Query SX3
-    const sx3Records = await this.sx3Repository.find({
-      where: {
-        x3Arquivo: tableName,
-        deleted: '', // Not deleted (empty string only, matching Protheus convention)
-      },
-      order: {
-        x3Ordem: 'ASC',
-      },
-    });
+    const sx3Records = await connection.query(`
+      SELECT *
+      FROM ${sx3Table}
+      WHERE X3_ARQUIVO = @0
+        AND D_E_L_E_T_ = ''
+      ORDER BY X3_ORDEM
+    `, [tableName]);
 
     if (sx3Records.length === 0) {
-      throw new NotFoundException(`Table ${tableName} not found in SX3`);
+      throw new NotFoundException(`Table ${tableName} not found in SX3 for country ${country.code}`);
     }
 
     // Map to DTO
-    const fields = sx3Records.map((record) => this.mapToDto(record));
+    const fields = sx3Records.map((record: any) => this.mapToDto(record));
 
     // Cache the result
-    this.cache.set(tableName, fields);
-    this.logger.log(`Cached structure for table ${tableName} (${fields.length} fields)`);
+    if (!this.cache.has(resolvedCountryId)) {
+      this.cache.set(resolvedCountryId, new Map());
+    }
+    this.cache.get(resolvedCountryId)!.set(tableName, fields);
+    this.logger.log(`Cached structure for table ${tableName} (${fields.length} fields, country: ${country.code})`);
 
     return {
       tableName,
@@ -60,27 +72,38 @@ export class Sx3Service {
   }
 
   /**
-   * Get all available tables from SX3
+   * Get all available tables from SX3 for a specific country
    */
-  async getAvailableTables(): Promise<string[]> {
-    this.logger.log('Getting available tables from SX3');
+  async getAvailableTables(countryId?: string): Promise<string[]> {
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
 
-    const result = await this.sx3Repository
-      .createQueryBuilder('sx3')
-      .select('DISTINCT sx3.x3Arquivo', 'tableName')
-      .where("sx3.deleted = ''")
-      .getRawMany();
+    this.logger.log(`Getting available tables from SX3 (country: ${country.code})`);
 
-    return result.map((r) => r.tableName).sort();
+    const connection = await this.connectionManager.getConnection(resolvedCountryId);
+    const sx3Table = `SX3${country.tableSuffix}`;
+
+    const result = await connection.query(`
+      SELECT DISTINCT X3_ARQUIVO as tableName
+      FROM ${sx3Table}
+      WHERE D_E_L_E_T_ = ''
+      ORDER BY X3_ARQUIVO
+    `);
+
+    return result.map((r: any) => r.tableName?.trim()).filter(Boolean);
   }
 
   /**
-   * Sync cache - clears all cached data
-   * This will force a fresh read from SX3 on next request
+   * Sync cache - clears cached data for a specific country or all countries
    */
-  syncCache(): void {
-    this.logger.log('Syncing cache - clearing all cached structures');
-    this.cache.clear();
+  syncCache(countryId?: string): void {
+    if (countryId) {
+      this.cache.delete(countryId);
+      this.logger.log(`Cleared cache for country: ${countryId}`);
+    } else {
+      this.cache.clear();
+      this.logger.log('Cleared all SX3 cache');
+    }
   }
 
   /**
@@ -93,18 +116,56 @@ export class Sx3Service {
   }
 
   /**
-   * Map SX3 entity to DTO
+   * Get cache statistics
    */
-  private mapToDto(record: Sx3): Sx3FieldDto {
-    const labelPtBR = record.x3Titulo?.trim() || '';
-    const labelEn = record.x3TitEng?.trim() || '';
-    const labelEs = record.x3TitSpa?.trim() || '';
-    const descriptionPtBR = record.x3Descric?.trim() || '';
-    const descriptionEn = record.x3DescEng?.trim() || '';
-    const descriptionEs = record.x3DescSpa?.trim() || '';
+  getCacheStats(countryId?: string) {
+    if (countryId) {
+      const countryCache = this.cache.get(countryId);
+      return {
+        countryId,
+        cachedTables: countryCache?.size || 0,
+        tables: countryCache ? Array.from(countryCache.keys()) : [],
+      };
+    }
+
+    const stats: Record<string, { cachedTables: number; tables: string[] }> = {};
+    for (const [cId, cCache] of this.cache) {
+      stats[cId] = {
+        cachedTables: cCache.size,
+        tables: Array.from(cCache.keys()),
+      };
+    }
+    return stats;
+  }
+
+  /**
+   * Resolve country ID - use default if not provided
+   */
+  private async resolveCountryId(countryId?: string): Promise<string> {
+    if (countryId) {
+      return countryId;
+    }
+
+    const defaultCountry = await this.countryService.getDefault();
+    if (!defaultCountry) {
+      throw new BadRequestException('No country specified and no default country configured');
+    }
+    return defaultCountry.id;
+  }
+
+  /**
+   * Map SX3 raw record to DTO
+   */
+  private mapToDto(record: any): Sx3FieldDto {
+    const labelPtBR = record.X3_TITULO?.trim() || '';
+    const labelEn = record.X3_TITENG?.trim() || '';
+    const labelEs = record.X3_TITSPA?.trim() || '';
+    const descriptionPtBR = record.X3_DESCRIC?.trim() || '';
+    const descriptionEn = record.X3_DESCENG?.trim() || '';
+    const descriptionEs = record.X3_DESCSPA?.trim() || '';
 
     return {
-      fieldName: record.x3Campo?.trim() || '',
+      fieldName: record.X3_CAMPO?.trim() || '',
       // Default label/description (Portuguese as fallback)
       label: labelPtBR,
       description: descriptionPtBR,
@@ -117,16 +178,16 @@ export class Sx3Service {
       descriptionEn: descriptionEn || descriptionPtBR,
       descriptionEs: descriptionEs || descriptionPtBR,
       // Other fields
-      fieldType: this.mapFieldType(record.x3Tipo),
-      size: record.x3Tamanho || 0,
-      decimals: record.x3Decimal || 0,
-      isRequired: record.x3Obrigat?.trim() === 'S',
-      mask: record.x3Picture?.trim() || '',
-      lookup: record.x3F3?.trim() || '',
-      order: record.x3Ordem?.trim() || '',
-      validation: record.x3Valid?.trim() || '',
-      when: record.x3When?.trim() || '',
-      defaultValue: record.x3Relacao?.trim() || '',
+      fieldType: this.mapFieldType(record.X3_TIPO),
+      size: record.X3_TAMANHO || 0,
+      decimals: record.X3_DECIMAL || 0,
+      isRequired: record.X3_OBRIGAT?.trim() === 'S',
+      mask: record.X3_PICTURE?.trim() || '',
+      lookup: record.X3_F3?.trim() || '',
+      order: record.X3_ORDEM?.trim() || '',
+      validation: record.X3_VALID?.trim() || '',
+      when: record.X3_WHEN?.trim() || '',
+      defaultValue: record.X3_RELACAO?.trim() || '',
     };
   }
 
@@ -143,15 +204,5 @@ export class Sx3Service {
     };
 
     return typeMap[sx3Type?.trim()] || 'string';
-  }
-
-  /**
-   * Get cache statistics
-   */
-  getCacheStats() {
-    return {
-      cachedTables: this.cache.size,
-      tables: Array.from(this.cache.keys()),
-    };
   }
 }

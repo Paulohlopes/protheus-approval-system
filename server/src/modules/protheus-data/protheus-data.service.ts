@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import { Sx3Service } from '../sx3/sx3.service';
+import { ConnectionManagerService } from '../country/connection-manager.service';
+import { CountryService } from '../country/country.service';
 import { SearchFieldDto, ProtheusRecordDto, SearchResultDto } from './dto/search-records.dto';
 
 @Injectable()
@@ -27,9 +27,9 @@ export class ProtheusDataService {
   };
 
   constructor(
-    @InjectDataSource('protheusConnection')
-    private dataSource: DataSource,
     private sx3Service: Sx3Service,
+    private connectionManager: ConnectionManagerService,
+    private countryService: CountryService,
   ) {}
 
   /**
@@ -40,8 +40,12 @@ export class ProtheusDataService {
     filters: Record<string, string> = {},
     limit: number = 50,
     offset: number = 0,
+    countryId?: string,
   ): Promise<SearchResultDto> {
-    this.logger.log(`Searching records in ${tableName} with filters: ${JSON.stringify(filters)}`);
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
+
+    this.logger.log(`Searching records in ${tableName} (country: ${country.code}) with filters: ${JSON.stringify(filters)}`);
 
     // Validar tabela
     const validTables = Object.keys(this.tableKeyFields);
@@ -50,9 +54,10 @@ export class ProtheusDataService {
     }
 
     const tableNameUpper = tableName.toUpperCase();
+    const fullTableName = `${tableNameUpper}${country.tableSuffix}`;
 
     // Obter estrutura da tabela do SX3
-    const tableStructure = await this.sx3Service.getTableStructure(tableNameUpper);
+    const tableStructure = await this.sx3Service.getTableStructure(tableNameUpper, resolvedCountryId);
     const validFieldNames = tableStructure.fields.map(f => f.fieldName);
 
     // Construir query com filtros seguros
@@ -78,14 +83,14 @@ export class ProtheusDataService {
     const whereClause = whereConditions.join(' AND ');
 
     // Query para contar total
-    const countQuery = `SELECT COUNT(*) as total FROM ${tableNameUpper}010 WHERE ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM ${fullTableName} WHERE ${whereClause}`;
 
     // Query para buscar registros
     const selectQuery = `
       SELECT TOP ${limit} *
       FROM (
         SELECT *, ROW_NUMBER() OVER (ORDER BY R_E_C_N_O_) as row_num
-        FROM ${tableNameUpper}010
+        FROM ${fullTableName}
         WHERE ${whereClause}
       ) as numbered
       WHERE row_num > ${offset}
@@ -93,8 +98,9 @@ export class ProtheusDataService {
     `;
 
     try {
-      // Executar queries
-      const queryRunner = this.dataSource.createQueryRunner();
+      // Get connection for this country
+      const dataSource = await this.connectionManager.getConnection(resolvedCountryId);
+      const queryRunner = dataSource.createQueryRunner();
       await queryRunner.connect();
 
       try {
@@ -120,7 +126,7 @@ export class ProtheusDataService {
           data: this.cleanRecordData(record),
         }));
 
-        this.logger.log(`Found ${total} records, returning ${mappedRecords.length}`);
+        this.logger.log(`Found ${total} records, returning ${mappedRecords.length} (country: ${country.code})`);
 
         return {
           records: mappedRecords,
@@ -132,7 +138,7 @@ export class ProtheusDataService {
         await queryRunner.release();
       }
     } catch (error) {
-      this.logger.error(`Error searching records in ${tableNameUpper}: ${error.message}`, error.stack);
+      this.logger.error(`Error searching records in ${fullTableName}: ${error.message}`, error.stack);
       throw new BadRequestException(`Error searching records: ${error.message}`);
     }
   }
@@ -140,8 +146,11 @@ export class ProtheusDataService {
   /**
    * Buscar registro específico por RECNO
    */
-  async getRecordByRecno(tableName: string, recno: string): Promise<ProtheusRecordDto> {
-    this.logger.log(`Getting record from ${tableName} with RECNO: ${recno}`);
+  async getRecordByRecno(tableName: string, recno: string, countryId?: string): Promise<ProtheusRecordDto> {
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
+
+    this.logger.log(`Getting record from ${tableName} with RECNO: ${recno} (country: ${country.code})`);
 
     const validTables = Object.keys(this.tableKeyFields);
     const tableNameUpper = tableName.toUpperCase();
@@ -150,22 +159,25 @@ export class ProtheusDataService {
       throw new BadRequestException(`Table ${tableName} is not supported`);
     }
 
+    const fullTableName = `${tableNameUpper}${country.tableSuffix}`;
+
     const query = `
       SELECT *
-      FROM ${tableNameUpper}010
+      FROM ${fullTableName}
       WHERE R_E_C_N_O_ = '${recno.replace(/'/g, "''")}'
       AND D_E_L_E_T_ = ''
     `;
 
     try {
-      const queryRunner = this.dataSource.createQueryRunner();
+      const dataSource = await this.connectionManager.getConnection(resolvedCountryId);
+      const queryRunner = dataSource.createQueryRunner();
       await queryRunner.connect();
 
       try {
         const records = await queryRunner.query(query);
 
         if (!records || records.length === 0) {
-          throw new NotFoundException(`Record with RECNO ${recno} not found in ${tableNameUpper}`);
+          throw new NotFoundException(`Record with RECNO ${recno} not found in ${fullTableName}`);
         }
 
         const record = records[0];
@@ -179,7 +191,7 @@ export class ProtheusDataService {
       }
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
-      this.logger.error(`Error getting record from ${tableNameUpper}: ${error.message}`, error.stack);
+      this.logger.error(`Error getting record from ${fullTableName}: ${error.message}`, error.stack);
       throw new BadRequestException(`Error getting record: ${error.message}`);
     }
   }
@@ -187,13 +199,15 @@ export class ProtheusDataService {
   /**
    * Obter campos disponíveis para busca
    */
-  async getSearchableFields(tableName: string): Promise<SearchFieldDto[]> {
+  async getSearchableFields(tableName: string, countryId?: string): Promise<SearchFieldDto[]> {
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+
     this.logger.log(`Getting searchable fields for ${tableName}`);
 
     const tableNameUpper = tableName.toUpperCase();
 
     // Obter estrutura da tabela
-    const tableStructure = await this.sx3Service.getTableStructure(tableNameUpper);
+    const tableStructure = await this.sx3Service.getTableStructure(tableNameUpper, resolvedCountryId);
 
     // Retornar campos que fazem sentido para busca (excluir memos, etc.)
     const searchableFields = tableStructure.fields
@@ -237,6 +251,21 @@ export class ProtheusDataService {
    */
   getDescriptionField(tableName: string): string | undefined {
     return this.tableDescFields[tableName.toUpperCase()];
+  }
+
+  /**
+   * Resolve country ID - use default if not provided
+   */
+  private async resolveCountryId(countryId?: string): Promise<string> {
+    if (countryId) {
+      return countryId;
+    }
+
+    const defaultCountry = await this.countryService.getDefault();
+    if (!defaultCountry) {
+      throw new BadRequestException('No country specified and no default country configured');
+    }
+    return defaultCountry.id;
   }
 
   /**

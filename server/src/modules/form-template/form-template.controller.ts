@@ -8,6 +8,7 @@ import {
   Body,
   Param,
   Query,
+  Headers,
   ParseBoolPipe,
   ParseIntPipe,
   DefaultValuePipe,
@@ -120,13 +121,18 @@ export class FormTemplateController {
       search?: string;
       page?: number;
       limit?: number;
+      countryId?: string;
     },
+    @Headers('x-country-id') headerCountryId?: string,
   ) {
     console.log('[LookupController] searchLookup called with body:', JSON.stringify(body, null, 2));
-    const { config, search = '', page = 0, limit = 20 } = body;
+    const { config, search = '', page = 0, limit = 20, countryId } = body;
+
+    // Use countryId from body or header
+    const resolvedCountryId = countryId || headerCountryId;
 
     try {
-      const result = await this.lookupService.search(config, search, { page, limit });
+      const result = await this.lookupService.search(config, search, { page, limit }, resolvedCountryId);
       console.log('[LookupController] searchLookup success, returning', result.data?.length, 'records');
       return result;
     } catch (error) {
@@ -143,9 +149,12 @@ export class FormTemplateController {
     @Body() body: {
       config: LookupConfigDto;
       value: string;
+      countryId?: string;
     },
+    @Headers('x-country-id') headerCountryId?: string,
   ) {
-    return this.lookupService.getRecord(body.config, body.value);
+    const resolvedCountryId = body.countryId || headerCountryId;
+    return this.lookupService.getRecord(body.config, body.value, resolvedCountryId);
   }
 
   /**
@@ -156,9 +165,12 @@ export class FormTemplateController {
     @Body() body: {
       config: LookupConfigDto;
       value: string;
+      countryId?: string;
     },
+    @Headers('x-country-id') headerCountryId?: string,
   ) {
-    return this.lookupService.validateValue(body.config, body.value);
+    const resolvedCountryId = body.countryId || headerCountryId;
+    return this.lookupService.validateValue(body.config, body.value, resolvedCountryId);
   }
 
   /**

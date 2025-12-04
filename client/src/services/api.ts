@@ -40,7 +40,15 @@ export const authApi: AxiosInstance = axios.create({
 // Import secure token manager
 import { tokenManager } from '../utils/secureStorage';
 
-// Request interceptor for backendApi to add auth token
+// Country ID storage key
+const COUNTRY_ID_STORAGE_KEY = 'activeCountryId';
+
+// Helper to get current country ID
+const getActiveCountryId = (): string | null => {
+  return localStorage.getItem(COUNTRY_ID_STORAGE_KEY);
+};
+
+// Request interceptor for backendApi to add auth token and country header
 backendApi.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = tokenManager.getToken();
@@ -48,6 +56,13 @@ backendApi.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Add country ID header if available
+    const countryId = getActiveCountryId();
+    if (countryId && config.headers) {
+      config.headers['X-Country-Id'] = countryId;
+    }
+
     return config;
   },
   (error) => {

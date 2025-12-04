@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Box, CircularProgress } from '@mui/material';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { CountryProvider } from './contexts/CountryContext';
 import { useAuthStore } from './stores/authStore';
 import { useInactivityLogout } from './hooks/useInactivityLogout';
 
@@ -13,6 +14,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const DocumentsTablePage = lazy(() => import('./pages/DocumentsTablePage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const AllowedTablesPage = lazy(() => import('./pages/admin/AllowedTablesPage'));
+const CountryManager = lazy(() => import('./pages/admin/CountryManager'));
 const SelectRegistrationTypePage = lazy(() => import('./pages/registration/SelectType').then(m => ({ default: m.SelectRegistrationTypePage })));
 const MyRequestsPage = lazy(() => import('./pages/registration/MyRequests').then(m => ({ default: m.MyRequestsPage })));
 const DynamicFormPage = lazy(() => import('./pages/registration/DynamicForm').then(m => ({ default: m.DynamicFormPage })));
@@ -54,8 +56,9 @@ function App() {
   return (
     <ErrorBoundary level="critical">
       <LanguageProvider>
-        <Router>
-          <AuthManager>
+        <CountryProvider>
+          <Router>
+            <AuthManager>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
               {/* Public routes */}
@@ -102,6 +105,19 @@ function App() {
                     <ProtectedRoute>
                       <MainLayout>
                         <AllowedTablesPage />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+
+              <Route
+                path="/admin/countries"
+                element={
+                  <ErrorBoundary level="page">
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <CountryManager />
                       </MainLayout>
                     </ProtectedRoute>
                   </ErrorBoundary>
@@ -194,8 +210,9 @@ function App() {
               <Route path="*" element={<Navigate to="/documents" replace />} />
               </Routes>
             </Suspense>
-          </AuthManager>
-        </Router>
+            </AuthManager>
+          </Router>
+        </CountryProvider>
       </LanguageProvider>
     </ErrorBoundary>
   );

@@ -1,45 +1,17 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import {
   DataSourceType,
   DataSourceConfigDto,
   DataSourceOptionDto,
   DataSourceResponseDto,
 } from '../dto/data-source.dto';
+import { ConnectionManagerService } from '../../country/connection-manager.service';
+import { CountryService } from '../../country/country.service';
+import { AllowedTablesService } from './allowed-tables.service';
 
 @Injectable()
 export class DataSourceService {
   private readonly logger = new Logger(DataSourceService.name);
-
-  // Whitelist of allowed tables for SQL queries
-  private readonly allowedTables = [
-    'SA1010', // Clientes
-    'SA2010', // Fornecedores
-    'SA3010', // Vendedores
-    'SB1010', // Produtos
-    'SB2010', // Saldos em Estoque
-    'SC5010', // Pedidos de Venda
-    'SC6010', // Itens de Pedidos
-    'SC7010', // Pedidos de Compra
-    'SD1010', // Itens NF Entrada
-    'SD2010', // Itens NF Saída
-    'SE1010', // Contas a Receber
-    'SE2010', // Contas a Pagar
-    'SF1010', // NF Entrada
-    'SF2010', // NF Saída
-    'SX5010', // Tabelas Genéricas
-    'CTT010', // Centro de Custo
-    'CTD010', // Plano de Contas
-    'DA0010', // Tabela de Preços (header)
-    'DA1010', // Tabela de Preços (itens)
-    'SG1010', // Estrutura de Produtos
-    'SM0010', // Cadastro de Empresas
-    'SYA010', // Países
-    'CC2010', // Estados
-    'SYS_COMPANY', // Empresas do Sistema
-    'SYS_USR', // Usuários do Sistema
-  ];
 
   // Forbidden SQL commands
   private readonly forbiddenCommands = [
@@ -64,8 +36,9 @@ export class DataSourceService {
   ];
 
   constructor(
-    @InjectDataSource('protheusConnection')
-    private dataSource: DataSource,
+    private connectionManager: ConnectionManagerService,
+    private countryService: CountryService,
+    private allowedTablesService: AllowedTablesService,
   ) {}
 
   /**
@@ -75,6 +48,7 @@ export class DataSourceService {
     dataSourceType: DataSourceType | string,
     dataSourceConfig: DataSourceConfigDto | any,
     filters?: Record<string, string>,
+    countryId?: string,
   ): Promise<DataSourceResponseDto> {
     this.logger.log(`Getting options for data source type: ${dataSourceType}`);
 
@@ -85,11 +59,11 @@ export class DataSourceService {
 
       case DataSourceType.SQL:
       case 'sql':
-        return this.executeSqlQuery(dataSourceConfig, filters);
+        return this.executeSqlQuery(dataSourceConfig, filters, countryId);
 
       case DataSourceType.SX5:
       case 'sx5':
-        return { options: await this.getSx5Options(dataSourceConfig.sx5Table, filters) };
+        return { options: await this.getSx5Options(dataSourceConfig.sx5Table, filters, countryId) };
 
       default:
         this.logger.warn(`Unknown data source type: ${dataSourceType}`);
@@ -118,21 +92,25 @@ export class DataSourceService {
   private async executeSqlQuery(
     config: DataSourceConfigDto | any,
     filters?: Record<string, string>,
+    countryId?: string,
   ): Promise<DataSourceResponseDto> {
     // Validate required fields
     if (!config.sqlQuery) {
       throw new BadRequestException('SQL query is required');
     }
 
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
+
     const keyField = config.keyField; // Optional: unique field for React keys
     const valueField = config.valueField || 'value';
     const labelField = config.labelField || 'label';
 
     // Validate and sanitize query
-    const sanitizedQuery = this.validateAndSanitizeQuery(config.sqlQuery);
+    const sanitizedQuery = await this.validateAndSanitizeQuery(config.sqlQuery);
 
-    // Build final query with filters
-    let query = sanitizedQuery;
+    // Apply table suffix
+    let query = this.applyTableSuffix(sanitizedQuery, country.tableSuffix);
 
     // Add filter conditions if provided
     if (filters && Object.keys(filters).length > 0) {
@@ -167,10 +145,11 @@ export class DataSourceService {
       query = query.replace(/^SELECT/i, 'SELECT TOP 1000');
     }
 
-    this.logger.debug(`Executing SQL query: ${query.substring(0, 200)}...`);
+    this.logger.debug(`Executing SQL query (country: ${country.code}): ${query.substring(0, 200)}...`);
 
     try {
-      const queryRunner = this.dataSource.createQueryRunner();
+      const dataSource = await this.connectionManager.getConnection(resolvedCountryId);
+      const queryRunner = dataSource.createQueryRunner();
       await queryRunner.connect();
 
       try {
@@ -233,15 +212,21 @@ export class DataSourceService {
   private async getSx5Options(
     tableCode: string,
     filters?: Record<string, string>,
+    countryId?: string,
   ): Promise<DataSourceOptionDto[]> {
     // Validate table code (2 alphanumeric characters)
     if (!tableCode || !/^[a-zA-Z0-9]{2}$/.test(tableCode)) {
       throw new BadRequestException('Código de tabela SX5 inválido');
     }
 
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
+
+    const sx5Table = `SX5${country.tableSuffix}`;
+
     let query = `
       SELECT RTRIM(X5_CHAVE) as value, RTRIM(X5_DESCRI) as label
-      FROM SX5010
+      FROM ${sx5Table}
       WHERE X5_TABELA = '${tableCode.toUpperCase()}'
       AND D_E_L_E_T_ = ''
     `;
@@ -254,10 +239,11 @@ export class DataSourceService {
 
     query += ' ORDER BY X5_CHAVE';
 
-    this.logger.debug(`Getting SX5 options for table: ${tableCode}`);
+    this.logger.debug(`Getting SX5 options for table: ${tableCode} (country: ${country.code})`);
 
     try {
-      const queryRunner = this.dataSource.createQueryRunner();
+      const dataSource = await this.connectionManager.getConnection(resolvedCountryId);
+      const queryRunner = dataSource.createQueryRunner();
       await queryRunner.connect();
 
       try {
@@ -282,18 +268,24 @@ export class DataSourceService {
   async validateWithSql(
     query: string,
     value: string,
+    countryId?: string,
   ): Promise<{ valid: boolean; message?: string }> {
     // Validate query
-    this.validateAndSanitizeQuery(query);
+    await this.validateAndSanitizeQuery(query);
 
-    // Replace placeholder with escaped value
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
+
+    // Apply table suffix and replace placeholder with escaped value
+    let finalQuery = this.applyTableSuffix(query, country.tableSuffix);
     const escapedValue = value.replace(/'/g, "''").trim();
-    const finalQuery = query.replace(/:value/g, `'${escapedValue}'`);
+    finalQuery = finalQuery.replace(/:value/g, `'${escapedValue}'`);
 
-    this.logger.debug(`Validating with SQL: ${finalQuery.substring(0, 200)}...`);
+    this.logger.debug(`Validating with SQL (country: ${country.code}): ${finalQuery.substring(0, 200)}...`);
 
     try {
-      const queryRunner = this.dataSource.createQueryRunner();
+      const dataSource = await this.connectionManager.getConnection(resolvedCountryId);
+      const queryRunner = dataSource.createQueryRunner();
       await queryRunner.connect();
 
       try {
@@ -317,9 +309,36 @@ export class DataSourceService {
   }
 
   /**
+   * Resolve country ID - use default if not provided
+   */
+  private async resolveCountryId(countryId?: string): Promise<string> {
+    if (countryId) {
+      return countryId;
+    }
+
+    const defaultCountry = await this.countryService.getDefault();
+    if (!defaultCountry) {
+      throw new BadRequestException('No country specified and no default country configured');
+    }
+    return defaultCountry.id;
+  }
+
+  /**
+   * Apply table suffix to SQL query
+   */
+  private applyTableSuffix(query: string, tableSuffix: string): string {
+    // Pattern to match Protheus table names (SA1, SB1, SX5, etc.)
+    const tablePattern = /\b(S[A-Z][0-9A-Z])\b/gi;
+
+    return query.replace(tablePattern, (match) => {
+      return `${match}${tableSuffix}`;
+    });
+  }
+
+  /**
    * Validate and sanitize SQL query for security
    */
-  private validateAndSanitizeQuery(query: string): string {
+  private async validateAndSanitizeQuery(query: string): Promise<string> {
     if (!query || typeof query !== 'string') {
       throw new BadRequestException('Query SQL inválida');
     }
@@ -341,7 +360,7 @@ export class DataSourceService {
       }
     }
 
-    // Extract and validate table names
+    // Extract and validate table names (without suffix)
     const tablePattern = /\bFROM\s+(\w+)/gi;
     const joinPattern = /\bJOIN\s+(\w+)/gi;
 
@@ -349,15 +368,24 @@ export class DataSourceService {
 
     let match;
     while ((match = tablePattern.exec(query)) !== null) {
-      tables.push(match[1].toUpperCase());
+      // Extract base table name (without suffix)
+      const tableName = match[1].toUpperCase().replace(/\d{3}$/, '');
+      tables.push(tableName);
     }
     while ((match = joinPattern.exec(query)) !== null) {
-      tables.push(match[1].toUpperCase());
+      const tableName = match[1].toUpperCase().replace(/\d{3}$/, '');
+      tables.push(tableName);
     }
 
-    // Validate all tables are in whitelist
+    // Get allowed tables from database
+    const allowedTables = await this.allowedTablesService.getAllowedTableNames();
+
+    // Validate all tables are in whitelist (compare base names)
     for (const table of tables) {
-      if (!this.allowedTables.includes(table)) {
+      const baseTableAllowed = allowedTables.some(
+        allowed => allowed.replace(/\d{3}$/, '') === table
+      );
+      if (!baseTableAllowed) {
         this.logger.warn(`Table ${table} not in whitelist`);
         throw new BadRequestException(`Tabela ${table} não permitida para consulta`);
       }
@@ -368,7 +396,7 @@ export class DataSourceService {
       /--/, // SQL comments
       /\/\*/, // Multi-line comments
       /;/, // Multiple statements
-      /\bUNION\b/i, // Union injection (be careful with this)
+      /\bUNION\b/i, // Union injection
     ];
 
     for (const pattern of dangerousPatterns) {
@@ -384,25 +412,31 @@ export class DataSourceService {
   /**
    * Get list of allowed tables for reference
    */
-  getAllowedTables(): string[] {
-    return [...this.allowedTables];
+  async getAllowedTables(): Promise<string[]> {
+    return this.allowedTablesService.getAllowedTableNames();
   }
 
   /**
    * Get list of available SX5 tables
    * Optimized: Uses GROUP BY instead of correlated subquery
    */
-  async getAvailableSx5Tables(): Promise<DataSourceOptionDto[]> {
+  async getAvailableSx5Tables(countryId?: string): Promise<DataSourceOptionDto[]> {
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
+
+    const sx5Table = `SX5${country.tableSuffix}`;
+
     const query = `
       SELECT X5_TABELA as value, MIN(X5_DESCRI) as label
-      FROM SX5010
+      FROM ${sx5Table}
       WHERE D_E_L_E_T_ = ''
       GROUP BY X5_TABELA
       ORDER BY X5_TABELA
     `;
 
     try {
-      const results = await this.dataSource.query(query);
+      const dataSource = await this.connectionManager.getConnection(resolvedCountryId);
+      const results = await dataSource.query(query);
 
       return results.map((row: any) => ({
         value: String(row.value || '').trim(),

@@ -1,12 +1,12 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import {
   LookupConfigDto,
   LookupSearchResponseDto,
   LookupRecordResponseDto,
 } from '../dto/lookup-config.dto';
 import { AllowedTablesService } from './allowed-tables.service';
+import { ConnectionManagerService } from '../../country/connection-manager.service';
+import { CountryService } from '../../country/country.service';
 
 @Injectable()
 export class LookupService {
@@ -35,8 +35,8 @@ export class LookupService {
   ];
 
   constructor(
-    @InjectDataSource('protheusConnection')
-    private dataSource: DataSource,
+    private connectionManager: ConnectionManagerService,
+    private countryService: CountryService,
     private allowedTablesService: AllowedTablesService,
   ) {}
 
@@ -47,9 +47,13 @@ export class LookupService {
     config: LookupConfigDto,
     searchTerm: string,
     pagination: { page: number; limit: number },
+    countryId?: string,
   ): Promise<LookupSearchResponseDto> {
     this.logger.log(`Lookup search called with config: ${JSON.stringify(config)}`);
     this.logger.log(`Search term: "${searchTerm}", pagination: ${JSON.stringify(pagination)}`);
+
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
 
     if (!config.sqlQuery) {
       throw new BadRequestException('Consulta SQL não configurada para este lookup');
@@ -63,8 +67,8 @@ export class LookupService {
       throw error;
     }
 
-    // Build query with search filter
-    let baseQuery = config.sqlQuery;
+    // Apply table suffix to the query
+    let baseQuery = this.applyTableSuffix(config.sqlQuery, country.tableSuffix);
 
     // Add search filter if user typed something
     if (searchTerm && searchTerm.trim()) {
@@ -102,7 +106,7 @@ export class LookupService {
     const countQuery = `SELECT COUNT(*) as total FROM (${baseQuery}) as countQuery`;
     let total = 0;
     try {
-      const countResult = await this.executeQuery(countQuery);
+      const countResult = await this.executeQuery(countQuery, resolvedCountryId);
       total = parseInt(countResult[0]?.total || '0', 10);
     } catch (error) {
       this.logger.warn(`Could not get total count: ${error.message}`);
@@ -119,10 +123,10 @@ export class LookupService {
 
     paginatedQuery += ` OFFSET ${offset} ROWS FETCH NEXT ${pagination.limit} ROWS ONLY`;
 
-    this.logger.debug(`Executing lookup search: ${paginatedQuery.substring(0, 200)}...`);
+    this.logger.debug(`Executing lookup search (country: ${country.code}): ${paginatedQuery.substring(0, 200)}...`);
 
     try {
-      const results = await this.executeQuery(paginatedQuery);
+      const results = await this.executeQuery(paginatedQuery, resolvedCountryId);
 
       const data = results.map((row: any) => {
         const record: Record<string, any> = {};
@@ -150,17 +154,23 @@ export class LookupService {
   async getRecord(
     config: LookupConfigDto,
     value: string,
+    countryId?: string,
   ): Promise<LookupRecordResponseDto> {
     if (!config.sqlQuery || !config.valueField) {
       throw new BadRequestException('Configuração de lookup incompleta');
     }
 
+    const resolvedCountryId = await this.resolveCountryId(countryId);
+    const country = await this.countryService.findOne(resolvedCountryId);
+
     // Validate the SQL query
     await this.validateCustomQuery(config.sqlQuery);
 
+    // Apply table suffix to the query
+    let query = this.applyTableSuffix(config.sqlQuery, country.tableSuffix);
+
     // Build query to get single record
     const escapedValue = this.escapeValue(value);
-    let query = config.sqlQuery;
 
     // Add WHERE clause to find specific record
     const valueCondition = `${config.valueField} = '${escapedValue}'`;
@@ -170,10 +180,10 @@ export class LookupService {
       query += ` WHERE ${valueCondition}`;
     }
 
-    this.logger.debug(`Executing getRecord query: ${query.substring(0, 200)}...`);
+    this.logger.debug(`Executing getRecord query (country: ${country.code}): ${query.substring(0, 200)}...`);
 
     try {
-      const results = await this.executeQuery(query);
+      const results = await this.executeQuery(query, resolvedCountryId);
 
       if (results.length === 0) {
         return { data: null, found: false };
@@ -197,9 +207,10 @@ export class LookupService {
   async validateValue(
     config: LookupConfigDto,
     value: string,
+    countryId?: string,
   ): Promise<{ valid: boolean; message?: string }> {
     try {
-      const result = await this.getRecord(config, value);
+      const result = await this.getRecord(config, value, countryId);
       return {
         valid: result.found,
         message: result.found ? undefined : 'Valor não encontrado',
@@ -215,6 +226,35 @@ export class LookupService {
   // ==========================================
 
   /**
+   * Resolve country ID - use default if not provided
+   */
+  private async resolveCountryId(countryId?: string): Promise<string> {
+    if (countryId) {
+      return countryId;
+    }
+
+    const defaultCountry = await this.countryService.getDefault();
+    if (!defaultCountry) {
+      throw new BadRequestException('No country specified and no default country configured');
+    }
+    return defaultCountry.id;
+  }
+
+  /**
+   * Apply table suffix to SQL query
+   * Replaces table names like SA1, SB1 with SA1010, SB1030 etc.
+   */
+  private applyTableSuffix(query: string, tableSuffix: string): string {
+    // Pattern to match Protheus table names (SA1, SB1, SX3, etc.)
+    // These are typically 2-3 letters followed by 1 digit
+    const tablePattern = /\b(S[A-Z][0-9A-Z])\b/gi;
+
+    return query.replace(tablePattern, (match) => {
+      return `${match}${tableSuffix}`;
+    });
+  }
+
+  /**
    * Escape value for SQL
    */
   private escapeValue(value: string): string {
@@ -222,10 +262,11 @@ export class LookupService {
   }
 
   /**
-   * Execute query using query runner
+   * Execute query using connection manager
    */
-  private async executeQuery(query: string): Promise<any[]> {
-    const queryRunner = this.dataSource.createQueryRunner();
+  private async executeQuery(query: string, countryId: string): Promise<any[]> {
+    const dataSource = await this.connectionManager.getConnection(countryId);
+    const queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
 
     try {
@@ -259,7 +300,7 @@ export class LookupService {
       }
     }
 
-    // Extract and validate table names
+    // Extract and validate table names (without suffix)
     const tablePattern = /\bFROM\s+(\w+)/gi;
     const joinPattern = /\bJOIN\s+(\w+)/gi;
 
@@ -267,18 +308,25 @@ export class LookupService {
 
     let match;
     while ((match = tablePattern.exec(query)) !== null) {
-      tables.push(match[1].toUpperCase());
+      // Extract base table name (without suffix)
+      const tableName = match[1].toUpperCase().replace(/\d{3}$/, '');
+      tables.push(tableName);
     }
     while ((match = joinPattern.exec(query)) !== null) {
-      tables.push(match[1].toUpperCase());
+      const tableName = match[1].toUpperCase().replace(/\d{3}$/, '');
+      tables.push(tableName);
     }
 
     // Get allowed tables from database
     const allowedTables = await this.allowedTablesService.getAllowedTableNames();
 
-    // Validate all tables are in whitelist
+    // Validate all tables are in whitelist (compare base names)
     for (const table of tables) {
-      if (!allowedTables.includes(table)) {
+      // Check if the base table name (without suffix) is allowed
+      const baseTableAllowed = allowedTables.some(
+        allowed => allowed.replace(/\d{3}$/, '') === table
+      );
+      if (!baseTableAllowed) {
         this.logger.warn(`Table ${table} not in whitelist`);
         throw new BadRequestException(`Tabela ${table} não permitida para consulta`);
       }

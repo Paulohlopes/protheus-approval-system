@@ -90,6 +90,10 @@ model FormTemplate {
   // Multi-table configuration
   isMultiTable Boolean    @default(false)  // true = uses TemplateTable, false = uses tableName
 
+  // Country association (optional - null means available for all countries)
+  countryId   String?
+  country     Country?    @relation(fields: [countryId], references: [id])
+
   // Timestamps
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -101,6 +105,7 @@ model FormTemplate {
   requests    RegistrationRequest[]
 
   @@map("form_templates")
+  @@index([countryId])
 }
 
 // ==========================================
@@ -246,6 +251,10 @@ model RegistrationWorkflow {
   requiresSequentialApproval Boolean @default(true)
   routingRules Json?           // Conditional routing rules
 
+  // Country association (optional - inherits from template if null)
+  countryId    String?
+  country      Country?        @relation(fields: [countryId], references: [id])
+
   // Timestamps
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
@@ -255,6 +264,7 @@ model RegistrationWorkflow {
 
   @@map("registration_workflows")
   @@index([templateId])
+  @@index([countryId])
 }
 
 model WorkflowLevel {
@@ -302,6 +312,10 @@ model RegistrationRequest {
   template        FormTemplate        @relation(fields: [templateId], references: [id])
   tableName       String              // Denormalized for quick access (primary table)
 
+  // Country association (required - determines which ERP to sync to)
+  countryId       String
+  country         Country             @relation(fields: [countryId], references: [id])
+
   // Requester info
   requestedById   String
   requestedBy     User                @relation(fields: [requestedById], references: [id])
@@ -343,6 +357,7 @@ model RegistrationRequest {
 
   @@map("registration_requests")
   @@index([templateId])
+  @@index([countryId])
   @@index([requestedById])
   @@index([status])
   @@index([createdAt])
@@ -444,11 +459,60 @@ model TrackingSequence {
 
 model AllowedLookupTable {
   id          String   @id @default(uuid())
-  tableName   String   @unique  // SA1010, SYS_COMPANY, etc.
-  description String?  // Clientes, Empresas/Filiais, etc.
+  tableName   String   @unique  // SA1, SB1, etc. (without suffix - suffix comes from country)
+  description String?  // Clientes, Produtos, etc.
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("allowed_lookup_tables")
+}
+
+// ==========================================
+// COUNTRY / ERP CONNECTION CONFIGURATION
+// ==========================================
+
+model Country {
+  id          String   @id @default(uuid())
+  code        String   @unique  // "BR", "AR", "PE", "CL"
+  name        String   // "Brasil", "Argentina", etc.
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)  // Default country for the system
+
+  // Table Suffix Configuration (Protheus company/branch)
+  // BR = 010, CL = 030, AR = 020, etc.
+  tableSuffix String   @default("010")  // Suffix for tables (SA1010, SA1030, etc)
+
+  // Database Connection (SQL Server - Protheus)
+  dbHost      String
+  dbPort      Int      @default(1433)
+  dbDatabase  String
+  dbUsername  String   // Encrypted
+  dbPassword  String   // Encrypted
+  dbOptions   Json?    // Additional options (encrypt, trustServerCertificate, etc)
+
+  // API Configuration (REST Protheus)
+  apiBaseUrl   String?  // Base URL for REST API
+  apiUsername  String?  // API Username (encrypted)
+  apiPassword  String?  // API Password (encrypted)
+  apiTimeout   Int      @default(30000)
+  oauthUrl     String?  // OAuth2 URL
+
+  // Connection Status
+  lastConnectionTest  DateTime?
+  connectionStatus    String?  // "connected", "failed", "untested"
+  connectionError     String?
+
+  // Audit
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  templates   FormTemplate[]
+  workflows   RegistrationWorkflow[]
+  requests    RegistrationRequest[]
+
+  @@map("countries")
+  @@index([code])
+  @@index([isActive])
 }
