@@ -71,6 +71,40 @@ export const adminService = {
   },
 
   /**
+   * Export a template as JSON
+   */
+  async exportTemplate(id: string): Promise<TemplateExportDto> {
+    const response = await backendApi.get(`/form-templates/${id}/export`);
+    return response.data;
+  },
+
+  /**
+   * Validate import data before importing
+   */
+  async validateTemplateImport(data: TemplateExportDto): Promise<TemplateImportValidation> {
+    const response = await backendApi.post('/form-templates/import/validate', data);
+    return response.data;
+  },
+
+  /**
+   * Import a template from JSON
+   */
+  async importTemplate(
+    data: TemplateExportDto,
+    options?: { overwriteExisting?: boolean; countryId?: string },
+  ): Promise<FormTemplate> {
+    const params = new URLSearchParams();
+    if (options?.overwriteExisting) {
+      params.append('overwriteExisting', 'true');
+    }
+    if (options?.countryId) {
+      params.append('countryId', options.countryId);
+    }
+    const response = await backendApi.post(`/form-templates/import?${params.toString()}`, data);
+    return response.data;
+  },
+
+  /**
    * Update a specific field in a template
    */
   async updateTemplateField(

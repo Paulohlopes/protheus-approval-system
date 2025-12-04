@@ -135,3 +135,80 @@ export interface SX3TableStructure {
   tableName: string;
   fields: SX3Field[];
 }
+
+// ==========================================
+// TEMPLATE EXPORT/IMPORT
+// ==========================================
+
+export interface TemplateExportField {
+  fieldName: string;
+  sx3FieldName?: string;
+  label: string;
+  fieldType: string;
+  isRequired: boolean;
+  isVisible: boolean;
+  isEnabled: boolean;
+  isCustomField: boolean;
+  isSyncField: boolean;
+  fieldOrder: number;
+  fieldGroup?: string;
+  tableAlias?: string;
+  labelPtBR?: string;
+  labelEn?: string;
+  labelEs?: string;
+  descriptionPtBR?: string;
+  descriptionEn?: string;
+  descriptionEs?: string;
+  dataSourceType?: string;
+  dataSourceConfig?: any;
+  lookupConfig?: any;
+  validationRules?: any;
+  attachmentConfig?: any;
+  metadata?: any;
+  placeholder?: string;
+  helpText?: string;
+}
+
+export interface TemplateExportTable {
+  tableName: string;
+  alias: string;
+  label: string;
+  tableOrder: number;
+  relationType?: string;
+  parentTableAlias?: string;
+  foreignKeyConfig?: any;
+  isActive: boolean;
+  metadata?: any;
+}
+
+export interface TemplateExportData {
+  tableName?: string;
+  label: string;
+  description?: string;
+  isActive: boolean;
+  isMultiTable: boolean;
+  countryCode?: string;
+  metadata?: any;
+}
+
+export interface TemplateExportDto {
+  exportVersion: string;
+  exportDate: string;
+  exportedBy?: string;
+  template: TemplateExportData;
+  tables: TemplateExportTable[];
+  fields: TemplateExportField[];
+}
+
+export interface TemplateImportWarning {
+  type: 'info' | 'warning' | 'error';
+  message: string;
+  field?: string;
+}
+
+export interface TemplateImportValidation {
+  valid: boolean;
+  warnings: TemplateImportWarning[];
+  templateExists: boolean;
+  existingTemplateId?: string;
+}

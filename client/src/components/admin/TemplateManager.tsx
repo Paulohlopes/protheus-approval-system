@@ -48,13 +48,16 @@ import {
   VerticalAlignTop,
   TableChart,
   Public,
+  Download,
+  Upload,
 } from '@mui/icons-material';
 import { MultiTableConfig } from './MultiTableConfig';
 import { adminService } from '../../services/adminService';
 import { dataSourceService } from '../../services/dataSourceService';
 import { useCountry } from '../../contexts/CountryContext';
 import type { FormTemplate, FormField, DataSourceOption, FieldType, DataSourceType } from '../../types/registration';
-import type { CreateFormTemplateDto } from '../../types/admin';
+import type { CreateFormTemplateDto, TemplateExportDto } from '../../types/admin';
+import ImportTemplateDialog from './ImportTemplateDialog';
 
 // Custom field types available
 const CUSTOM_FIELD_TYPES: { value: FieldType; label: string }[] = [
@@ -277,6 +280,8 @@ const TemplateManager: React.FC = () => {
   const [syncing, setSyncing] = useState<string | null>(null);
   const [savingCustomField, setSavingCustomField] = useState(false);
   const [savingFieldEdit, setSavingFieldEdit] = useState(false);
+  const [exporting, setExporting] = useState<string | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   // Form state for create/edit template
   const [formData, setFormData] = useState<CreateFormTemplateDto & { isMultiTable?: boolean }>({
@@ -801,6 +806,40 @@ const TemplateManager: React.FC = () => {
     });
   }, []);
 
+  // Export template as JSON file
+  const handleExportTemplate = useCallback(async (template: FormTemplate) => {
+    try {
+      setExporting(template.id);
+      const exportData = await adminService.exportTemplate(template.id);
+
+      // Create file name with template label and date
+      const date = new Date().toISOString().split('T')[0];
+      const sanitizedLabel = template.label.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+      const fileName = `template-${sanitizedLabel}-${date}.json`;
+
+      // Create blob and download
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao exportar template');
+    } finally {
+      setExporting(null);
+    }
+  }, []);
+
+  // Handle import success
+  const handleImportSuccess = useCallback(async () => {
+    setImportDialogOpen(false);
+    await loadTemplates();
+  }, [loadTemplates]);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -815,6 +854,13 @@ const TemplateManager: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">Templates de Formulários</Typography>
         <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            startIcon={<Upload />}
+            onClick={() => setImportDialogOpen(true)}
+          >
+            Importar
+          </Button>
           <Button
             variant="outlined"
             startIcon={<TableChart />}
@@ -937,6 +983,19 @@ const TemplateManager: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        <Tooltip title="Exportar template">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleExportTemplate(template)}
+                            disabled={exporting === template.id}
+                          >
+                            {exporting === template.id ? (
+                              <CircularProgress size={20} />
+                            ) : (
+                              <Download />
+                            )}
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Sincronizar com SX3">
                           <IconButton
                             size="small"
@@ -1853,6 +1912,14 @@ const TemplateManager: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Import Template Dialog */}
+      <ImportTemplateDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onImportSuccess={handleImportSuccess}
+        countries={countries}
+      />
     </Box>
   );
 };

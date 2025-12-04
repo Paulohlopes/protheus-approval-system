@@ -17,6 +17,7 @@ import { FormTemplateService } from './form-template.service';
 import { DataSourceService } from './services/data-source.service';
 import { LookupService } from './services/lookup.service';
 import { AllowedTablesService } from './services/allowed-tables.service';
+import { TemplateExportService, TemplateExportDto, ImportOptions } from './services/template-export.service';
 import { CreateFormTemplateDto } from './dto/create-form-template.dto';
 import { UpdateFormTemplateDto } from './dto/update-form-template.dto';
 import { UpdateFormFieldDto } from './dto/update-form-field.dto';
@@ -36,6 +37,7 @@ export class FormTemplateController {
     private readonly dataSourceService: DataSourceService,
     private readonly lookupService: LookupService,
     private readonly allowedTablesService: AllowedTablesService,
+    private readonly templateExportService: TemplateExportService,
   ) {}
 
   // ==========================================
@@ -202,6 +204,34 @@ export class FormTemplateController {
   }
 
   // ==========================================
+  // TEMPLATE EXPORT/IMPORT ENDPOINTS
+  // ==========================================
+
+  /**
+   * Validate import data before importing
+   */
+  @Post('import/validate')
+  validateImport(@Body() data: TemplateExportDto) {
+    return this.templateExportService.validateImport(data);
+  }
+
+  /**
+   * Import a template from JSON
+   */
+  @Post('import')
+  importTemplate(
+    @Body() data: TemplateExportDto,
+    @Query('overwriteExisting', new ParseBoolPipe({ optional: true })) overwriteExisting?: boolean,
+    @Query('countryId') countryId?: string,
+  ) {
+    const options: ImportOptions = {
+      overwriteExisting: overwriteExisting ?? false,
+      countryId,
+    };
+    return this.templateExportService.importTemplate(data, options);
+  }
+
+  // ==========================================
   // MULTI-TABLE TEMPLATE ENDPOINTS
   // ==========================================
 
@@ -262,6 +292,14 @@ export class FormTemplateController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.formTemplateService.findOne(id);
+  }
+
+  /**
+   * Export form template as JSON
+   */
+  @Get(':id/export')
+  exportTemplate(@Param('id') id: string) {
+    return this.templateExportService.exportTemplate(id);
   }
 
   /**
