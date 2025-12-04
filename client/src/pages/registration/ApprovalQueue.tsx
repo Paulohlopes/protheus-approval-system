@@ -379,6 +379,7 @@ export const ApprovalQueuePage = () => {
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: 'grey.50' }}>
+                  <TableCell sx={{ fontWeight: 600, width: 120 }}>{t.registration.tableNumber || 'Nº'}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableType}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableOperation}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableRequester}</TableCell>
@@ -397,6 +398,19 @@ export const ApprovalQueuePage = () => {
                     hover
                     sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                   >
+                    <TableCell>
+                      {request.trackingNumber ? (
+                        <Chip
+                          label={request.trackingNumber}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          sx={{ fontWeight: 600, fontFamily: 'monospace' }}
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">—</Typography>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight={500}>
                         {request.template?.label || request.tableName}
@@ -518,6 +532,17 @@ export const ApprovalQueuePage = () => {
                     </Typography>
                     <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                       <Stack spacing={1.5}>
+                        {selectedRequest.trackingNumber && (
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">{t.registration.tableNumber || 'Nº'}:</Typography>
+                            <Chip
+                              label={selectedRequest.trackingNumber}
+                              size="small"
+                              color="primary"
+                              sx={{ fontWeight: 600, fontFamily: 'monospace' }}
+                            />
+                          </Box>
+                        )}
                         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                           <Typography variant="body2" color="text.secondary">{t.registration.tableType}:</Typography>
                           <Typography variant="body2" fontWeight={500}>

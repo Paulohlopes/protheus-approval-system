@@ -413,6 +413,7 @@ export const es = {
     actionRejected: 'Rechazado',
 
     // Table headers
+    tableNumber: 'Nº',
     tableType: 'Tipo',
     tableOperation: 'Operación',
     tableDate: 'Fecha',

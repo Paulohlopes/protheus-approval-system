@@ -413,6 +413,7 @@ export const en = {
     actionRejected: 'Rejected',
 
     // Table headers
+    tableNumber: 'No.',
     tableType: 'Type',
     tableOperation: 'Operation',
     tableDate: 'Date',

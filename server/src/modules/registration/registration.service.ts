@@ -324,6 +324,24 @@ export class RegistrationService {
   // ==========================================
 
   /**
+   * Generate a unique tracking number in format YYYY-NNNNN (e.g., 2025-00001)
+   * Uses atomic upsert to ensure uniqueness even with concurrent requests
+   */
+  private async generateTrackingNumber(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+
+    // Upsert with atomic increment to handle concurrency
+    const sequence = await this.prisma.trackingSequence.upsert({
+      where: { year: currentYear },
+      create: { year: currentYear, lastNumber: 1 },
+      update: { lastNumber: { increment: 1 } },
+    });
+
+    // Format: 2025-00001
+    return `${currentYear}-${String(sequence.lastNumber).padStart(5, '0')}`;
+  }
+
+  /**
    * Create draft registration
    */
   async create(dto: CreateRegistrationDto, userId: string, userEmail: string) {
@@ -357,11 +375,15 @@ export class RegistrationService {
       });
     }
 
+    // Generate tracking number
+    const trackingNumber = await this.generateTrackingNumber();
+
     // Create registration with userId from JWT (secure)
     const registration = await this.prisma.registrationRequest.create({
       data: {
         templateId: dto.templateId,
         tableName: template.tableName,
+        trackingNumber,
         requestedById: userId, // From JWT - secure
         requestedByEmail: userEmail,
         formData: dto.formData,
@@ -373,7 +395,7 @@ export class RegistrationService {
       },
     });
 
-    this.logger.log(`Created registration draft ${registration.id}`);
+    this.logger.log(`Created registration draft ${registration.id} with tracking number ${trackingNumber}`);
     return registration;
   }
 
@@ -449,11 +471,15 @@ export class RegistrationService {
       }
     }
 
+    // Generate tracking number
+    const trackingNumber = await this.generateTrackingNumber();
+
     // Create registration with alteration type
     const registration = await this.prisma.registrationRequest.create({
       data: {
         templateId: dto.templateId,
         tableName: primaryTableName,
+        trackingNumber,
         requestedById: userId,
         requestedByEmail: userEmail,
         formData,
@@ -468,7 +494,7 @@ export class RegistrationService {
       },
     });
 
-    this.logger.log(`Created alteration draft ${registration.id} for RECNO ${dto.originalRecno}`);
+    this.logger.log(`Created alteration draft ${registration.id} with tracking number ${trackingNumber} for RECNO ${dto.originalRecno}`);
     return registration;
   }
 

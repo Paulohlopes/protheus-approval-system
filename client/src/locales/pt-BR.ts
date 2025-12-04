@@ -413,6 +413,7 @@ export const ptBR = {
     actionRejected: 'Rejeitado',
 
     // Table headers
+    tableNumber: 'Nº',
     tableType: 'Tipo',
     tableOperation: 'Operação',
     tableDate: 'Data',

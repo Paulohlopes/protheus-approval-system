@@ -297,6 +297,7 @@ enum RegistrationStatus {
 
 model RegistrationRequest {
   id              String              @id @default(uuid())
+  trackingNumber  String?             @unique  // Sequential tracking number (e.g., "2025-00001")
   templateId      String
   template        FormTemplate        @relation(fields: [templateId], references: [id])
   tableName       String              // Denormalized for quick access (primary table)
@@ -422,4 +423,17 @@ model SystemSetting {
 
   @@map("system_settings")
   @@index([category])
+}
+
+// ==========================================
+// TRACKING SEQUENCE (for sequential tracking numbers)
+// ==========================================
+
+model TrackingSequence {
+  id         String   @id @default(uuid())
+  year       Int      @unique  // 2025
+  lastNumber Int      @default(0)  // Last number used for this year
+  updatedAt  DateTime @updatedAt
+
+  @@map("tracking_sequences")
 }

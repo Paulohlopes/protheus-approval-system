@@ -317,6 +317,7 @@ export type OperationType = 'NEW' | 'ALTERATION';
 
 export type RegistrationRequest = {
   id: string;
+  trackingNumber?: string;  // Sequential tracking number (e.g., "2025-00001")
   templateId: string;
   template?: FormTemplate;
   tableName: string;
