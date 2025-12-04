@@ -294,4 +294,135 @@ export class ProtheusIntegrationService {
       };
     }
   }
+
+  /**
+   * Check if a record exists in Protheus by key fields
+   * Returns the record data if found, null if not found
+   */
+  async findRecordByKeys(
+    tableName: string,
+    keyFields: Record<string, any>,
+  ): Promise<{ exists: boolean; recno?: string; data?: Record<string, any> }> {
+    this.logger.log(`Checking if record exists in Protheus table ${tableName}`, keyFields);
+
+    const token = await this.getToken();
+    const baseUrl = this.configService.get('PROTHEUS_API_URL');
+    const endpoint = this.getEndpoint(tableName);
+
+    // Build filter query from key fields
+    // Example: A1_COD='000001' AND A1_LOJA='01'
+    const filterParts = Object.entries(keyFields)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      .map(([field, value]) => `${field}='${String(value).trim()}'`);
+
+    if (filterParts.length === 0) {
+      return { exists: false };
+    }
+
+    const filter = filterParts.join(' AND ');
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(`${baseUrl}${endpoint}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          params: {
+            $filter: filter,
+            $top: 1,
+          },
+        }),
+      );
+
+      // Handle different response formats
+      const items = response.data?.items || response.data?.value || response.data;
+      const record = Array.isArray(items) ? items[0] : items;
+
+      if (record && (record.R_E_C_N_O_ || record.recno || record.id)) {
+        const recno = String(record.R_E_C_N_O_ || record.recno || record.id);
+        this.logger.log(`Record found in Protheus. RECNO: ${recno}`);
+        return {
+          exists: true,
+          recno,
+          data: record,
+        };
+      }
+
+      this.logger.log(`Record not found in Protheus for filter: ${filter}`);
+      return { exists: false };
+    } catch (error) {
+      // 404 means not found, which is not an error in this context
+      if (error.response?.status === 404) {
+        this.logger.log(`Record not found in Protheus (404)`);
+        return { exists: false };
+      }
+
+      this.logger.error(`Failed to check record in Protheus`, {
+        tableName,
+        keyFields,
+        error: error.message,
+        response: error.response?.data,
+      });
+
+      throw new Error(
+        `Protheus API error: ${error.response?.data?.message || error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Check multiple records existence in batch
+   * Returns array with existence info for each record
+   */
+  async checkRecordsExistence(
+    tableName: string,
+    keyFieldNames: string[],
+    records: Record<string, any>[],
+  ): Promise<Array<{ index: number; exists: boolean; recno?: string; data?: Record<string, any> }>> {
+    this.logger.log(`Checking ${records.length} records existence in Protheus table ${tableName}`);
+
+    const results: Array<{ index: number; exists: boolean; recno?: string; data?: Record<string, any> }> = [];
+
+    // Process in batches to avoid overwhelming the API
+    const batchSize = 10;
+    for (let i = 0; i < records.length; i += batchSize) {
+      const batch = records.slice(i, i + batchSize);
+
+      // Process batch in parallel
+      const batchPromises = batch.map(async (record, batchIndex) => {
+        const index = i + batchIndex;
+
+        // Extract key field values from record
+        const keyFields: Record<string, any> = {};
+        for (const fieldName of keyFieldNames) {
+          if (record[fieldName] !== undefined) {
+            keyFields[fieldName] = record[fieldName];
+          }
+        }
+
+        // Skip if no key fields have values
+        if (Object.keys(keyFields).length === 0) {
+          return { index, exists: false };
+        }
+
+        try {
+          const result = await this.findRecordByKeys(tableName, keyFields);
+          return { index, ...result };
+        } catch (error) {
+          this.logger.warn(`Error checking record at index ${index}`, error.message);
+          // Return as not found on error (will be treated as new)
+          return { index, exists: false };
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+    }
+
+    const existingCount = results.filter(r => r.exists).length;
+    this.logger.log(`Found ${existingCount} existing records out of ${records.length}`);
+
+    return results;
+  }
 }

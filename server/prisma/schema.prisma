@@ -92,6 +92,7 @@ model FormTemplate {
 
   // Bulk import configuration
   allowBulkImport Boolean @default(false)  // true = allows bulk import via Excel/CSV
+  bulkKeyFields   String[]                 // Fields used to identify existing records (e.g., ["A1_COD", "A1_LOJA"])
 
   // Country association (optional - null means available for all countries)
   countryId   String?

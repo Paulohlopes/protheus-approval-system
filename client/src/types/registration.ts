@@ -27,6 +27,7 @@ export interface FormTemplate {
   isActive: boolean;
   isMultiTable?: boolean; // true = uses TemplateTable, false = uses tableName
   allowBulkImport?: boolean; // true = allows bulk import via Excel/CSV
+  bulkKeyFields?: string[]; // Fields used to identify existing records (e.g., ["A1_COD", "A1_LOJA"])
   tables?: TemplateTable[]; // Multi-table configuration
   fields?: FormField[];
   countryId?: string; // Country associated with the template
@@ -539,4 +540,61 @@ export interface BulkSubmitResult {
     trackingNumber?: string;
     error?: string;
   }[];
+}
+
+// ==========================================
+// SMART BULK IMPORT TYPES
+// ==========================================
+
+/**
+ * Operation type for smart bulk import
+ */
+export type BulkOperationType = 'NEW' | 'ALTERATION' | 'ERROR';
+
+/**
+ * Information about a record in smart bulk import
+ */
+export interface BulkRecordInfo {
+  index: number;
+  rowNumber: number;
+  operationType: BulkOperationType;
+  exists: boolean;
+  recno?: string;
+  originalData?: Record<string, any>;
+  keyValues?: Record<string, any>;
+  error?: string;
+}
+
+/**
+ * Result of smart bulk import validation with record details
+ */
+export interface BulkValidationResultWithRecords extends BulkValidationResult {
+  records: BulkRecordInfo[];
+  summary: {
+    newRecords: number;
+    alterations: number;
+    errors: number;
+  };
+  hasKeyFields: boolean;
+  keyFields?: string[];
+}
+
+/**
+ * Result of smart bulk import (separated by operation type)
+ */
+export interface BulkImportResultSeparated {
+  success: boolean;
+  newRegistration?: {
+    id: string;
+    trackingNumber?: string;
+    itemCount: number;
+  };
+  alterationRegistration?: {
+    id: string;
+    trackingNumber?: string;
+    itemCount: number;
+  };
+  totalItems: number;
+  errors: BulkImportError[];
+  warnings: BulkImportWarning[];
 }

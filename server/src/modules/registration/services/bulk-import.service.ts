@@ -6,6 +6,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { ProtheusIntegrationService } from '../../protheus-integration/protheus-integration.service';
 import * as XLSX from 'xlsx';
 import * as Papa from 'papaparse';
 import {
@@ -18,6 +19,9 @@ import {
   BulkFormData,
   CreateBulkRegistrationDto,
   BulkSubmitResult,
+  BulkRecordInfo,
+  BulkValidationResultWithRecords,
+  BulkImportResultSeparated,
 } from '../dto/bulk-import.dto';
 
 // Constants
@@ -30,7 +34,10 @@ const DATA_SHEET_NAME = 'Dados';
 export class BulkImportService {
   private readonly logger = new Logger(BulkImportService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly protheusService: ProtheusIntegrationService,
+  ) {}
 
   /**
    * Generate Excel/CSV template for bulk import
@@ -242,9 +249,9 @@ export class BulkImportService {
       });
       const metaMap = new Map(metaData.map((row) => [row[0], row[1]]));
       metadata = {
-        templateId: metaMap.get('templateId'),
-        version: metaMap.get('version'),
-        exportDate: metaMap.get('exportDate'),
+        templateId: String(metaMap.get('templateId') || ''),
+        version: String(metaMap.get('version') || ''),
+        exportDate: String(metaMap.get('exportDate') || ''),
       };
     }
 
@@ -472,6 +479,156 @@ export class BulkImportService {
   }
 
   /**
+   * Validate bulk data with smart detection of NEW vs ALTERATION
+   * Checks each record against Protheus to determine if it exists
+   */
+  async validateBulkDataWithExistenceCheck(
+    templateId: string,
+    data: ParsedBulkData,
+  ): Promise<BulkValidationResultWithRecords> {
+    this.logger.log(`Validating bulk data with existence check for template ${templateId}`);
+
+    // First, run standard validation
+    const baseValidation = await this.validateBulkData(templateId, data);
+
+    // Fetch template with key fields
+    const template = await this.prisma.formTemplate.findUnique({
+      where: { id: templateId },
+      include: {
+        fields: {
+          where: { isVisible: true, isEnabled: true },
+        },
+      },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Template ${templateId} not found`);
+    }
+
+    const keyFields = template.bulkKeyFields || [];
+    const hasKeyFields = keyFields.length > 0;
+
+    // If no key fields configured, all records are treated as NEW
+    if (!hasKeyFields) {
+      this.logger.log('No key fields configured, treating all records as NEW');
+      const records: BulkRecordInfo[] = data.rows.map((row, index) => ({
+        index,
+        rowNumber: index + 5, // Excel row (data starts at row 5)
+        operationType: 'NEW' as const,
+        exists: false,
+      }));
+
+      return {
+        ...baseValidation,
+        records,
+        summary: {
+          newRecords: data.rows.length,
+          alterations: 0,
+          errors: 0,
+        },
+        hasKeyFields: false,
+      };
+    }
+
+    // Check each record's existence in Protheus
+    this.logger.log(`Checking existence using key fields: ${keyFields.join(', ')}`);
+
+    const records: BulkRecordInfo[] = [];
+    let newCount = 0;
+    let alterationCount = 0;
+    let errorCount = 0;
+
+    try {
+      const existenceResults = await this.protheusService.checkRecordsExistence(
+        template.tableName || '',
+        keyFields,
+        data.rows,
+      );
+
+      for (const result of existenceResults) {
+        const row = data.rows[result.index];
+
+        // Extract key values for display
+        const keyValues: Record<string, any> = {};
+        for (const field of keyFields) {
+          keyValues[field] = row[field];
+        }
+
+        // Check if any key field is empty (error)
+        const hasEmptyKey = keyFields.some(f => {
+          const val = row[f];
+          return val === undefined || val === null || val === '';
+        });
+
+        if (hasEmptyKey) {
+          records.push({
+            index: result.index,
+            rowNumber: result.index + 5,
+            operationType: 'ERROR',
+            exists: false,
+            keyValues,
+            error: 'Campo(s) chave vazio(s)',
+          });
+          errorCount++;
+        } else if (result.exists) {
+          records.push({
+            index: result.index,
+            rowNumber: result.index + 5,
+            operationType: 'ALTERATION',
+            exists: true,
+            recno: result.recno,
+            originalData: result.data,
+            keyValues,
+          });
+          alterationCount++;
+        } else {
+          records.push({
+            index: result.index,
+            rowNumber: result.index + 5,
+            operationType: 'NEW',
+            exists: false,
+            keyValues,
+          });
+          newCount++;
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`Error checking existence in Protheus: ${error.message}`);
+      // If Protheus check fails, treat all as NEW with warning
+      for (let i = 0; i < data.rows.length; i++) {
+        const keyValues: Record<string, any> = {};
+        for (const field of keyFields) {
+          keyValues[field] = data.rows[i][field];
+        }
+        records.push({
+          index: i,
+          rowNumber: i + 5,
+          operationType: 'NEW',
+          exists: false,
+          keyValues,
+        });
+        newCount++;
+      }
+      baseValidation.warnings.push({
+        type: 'warning',
+        message: `Não foi possível verificar registros existentes no Protheus: ${error.message}. Todos os registros serão tratados como novos.`,
+      });
+    }
+
+    return {
+      ...baseValidation,
+      records,
+      summary: {
+        newRecords: newCount,
+        alterations: alterationCount,
+        errors: errorCount,
+      },
+      hasKeyFields: true,
+      keyFields,
+    };
+  }
+
+  /**
    * Create bulk registration from parsed data
    */
   async createBulkRegistration(
@@ -677,5 +834,195 @@ export class BulkImportService {
       failed: results.filter((r) => !r.success).length,
       results,
     };
+  }
+
+  /**
+   * Create bulk registrations with smart separation (NEW vs ALTERATION)
+   * Creates up to 2 registrations: one for new records, one for alterations
+   */
+  async createBulkRegistrationSmart(
+    dto: CreateBulkRegistrationDto,
+    file: Express.Multer.File,
+    userId: string,
+    userEmail: string,
+  ): Promise<BulkImportResultSeparated> {
+    this.logger.log(`Creating smart bulk registration for template ${dto.templateId}`);
+
+    // Parse file
+    const parsedData = await this.parseFile(file);
+
+    // Validate with existence check
+    const validation = await this.validateBulkDataWithExistenceCheck(dto.templateId, parsedData);
+
+    if (!validation.valid) {
+      return {
+        success: false,
+        totalItems: parsedData.rows.length,
+        errors: validation.errors,
+        warnings: validation.warnings,
+      };
+    }
+
+    // Fetch template
+    const template = await this.prisma.formTemplate.findUnique({
+      where: { id: dto.templateId },
+      include: {
+        fields: {
+          where: { isVisible: true, isEnabled: true },
+        },
+      },
+    });
+
+    if (!template) {
+      throw new NotFoundException(`Template ${dto.templateId} not found`);
+    }
+
+    // Build field map for type conversion
+    const fieldMap = new Map(
+      template.fields.map((f) => [f.fieldName || f.sx3FieldName, f]),
+    );
+
+    // Separate records by operation type
+    const newRecords: { index: number; data: Record<string, any> }[] = [];
+    const alterationRecords: { index: number; data: Record<string, any>; recno: string; originalData?: Record<string, any> }[] = [];
+
+    for (const record of validation.records) {
+      if (record.operationType === 'ERROR') {
+        continue; // Skip error records
+      }
+
+      const row = parsedData.rows[record.index];
+      const item = this.convertRowToItem(row, fieldMap);
+
+      if (record.operationType === 'NEW') {
+        newRecords.push({ index: record.index, data: item });
+      } else if (record.operationType === 'ALTERATION') {
+        alterationRecords.push({
+          index: record.index,
+          data: item,
+          recno: record.recno!,
+          originalData: record.originalData,
+        });
+      }
+    }
+
+    const result: BulkImportResultSeparated = {
+      success: true,
+      totalItems: newRecords.length + alterationRecords.length,
+      errors: [],
+      warnings: validation.warnings,
+    };
+
+    const year = new Date().getFullYear();
+
+    // Create registration for NEW records
+    if (newRecords.length > 0) {
+      const newTrackingNumber = `${year}-${String(await this.getNextTrackingSequence(year)).padStart(5, '0')}`;
+
+      const bulkFormData: BulkFormData = {
+        _isBulk: true,
+        _itemCount: newRecords.length,
+        items: newRecords.map(r => r.data),
+      };
+
+      const newRegistration = await this.prisma.registrationRequest.create({
+        data: {
+          templateId: dto.templateId,
+          tableName: template.tableName || template.label,
+          countryId: dto.countryId || null,
+          requestedById: userId,
+          requestedByEmail: userEmail,
+          formData: bulkFormData as any,
+          operationType: 'NEW',
+          status: 'DRAFT',
+          currentLevel: 0,
+          trackingNumber: newTrackingNumber,
+        },
+      });
+
+      result.newRegistration = {
+        id: newRegistration.id,
+        trackingNumber: newRegistration.trackingNumber || undefined,
+        itemCount: newRecords.length,
+      };
+
+      this.logger.log(`Created NEW bulk registration ${newRegistration.id} with ${newRecords.length} items`);
+    }
+
+    // Create registration for ALTERATION records
+    if (alterationRecords.length > 0) {
+      const altTrackingNumber = `${year}-${String(await this.getNextTrackingSequence(year)).padStart(5, '0')}`;
+
+      // For alterations, include original data reference
+      const bulkFormData: BulkFormData & { _alterationMeta?: any } = {
+        _isBulk: true,
+        _itemCount: alterationRecords.length,
+        items: alterationRecords.map(r => ({
+          ...r.data,
+          _recno: r.recno,
+          _originalData: r.originalData,
+        })),
+      };
+
+      const altRegistration = await this.prisma.registrationRequest.create({
+        data: {
+          templateId: dto.templateId,
+          tableName: template.tableName || template.label,
+          countryId: dto.countryId || null,
+          requestedById: userId,
+          requestedByEmail: userEmail,
+          formData: bulkFormData as any,
+          operationType: 'ALTERATION',
+          status: 'DRAFT',
+          currentLevel: 0,
+          trackingNumber: altTrackingNumber,
+        },
+      });
+
+      result.alterationRegistration = {
+        id: altRegistration.id,
+        trackingNumber: altRegistration.trackingNumber || undefined,
+        itemCount: alterationRecords.length,
+      };
+
+      this.logger.log(`Created ALTERATION bulk registration ${altRegistration.id} with ${alterationRecords.length} items`);
+    }
+
+    return result;
+  }
+
+  /**
+   * Convert a row to typed item using field definitions
+   */
+  private convertRowToItem(
+    row: Record<string, any>,
+    fieldMap: Map<string, any>,
+  ): Record<string, any> {
+    const item: Record<string, any> = {};
+
+    for (const [fieldName, value] of Object.entries(row)) {
+      const field = fieldMap.get(fieldName);
+      if (!field) {
+        item[fieldName] = value;
+        continue;
+      }
+
+      switch (field.fieldType) {
+        case 'number':
+          item[fieldName] = value ? Number(value) : null;
+          break;
+        case 'date':
+          item[fieldName] = value ? new Date(value as string).toISOString().split('T')[0] : null;
+          break;
+        case 'boolean':
+          const boolStr = String(value).toLowerCase();
+          item[fieldName] = ['true', 'sim', '1', 's'].includes(boolStr);
+          break;
+        default:
+          item[fieldName] = value;
+      }
+    }
+
+    return item;
   }
 }

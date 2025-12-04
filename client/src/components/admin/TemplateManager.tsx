@@ -1085,6 +1085,52 @@ const TemplateManager: React.FC = () => {
                                 </Box>
                               }
                             />
+
+                            {/* Bulk Key Fields Configuration */}
+                            {template.allowBulkImport && (
+                              <Box sx={{ mt: 2, pl: 2, borderLeft: '3px solid', borderColor: 'primary.light' }}>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                  Campos-Chave para Identificação
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                                  Selecione os campos que identificam um registro único (para detectar inclusão vs alteração)
+                                </Typography>
+                                <Select
+                                  multiple
+                                  size="small"
+                                  value={template.bulkKeyFields || []}
+                                  onChange={async (e) => {
+                                    try {
+                                      await adminService.updateTemplate(template.id, {
+                                        bulkKeyFields: e.target.value as string[],
+                                      });
+                                      loadTemplates();
+                                    } catch (err: any) {
+                                      setError(err.message || 'Erro ao atualizar campos-chave');
+                                    }
+                                  }}
+                                  renderValue={(selected) => (selected as string[]).join(', ')}
+                                  sx={{ minWidth: 300 }}
+                                >
+                                  {template.fields
+                                    ?.filter(f => f.isVisible)
+                                    .map((field) => (
+                                      <MenuItem key={field.id} value={field.fieldName || field.sx3FieldName}>
+                                        <Checkbox checked={(template.bulkKeyFields || []).includes(field.fieldName || field.sx3FieldName || '')} />
+                                        <ListItemText
+                                          primary={field.label}
+                                          secondary={field.fieldName || field.sx3FieldName}
+                                        />
+                                      </MenuItem>
+                                    ))}
+                                </Select>
+                                {(!template.bulkKeyFields || template.bulkKeyFields.length === 0) && (
+                                  <Typography variant="caption" color="warning.main" sx={{ display: 'block', mt: 0.5 }}>
+                                    Sem campos-chave: todos os registros serão tratados como novos
+                                  </Typography>
+                                )}
+                              </Box>
+                            )}
                           </Box>
 
                           {/* Multi-Table Configuration Section */}

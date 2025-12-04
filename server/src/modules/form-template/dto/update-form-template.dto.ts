@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsArray } from 'class-validator';
 
 export class UpdateFormTemplateDto {
   @IsOptional()
@@ -16,4 +16,9 @@ export class UpdateFormTemplateDto {
   @IsOptional()
   @IsBoolean()
   allowBulkImport?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  bulkKeyFields?: string[];
 }

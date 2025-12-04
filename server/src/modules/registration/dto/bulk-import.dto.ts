@@ -124,3 +124,56 @@ export class BulkSubmitDto {
   @IsString({ each: true })
   registrationIds: string[];
 }
+
+/**
+ * Operation type for each bulk record
+ */
+export type BulkOperationType = 'NEW' | 'ALTERATION' | 'ERROR';
+
+/**
+ * Information about a bulk record after checking existence
+ */
+export interface BulkRecordInfo {
+  index: number;           // Row index (0-based)
+  rowNumber: number;       // Excel row number (1-based, accounting for headers)
+  operationType: BulkOperationType;
+  exists: boolean;
+  recno?: string;          // Original RECNO if exists
+  originalData?: Record<string, any>; // Original data from Protheus
+  keyValues?: Record<string, any>;    // Key field values used for lookup
+  error?: string;          // Error message if any
+}
+
+/**
+ * Extended validation result with record existence info
+ */
+export interface BulkValidationResultWithRecords extends BulkValidationResult {
+  records: BulkRecordInfo[];
+  summary: {
+    newRecords: number;
+    alterations: number;
+    errors: number;
+  };
+  hasKeyFields: boolean;
+  keyFields?: string[];
+}
+
+/**
+ * Result of bulk import with separated registrations
+ */
+export interface BulkImportResultSeparated {
+  success: boolean;
+  newRegistration?: {
+    id: string;
+    trackingNumber?: string;
+    itemCount: number;
+  };
+  alterationRegistration?: {
+    id: string;
+    trackingNumber?: string;
+    itemCount: number;
+  };
+  totalItems: number;
+  errors: BulkImportError[];
+  warnings: BulkImportWarning[];
+}

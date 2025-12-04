@@ -4,7 +4,9 @@ import type {
   RegistrationRequest,
   RegistrationWorkflow,
   BulkValidationResult,
+  BulkValidationResultWithRecords,
   BulkImportResult,
+  BulkImportResultSeparated,
   BulkSubmitResult,
 } from '../types/registration';
 import type { RegistrationStatus } from '../types/registration';
@@ -381,10 +383,45 @@ export const registrationService = {
    */
   async getBulkEnabledTemplates(): Promise<FormTemplate[]> {
     const response = await backendApi.get('/form-templates', {
-      params: { includeFields: false },
+      params: { includeFields: true },
     });
     // Filter only templates with allowBulkImport = true
     return response.data.filter((t: FormTemplate) => t.allowBulkImport);
+  },
+
+  /**
+   * Validate bulk import file with smart detection (NEW vs ALTERATION)
+   */
+  async validateBulkFileSmart(templateId: string, file: File): Promise<BulkValidationResultWithRecords> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('templateId', templateId);
+
+    const response = await backendApi.post('/registrations/bulk/validate-smart', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  /**
+   * Create bulk registration with smart separation (NEW vs ALTERATION)
+   */
+  async createBulkRegistrationSmart(
+    templateId: string,
+    file: File,
+    countryId?: string,
+  ): Promise<BulkImportResultSeparated> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('templateId', templateId);
+    if (countryId) {
+      formData.append('countryId', countryId);
+    }
+
+    const response = await backendApi.post('/registrations/bulk/import-smart', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
   },
 };
 

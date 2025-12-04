@@ -50,9 +50,12 @@ import { useCountry } from '../../contexts/CountryContext';
 import type {
   FormTemplate,
   BulkValidationResult,
+  BulkValidationResultWithRecords,
   BulkImportResult,
+  BulkImportResultSeparated,
   BulkImportError,
   BulkImportWarning,
+  BulkRecordInfo,
 } from '../../types/registration';
 
 const steps = ['Selecionar Template', 'Upload do Arquivo', 'Validação', 'Confirmação'];
@@ -74,13 +77,13 @@ const BulkImport: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
 
-  // Validation
+  // Validation - now using smart validation with record detection
   const [validating, setValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState<BulkValidationResult | null>(null);
+  const [validationResult, setValidationResult] = useState<BulkValidationResultWithRecords | null>(null);
 
-  // Import
+  // Import - now using smart import with separated results
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<BulkImportResult | null>(null);
+  const [importResult, setImportResult] = useState<BulkImportResultSeparated | null>(null);
 
   // Error
   const [error, setError] = useState<string | null>(null);
@@ -162,14 +165,15 @@ const BulkImport: React.FC = () => {
     event.stopPropagation();
   }, []);
 
-  // Validate file
+  // Validate file using smart validation (detects NEW vs ALTERATION)
   const handleValidate = async () => {
     if (!selectedTemplateId || !file) return;
 
     try {
       setValidating(true);
       setError(null);
-      const result = await registrationService.validateBulkFile(selectedTemplateId, file);
+      // Use smart validation that checks Protheus for existing records
+      const result = await registrationService.validateBulkFileSmart(selectedTemplateId, file);
       setValidationResult(result);
 
       if (result.valid) {
@@ -182,14 +186,15 @@ const BulkImport: React.FC = () => {
     }
   };
 
-  // Import file
+  // Import file using smart import (separates NEW vs ALTERATION)
   const handleImport = async () => {
     if (!selectedTemplateId || !file) return;
 
     try {
       setImporting(true);
       setError(null);
-      const result = await registrationService.createBulkRegistration(
+      // Use smart import that creates separate registrations for NEW and ALTERATION
+      const result = await registrationService.createBulkRegistrationSmart(
         selectedTemplateId,
         file,
         selectedCountry?.id,
@@ -206,15 +211,37 @@ const BulkImport: React.FC = () => {
     }
   };
 
-  // Submit registration
-  const handleSubmit = async () => {
-    if (!importResult?.registrationId) return;
+  // Submit registrations (both NEW and ALTERATION if present)
+  const handleSubmitAll = async () => {
+    if (!importResult) return;
+
+    const registrationIds: string[] = [];
+    if (importResult.newRegistration?.id) {
+      registrationIds.push(importResult.newRegistration.id);
+    }
+    if (importResult.alterationRegistration?.id) {
+      registrationIds.push(importResult.alterationRegistration.id);
+    }
+
+    if (registrationIds.length === 0) return;
 
     try {
-      await registrationService.submitRegistration(importResult.registrationId);
+      await registrationService.submitBulkRegistrations(registrationIds);
       navigate('/registration/my-requests');
     } catch (err: any) {
-      setError(err.message || 'Erro ao submeter solicitação');
+      setError(err.message || 'Erro ao submeter solicitações');
+    }
+  };
+
+  // Helper to get operation type label and color
+  const getOperationTypeChip = (type: 'NEW' | 'ALTERATION' | 'ERROR') => {
+    switch (type) {
+      case 'NEW':
+        return <Chip label="Inclusão" size="small" color="success" icon={<CheckCircle />} />;
+      case 'ALTERATION':
+        return <Chip label="Alteração" size="small" color="warning" icon={<Warning />} />;
+      case 'ERROR':
+        return <Chip label="Erro" size="small" color="error" icon={<ErrorIcon />} />;
     }
   };
 
@@ -446,31 +473,93 @@ const BulkImport: React.FC = () => {
                 Resultado da Validação
               </Typography>
 
-              {/* Summary */}
-              <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-                <Card variant="outlined" sx={{ flex: 1 }}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4">{validationResult.totalRows}</Typography>
-                    <Typography color="text.secondary">Linhas Total</Typography>
-                  </CardContent>
-                </Card>
-                <Card variant="outlined" sx={{ flex: 1 }}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="success.main">
-                      {validationResult.validRows}
-                    </Typography>
-                    <Typography color="text.secondary">Linhas Válidas</Typography>
-                  </CardContent>
-                </Card>
-                <Card variant="outlined" sx={{ flex: 1 }}>
-                  <CardContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="h4" color="error.main">
-                      {validationResult.errors.length}
-                    </Typography>
-                    <Typography color="text.secondary">Erros</Typography>
-                  </CardContent>
-                </Card>
-              </Stack>
+              {/* Smart Detection Summary - Shows NEW vs ALTERATION breakdown */}
+              {validationResult.hasKeyFields && validationResult.summary && (
+                <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+                  <Card variant="outlined" sx={{ flex: 1 }}>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4">{validationResult.totalRows}</Typography>
+                      <Typography color="text.secondary">Linhas Total</Typography>
+                    </CardContent>
+                  </Card>
+                  <Card variant="outlined" sx={{ flex: 1, borderColor: 'success.main', borderWidth: 2 }}>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="success.main">
+                        {validationResult.summary.newRecords}
+                      </Typography>
+                      <Typography color="text.secondary">Inclusões (Novo)</Typography>
+                    </CardContent>
+                  </Card>
+                  <Card variant="outlined" sx={{ flex: 1, borderColor: 'warning.main', borderWidth: 2 }}>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="warning.main">
+                        {validationResult.summary.alterations}
+                      </Typography>
+                      <Typography color="text.secondary">Alterações</Typography>
+                    </CardContent>
+                  </Card>
+                  <Card variant="outlined" sx={{ flex: 1, borderColor: 'error.main', borderWidth: 2 }}>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="error.main">
+                        {validationResult.summary.errors}
+                      </Typography>
+                      <Typography color="text.secondary">Erros</Typography>
+                    </CardContent>
+                  </Card>
+                </Stack>
+              )}
+
+              {/* Simple Summary (when no key fields configured) */}
+              {!validationResult.hasKeyFields && (
+                <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
+                  <Card variant="outlined" sx={{ flex: 1 }}>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4">{validationResult.totalRows}</Typography>
+                      <Typography color="text.secondary">Linhas Total</Typography>
+                    </CardContent>
+                  </Card>
+                  <Card variant="outlined" sx={{ flex: 1 }}>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="success.main">
+                        {validationResult.validRows}
+                      </Typography>
+                      <Typography color="text.secondary">Linhas Válidas</Typography>
+                    </CardContent>
+                  </Card>
+                  <Card variant="outlined" sx={{ flex: 1 }}>
+                    <CardContent sx={{ textAlign: 'center' }}>
+                      <Typography variant="h4" color="error.main">
+                        {validationResult.errors.length}
+                      </Typography>
+                      <Typography color="text.secondary">Erros</Typography>
+                    </CardContent>
+                  </Card>
+                </Stack>
+              )}
+
+              {/* Key Fields Info */}
+              {validationResult.hasKeyFields && validationResult.keyFields && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2">
+                    Campos-chave utilizados para identificação: {validationResult.keyFields.join(', ')}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    O sistema verificou no Protheus quais registros já existem.
+                  </Typography>
+                </Alert>
+              )}
+
+              {!validationResult.hasKeyFields && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2">
+                    Campos-chave não configurados
+                  </Typography>
+                  <Typography variant="body2">
+                    Sem campos-chave, todos os registros serão tratados como inclusão (novos).
+                    Configure os campos-chave no template para habilitar a detecção automática.
+                  </Typography>
+                </Alert>
+              )}
 
               {/* Warnings */}
               {validationResult.warnings.length > 0 && (
@@ -525,8 +614,59 @@ const BulkImport: React.FC = () => {
                 </Alert>
               )}
 
-              {/* Preview */}
-              {validationResult.preview && validationResult.valid && (
+              {/* Smart Preview with Operation Type Indicator */}
+              {validationResult.records && validationResult.records.length > 0 && validationResult.valid && (
+                <Card variant="outlined">
+                  <CardContent>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Preview dos Dados (primeiras 20 linhas)
+                    </Typography>
+                    <TableContainer sx={{ maxHeight: 400 }}>
+                      <Table size="small" stickyHeader>
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Linha</TableCell>
+                            <TableCell>Tipo</TableCell>
+                            {validationResult.preview?.headers.map((header) => (
+                              <TableCell key={header}>{header}</TableCell>
+                            ))}
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {validationResult.records.slice(0, 20).map((record, idx) => (
+                            <TableRow
+                              key={idx}
+                              sx={{
+                                bgcolor: record.operationType === 'ERROR'
+                                  ? 'error.lighter'
+                                  : record.operationType === 'ALTERATION'
+                                    ? 'warning.lighter'
+                                    : 'success.lighter',
+                              }}
+                            >
+                              <TableCell>{record.rowNumber}</TableCell>
+                              <TableCell>{getOperationTypeChip(record.operationType)}</TableCell>
+                              {validationResult.preview?.headers.map((header) => (
+                                <TableCell key={header}>
+                                  {String(validationResult.preview?.rows[idx]?.[header] ?? '')}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                    {validationResult.records.length > 20 && (
+                      <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+                        Mostrando 20 de {validationResult.records.length} linhas
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Fallback Preview (old style) */}
+              {validationResult.preview && validationResult.valid && (!validationResult.records || validationResult.records.length === 0) && (
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="subtitle1" gutterBottom>
@@ -574,41 +714,92 @@ const BulkImport: React.FC = () => {
                 Importação Concluída!
               </Typography>
               <Typography color="text.secondary" sx={{ mb: 3 }}>
-                Sua solicitação foi criada com sucesso.
+                {importResult.newRegistration && importResult.alterationRegistration
+                  ? 'Foram criadas 2 solicitações separadas (inclusões e alterações).'
+                  : importResult.newRegistration
+                    ? 'Solicitação de inclusão criada com sucesso.'
+                    : 'Solicitação de alteração criada com sucesso.'}
               </Typography>
 
-              <Card variant="outlined" sx={{ maxWidth: 400, mx: 'auto', mb: 3 }}>
-                <CardContent>
-                  <Stack spacing={1}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography color="text.secondary">Tracking:</Typography>
-                      <Typography fontWeight={600}>{importResult.trackingNumber}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography color="text.secondary">Itens:</Typography>
-                      <Typography>{importResult.itemCount}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography color="text.secondary">Status:</Typography>
-                      <Chip label="Rascunho" size="small" color="default" />
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
+              {/* Summary Cards */}
+              <Stack direction="row" spacing={2} justifyContent="center" sx={{ mb: 3 }}>
+                {importResult.newRegistration && (
+                  <Card variant="outlined" sx={{ minWidth: 300, borderColor: 'success.main', borderWidth: 2 }}>
+                    <CardContent>
+                      <Chip label="Inclusões" color="success" size="small" sx={{ mb: 2 }} />
+                      <Stack spacing={1}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography color="text.secondary">Tracking:</Typography>
+                          <Typography fontWeight={600}>{importResult.newRegistration.trackingNumber}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography color="text.secondary">Itens:</Typography>
+                          <Typography>{importResult.newRegistration.itemCount}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography color="text.secondary">Status:</Typography>
+                          <Chip label="Rascunho" size="small" color="default" />
+                        </Box>
+                        <Button
+                          variant="text"
+                          size="small"
+                          onClick={() => navigate(`/registration/${importResult.newRegistration!.id}`)}
+                        >
+                          Ver Detalhes
+                        </Button>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {importResult.alterationRegistration && (
+                  <Card variant="outlined" sx={{ minWidth: 300, borderColor: 'warning.main', borderWidth: 2 }}>
+                    <CardContent>
+                      <Chip label="Alterações" color="warning" size="small" sx={{ mb: 2 }} />
+                      <Stack spacing={1}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography color="text.secondary">Tracking:</Typography>
+                          <Typography fontWeight={600}>{importResult.alterationRegistration.trackingNumber}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography color="text.secondary">Itens:</Typography>
+                          <Typography>{importResult.alterationRegistration.itemCount}</Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography color="text.secondary">Status:</Typography>
+                          <Chip label="Rascunho" size="small" color="default" />
+                        </Box>
+                        <Button
+                          variant="text"
+                          size="small"
+                          onClick={() => navigate(`/registration/${importResult.alterationRegistration!.id}`)}
+                        >
+                          Ver Detalhes
+                        </Button>
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                )}
+              </Stack>
+
+              {/* Total Summary */}
+              <Typography color="text.secondary" sx={{ mb: 3 }}>
+                Total de itens importados: <strong>{importResult.totalItems}</strong>
+              </Typography>
 
               <Stack direction="row" spacing={2} justifyContent="center">
                 <Button
                   variant="outlined"
-                  onClick={() => navigate(`/registration/${importResult.registrationId}`)}
+                  onClick={() => navigate('/registration/my-requests')}
                 >
-                  Ver Detalhes
+                  Ver Minhas Solicitações
                 </Button>
                 <Button
                   variant="contained"
                   startIcon={<Send />}
-                  onClick={handleSubmit}
+                  onClick={handleSubmitAll}
                 >
-                  Submeter para Aprovação
+                  Submeter Todas para Aprovação
                 </Button>
               </Stack>
             </Box>

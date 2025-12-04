@@ -14,9 +14,11 @@ export interface CreateFormTemplateDto {
 }
 
 export interface UpdateFormTemplateDto {
-  name?: string;
+  label?: string;
   description?: string;
   isActive?: boolean;
+  allowBulkImport?: boolean;
+  bulkKeyFields?: string[];
 }
 
 export interface ReorderFieldsDto {

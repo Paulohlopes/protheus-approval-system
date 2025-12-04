@@ -119,6 +119,22 @@ export class RegistrationController {
     return this.bulkImportService.validateBulkData(templateId, parsedData);
   }
 
+  @Post('bulk/validate-smart')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({
+    summary: 'Validar arquivo com detecção inteligente de inclusão/alteração',
+    description: 'Valida o arquivo e identifica quais registros são novos e quais são alterações baseado nos campos-chave.',
+  })
+  @ApiResponse({ status: 200, description: 'Validação concluída com identificação de tipo' })
+  @ApiResponse({ status: 400, description: 'Arquivo inválido' })
+  async validateBulkImportSmart(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('templateId') templateId: string,
+  ) {
+    const parsedData = await this.bulkImportService.parseFile(file);
+    return this.bulkImportService.validateBulkDataWithExistenceCheck(templateId, parsedData);
+  }
+
   @Post('bulk/import')
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({
@@ -144,6 +160,37 @@ export class RegistrationController {
     }
 
     return this.bulkImportService.createBulkRegistration(dto, file, user.id, user.email);
+  }
+
+  @Post('bulk/import-smart')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({
+    summary: 'Importação inteligente com separação automática',
+    description: 'Cria solicitações separadas para inclusões e alterações automaticamente.',
+  })
+  @ApiResponse({ status: 201, description: 'Solicitações criadas' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  async createBulkRegistrationSmart(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: CreateBulkRegistrationDto,
+    @CurrentUser() user: UserInfo,
+    @Headers('x-country-id') countryIdHeader?: string,
+  ) {
+    if (!user?.id || !user?.email) {
+      throw new UnauthorizedException('User not authenticated properly');
+    }
+
+    // Use country from header if not in body
+    if (!dto.countryId && countryIdHeader) {
+      dto.countryId = countryIdHeader;
+    }
+
+    return this.bulkImportService.createBulkRegistrationSmart(
+      dto,
+      file,
+      user.id,
+      user.email,
+    );
   }
 
   @Post('bulk/submit')
