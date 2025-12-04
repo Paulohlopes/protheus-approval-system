@@ -4,6 +4,7 @@ import { HttpService } from '@nestjs/axios';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegistrationStatus } from '@prisma/client';
 import { firstValueFrom } from 'rxjs';
+import { ConnectionManagerService } from '../country/connection-manager.service';
 
 interface ProtheusTokenResponse {
   access_token: string;
@@ -23,6 +24,7 @@ export class ProtheusIntegrationService {
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
+    private readonly connectionManager: ConnectionManagerService,
   ) {}
 
   /**
@@ -296,7 +298,159 @@ export class ProtheusIntegrationService {
   }
 
   /**
-   * Check if a record exists in Protheus by key fields
+   * Check if a record exists in Protheus by key fields using SQL
+   * Returns the record data if found, null if not found
+   */
+  async findRecordByKeysSql(
+    countryId: string,
+    tableName: string,
+    tableSuffix: string,
+    keyFields: Record<string, any>,
+  ): Promise<{ exists: boolean; recno?: string; data?: Record<string, any> }> {
+    this.logger.log(`[SQL] Checking if record exists in table ${tableName}${tableSuffix}`, keyFields);
+
+    // Build WHERE clause from key fields
+    const whereParts = Object.entries(keyFields)
+      .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+      .map(([field, value]) => `${field} = '${String(value).trim().replace(/'/g, "''")}'`);
+
+    if (whereParts.length === 0) {
+      return { exists: false };
+    }
+
+    const whereClause = whereParts.join(' AND ');
+    const fullTableName = `${tableName}${tableSuffix}`;
+
+    try {
+      const dataSource = await this.connectionManager.getConnection(countryId);
+
+      const query = `
+        SELECT TOP 1 R_E_C_N_O_ as recno, *
+        FROM ${fullTableName}
+        WHERE ${whereClause}
+          AND D_E_L_E_T_ = ''
+      `;
+
+      this.logger.debug(`Executing query: ${query}`);
+      const results = await dataSource.query(query);
+
+      if (results && results.length > 0) {
+        const record = results[0];
+        const recno = String(record.recno || record.R_E_C_N_O_);
+        this.logger.log(`[SQL] Record found. RECNO: ${recno}`);
+        return {
+          exists: true,
+          recno,
+          data: record,
+        };
+      }
+
+      this.logger.log(`[SQL] Record not found for: ${whereClause}`);
+      return { exists: false };
+    } catch (error) {
+      this.logger.error(`[SQL] Failed to check record in ${fullTableName}`, {
+        keyFields,
+        error: error.message,
+      });
+      throw new Error(`SQL query failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Check multiple records existence using SQL (batch)
+   */
+  async checkRecordsExistenceSql(
+    countryId: string,
+    tableName: string,
+    tableSuffix: string,
+    keyFieldNames: string[],
+    records: Record<string, any>[],
+  ): Promise<Array<{ index: number; exists: boolean; recno?: string; data?: Record<string, any>; error?: string }>> {
+    this.logger.log(`[SQL] Checking ${records.length} records in ${tableName}${tableSuffix}`);
+
+    const results: Array<{ index: number; exists: boolean; recno?: string; data?: Record<string, any>; error?: string }> = [];
+
+    // Get connection once for all queries
+    let dataSource;
+    try {
+      dataSource = await this.connectionManager.getConnection(countryId);
+    } catch (error) {
+      this.logger.error(`[SQL] Failed to get connection for country ${countryId}`, error.message);
+      return records.map((_, index) => ({
+        index,
+        exists: false,
+        error: `Connection failed: ${error.message}`,
+      }));
+    }
+
+    const fullTableName = `${tableName}${tableSuffix}`;
+
+    // Process each record
+    for (let i = 0; i < records.length; i++) {
+      const record = records[i];
+
+      // Extract key field values
+      const keyFields: Record<string, any> = {};
+      for (const fieldName of keyFieldNames) {
+        if (record[fieldName] !== undefined) {
+          keyFields[fieldName] = record[fieldName];
+        }
+      }
+
+      this.logger.log(`[SQL] Checking record ${i + 1}/${records.length}: ${JSON.stringify(keyFields)}`);
+
+      // Skip if no key fields have values
+      if (Object.keys(keyFields).length === 0) {
+        results.push({ index: i, exists: false, error: 'No key fields provided' });
+        continue;
+      }
+
+      // Build WHERE clause
+      const whereParts = Object.entries(keyFields)
+        .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+        .map(([field, value]) => `${field} = '${String(value).trim().replace(/'/g, "''")}'`);
+
+      if (whereParts.length === 0) {
+        results.push({ index: i, exists: false });
+        continue;
+      }
+
+      try {
+        const query = `
+          SELECT TOP 1 R_E_C_N_O_ as recno, *
+          FROM ${fullTableName}
+          WHERE ${whereParts.join(' AND ')}
+            AND D_E_L_E_T_ = ''
+        `;
+
+        const queryResults = await dataSource.query(query);
+
+        if (queryResults && queryResults.length > 0) {
+          const dbRecord = queryResults[0];
+          results.push({
+            index: i,
+            exists: true,
+            recno: String(dbRecord.recno || dbRecord.R_E_C_N_O_),
+            data: dbRecord,
+          });
+        } else {
+          results.push({ index: i, exists: false });
+        }
+      } catch (error) {
+        this.logger.warn(`[SQL] Error checking record at index ${i}: ${error.message}`);
+        results.push({ index: i, exists: false, error: error.message });
+      }
+    }
+
+    const existingCount = results.filter(r => r.exists).length;
+    const errorCount = results.filter(r => r.error).length;
+    this.logger.log(`[SQL] Found ${existingCount} existing records out of ${records.length} (${errorCount} errors)`);
+
+    return results;
+  }
+
+  /**
+   * Check if a record exists in Protheus by key fields (REST API - legacy)
    * Returns the record data if found, null if not found
    */
   async findRecordByKeys(

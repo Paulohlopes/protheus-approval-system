@@ -491,13 +491,14 @@ export class BulkImportService {
     // First, run standard validation
     const baseValidation = await this.validateBulkData(templateId, data);
 
-    // Fetch template with key fields
+    // Fetch template with key fields and country info
     const template = await this.prisma.formTemplate.findUnique({
       where: { id: templateId },
       include: {
         fields: {
           where: { isVisible: true, isEnabled: true },
         },
+        country: true,
       },
     });
 
@@ -530,7 +531,35 @@ export class BulkImportService {
       };
     }
 
-    // Check each record's existence in Protheus
+    // Check if we have country configured for SQL access
+    if (!template.countryId || !template.country) {
+      this.logger.warn('No country configured for template, cannot check existence via SQL');
+      baseValidation.warnings.push({
+        type: 'warning',
+        message: 'Template não possui país configurado. Não foi possível verificar registros existentes. Todos serão tratados como INCLUSÃO.',
+      });
+
+      const records: BulkRecordInfo[] = data.rows.map((row, index) => ({
+        index,
+        rowNumber: index + 5,
+        operationType: 'NEW' as const,
+        exists: false,
+      }));
+
+      return {
+        ...baseValidation,
+        records,
+        summary: {
+          newRecords: data.rows.length,
+          alterations: 0,
+          errors: 0,
+        },
+        hasKeyFields: true,
+        keyFields,
+      };
+    }
+
+    // Check each record's existence in Protheus via SQL
     this.logger.log(`Checking existence using key fields: ${keyFields.join(', ')}`);
 
     const records: BulkRecordInfo[] = [];
@@ -538,9 +567,15 @@ export class BulkImportService {
     let alterationCount = 0;
     let errorCount = 0;
 
+    // Get table suffix from country settings
+    const tableSuffix = template.country.tableSuffix || '010';
+
     try {
-      const existenceResults = await this.protheusService.checkRecordsExistence(
+      // Use SQL-based check instead of REST API
+      const existenceResults = await this.protheusService.checkRecordsExistenceSql(
+        template.countryId,
         template.tableName || '',
+        tableSuffix,
         keyFields,
         data.rows,
       );
