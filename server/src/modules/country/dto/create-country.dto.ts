@@ -6,9 +6,9 @@ import {
   Min,
   Max,
   Length,
-  IsUrl,
   IsObject,
 } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class CreateCountryDto {
   @IsString()
@@ -21,10 +21,12 @@ export class CreateCountryDto {
 
   @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) => value === true || value === 'true')
   isActive?: boolean = true;
 
   @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) => value === true || value === 'true')
   isDefault?: boolean = false;
 
   // Table Suffix Configuration
@@ -37,6 +39,7 @@ export class CreateCountryDto {
   dbHost: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(65535)
@@ -69,6 +72,7 @@ export class CreateCountryDto {
   apiPassword?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(1000)
   @Max(300000)
