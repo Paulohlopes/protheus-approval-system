@@ -168,44 +168,33 @@ export interface AttachmentConfig {
 }
 
 // ==========================================
-// LOOKUP CONFIGURATION
+// LOOKUP CONFIGURATION (SQL-Based)
 // ==========================================
 
-export type LookupFilterOperator = 'equals' | 'like' | 'in';
-
-export interface LookupSearchField {
-  field: string; // Column name in source table (e.g., A1_COD)
-  label: string; // Display label (e.g., "Código")
-  width?: number; // Column width in pixels
-}
-
-export interface LookupReturnField {
-  sourceField: string; // Field from lookup table (e.g., A1_NOME)
-  targetField: string; // Field to fill in form (e.g., CLIENTE_NOME)
-}
-
-export interface LookupFilter {
-  field: string;
-  operator: LookupFilterOperator;
-  value: string | string[];
-}
-
-export interface LookupModalConfig {
-  title?: string;
-  width?: 'sm' | 'md' | 'lg' | 'xl';
-  showAdvancedFilters?: boolean;
-}
-
 export interface LookupConfig {
-  sourceTable?: string; // Source table for lookup (e.g., SA1010)
-  searchFields?: LookupSearchField[]; // Fields displayed in search modal
-  returnFields?: LookupReturnField[]; // Fields to auto-fill on selection
-  valueField?: string; // Field to store as value (e.g., A1_COD)
-  displayField?: string; // Field to display in input (e.g., A1_NOME)
-  filters?: LookupFilter[]; // Fixed filters for the query
-  baseFilter?: string; // SQL WHERE clause to pre-filter data (e.g., "D_E_L_E_T_ = '' AND A1_MSBLQL <> '1'")
-  customQuery?: string; // Custom SQL query (optional, replaces default query)
-  modalConfig?: LookupModalConfig; // Modal configuration
+  // SQL Query that returns data for the lookup
+  // Example: "SELECT A1_COD, A1_NOME, A1_CGC FROM SA1010 WHERE D_E_L_E_T_ = '' AND A1_MSBLQL <> '1'"
+  sqlQuery?: string;
+
+  // Column name to use as stored value (e.g., A1_COD)
+  valueField?: string;
+
+  // Column name to display in the input field (e.g., A1_NOME)
+  displayField?: string;
+
+  // Optional: Columns to search when user types (defaults to all columns)
+  searchableFields?: string[];
+
+  // Optional: Auto-fill other form fields when a record is selected
+  // Format: { "sourceColumn": "targetFieldName" }
+  // Example: { "A1_NOME": "cliente_nome", "A1_CGC": "cliente_cnpj" }
+  returnFields?: Record<string, string>;
+
+  // Optional: Modal title (defaults to field label)
+  modalTitle?: string;
+
+  // Optional: Show all columns in results or just valueField + displayField
+  showAllColumns?: boolean;
 }
 
 export interface LookupSearchResponse {
