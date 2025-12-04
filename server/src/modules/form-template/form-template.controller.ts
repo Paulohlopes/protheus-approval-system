@@ -37,6 +37,186 @@ export class FormTemplateController {
     private readonly allowedTablesService: AllowedTablesService,
   ) {}
 
+  // ==========================================
+  // STATIC ROUTES (must come BEFORE :id routes)
+  // ==========================================
+
+  // ==========================================
+  // ALLOWED TABLES MANAGEMENT ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get all allowed tables with details
+   */
+  @Get('allowed-tables')
+  async getAllAllowedTables() {
+    return this.allowedTablesService.findAll();
+  }
+
+  /**
+   * Get active allowed tables only
+   */
+  @Get('allowed-tables/active')
+  async getActiveAllowedTables() {
+    return this.allowedTablesService.findActive();
+  }
+
+  /**
+   * Get a single allowed table by ID
+   */
+  @Get('allowed-tables/:id')
+  async getAllowedTable(@Param('id') id: string) {
+    return this.allowedTablesService.findOne(id);
+  }
+
+  /**
+   * Create a new allowed table
+   */
+  @Post('allowed-tables')
+  async createAllowedTable(
+    @Body() body: { tableName: string; description?: string; isActive?: boolean },
+  ) {
+    return this.allowedTablesService.create(body);
+  }
+
+  /**
+   * Update an allowed table
+   */
+  @Put('allowed-tables/:id')
+  async updateAllowedTable(
+    @Param('id') id: string,
+    @Body() body: { tableName?: string; description?: string; isActive?: boolean },
+  ) {
+    return this.allowedTablesService.update(id, body);
+  }
+
+  /**
+   * Toggle allowed table active status
+   */
+  @Patch('allowed-tables/:id/toggle')
+  async toggleAllowedTable(@Param('id') id: string) {
+    return this.allowedTablesService.toggleActive(id);
+  }
+
+  /**
+   * Delete an allowed table
+   */
+  @Delete('allowed-tables/:id')
+  async deleteAllowedTable(@Param('id') id: string) {
+    return this.allowedTablesService.remove(id);
+  }
+
+  // ==========================================
+  // LOOKUP ENDPOINTS
+  // ==========================================
+
+  /**
+   * Search records for lookup modal
+   */
+  @Post('lookup/search')
+  async searchLookup(
+    @Body() body: {
+      config: LookupConfigDto;
+      search?: string;
+      page?: number;
+      limit?: number;
+    },
+  ) {
+    console.log('[LookupController] searchLookup called with body:', JSON.stringify(body, null, 2));
+    const { config, search = '', page = 0, limit = 20 } = body;
+
+    try {
+      const result = await this.lookupService.search(config, search, { page, limit });
+      console.log('[LookupController] searchLookup success, returning', result.data?.length, 'records');
+      return result;
+    } catch (error) {
+      console.error('[LookupController] searchLookup error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a single record for lookup display
+   */
+  @Post('lookup/record')
+  async getLookupRecord(
+    @Body() body: {
+      config: LookupConfigDto;
+      value: string;
+    },
+  ) {
+    return this.lookupService.getRecord(body.config, body.value);
+  }
+
+  /**
+   * Validate a lookup value
+   */
+  @Post('lookup/validate')
+  async validateLookupValue(
+    @Body() body: {
+      config: LookupConfigDto;
+      value: string;
+    },
+  ) {
+    return this.lookupService.validateValue(body.config, body.value);
+  }
+
+  /**
+   * Get allowed tables for lookup (names only)
+   */
+  @Get('lookup/allowed-tables')
+  async getLookupAllowedTables() {
+    return this.lookupService.getAllowedTables();
+  }
+
+  // ==========================================
+  // DATA SOURCE ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get list of allowed tables for SQL queries
+   */
+  @Get('data-sources/allowed-tables')
+  getAllowedTablesForDataSources() {
+    return this.dataSourceService.getAllowedTables();
+  }
+
+  /**
+   * Get available SX5 tables for selection
+   */
+  @Get('data-sources/sx5-tables')
+  getAvailableSx5Tables() {
+    return this.dataSourceService.getAvailableSx5Tables();
+  }
+
+  // ==========================================
+  // MULTI-TABLE TEMPLATE ENDPOINTS
+  // ==========================================
+
+  /**
+   * Create a new multi-table template
+   */
+  @Post('multi-table')
+  createMultiTableTemplate(@Body() dto: CreateMultiTableTemplateDto) {
+    return this.formTemplateService.createMultiTableTemplate(dto);
+  }
+
+  // ==========================================
+  // TEMPLATE BY TABLE NAME
+  // ==========================================
+
+  /**
+   * Get form template by table name
+   */
+  @Get('by-table/:tableName')
+  findByTableName(@Param('tableName') tableName: string) {
+    return this.formTemplateService.findByTableName(tableName);
+  }
+
+  // ==========================================
+  // BASE TEMPLATE ROUTES (no params)
+  // ==========================================
+
   /**
    * Create new form template from SX3 structure
    */
@@ -53,20 +233,16 @@ export class FormTemplateController {
     return this.formTemplateService.findAll(includeFields);
   }
 
+  // ==========================================
+  // TEMPLATE ROUTES WITH :id (must come LAST)
+  // ==========================================
+
   /**
    * Get form template by ID
    */
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.formTemplateService.findOne(id);
-  }
-
-  /**
-   * Get form template by table name
-   */
-  @Get('by-table/:tableName')
-  findByTableName(@Param('tableName') tableName: string) {
-    return this.formTemplateService.findByTableName(tableName);
   }
 
   /**
@@ -143,10 +319,6 @@ export class FormTemplateController {
     return this.formTemplateService.deleteField(id, fieldId);
   }
 
-  // ==========================================
-  // DATA SOURCE ENDPOINTS
-  // ==========================================
-
   /**
    * Get options for a field's data source
    */
@@ -169,34 +341,6 @@ export class FormTemplateController {
     @Body() body: { value: string },
   ) {
     return this.formTemplateService.validateFieldValue(templateId, fieldId, body.value);
-  }
-
-  /**
-   * Get list of allowed tables for SQL queries
-   */
-  @Get('data-sources/allowed-tables')
-  getAllowedTables() {
-    return this.dataSourceService.getAllowedTables();
-  }
-
-  /**
-   * Get available SX5 tables for selection
-   */
-  @Get('data-sources/sx5-tables')
-  getAvailableSx5Tables() {
-    return this.dataSourceService.getAvailableSx5Tables();
-  }
-
-  // ==========================================
-  // MULTI-TABLE TEMPLATE ENDPOINTS
-  // ==========================================
-
-  /**
-   * Create a new multi-table template
-   */
-  @Post('multi-table')
-  createMultiTableTemplate(@Body() dto: CreateMultiTableTemplateDto) {
-    return this.formTemplateService.createMultiTableTemplate(dto);
   }
 
   /**
@@ -253,133 +397,5 @@ export class FormTemplateController {
     @Param('tableId') tableId: string,
   ) {
     return this.formTemplateService.getTableFields(id, tableId);
-  }
-
-  // ==========================================
-  // LOOKUP ENDPOINTS
-  // ==========================================
-
-  /**
-   * Search records for lookup modal
-   */
-  @Post('lookup/search')
-  async searchLookup(
-    @Body() body: {
-      config: LookupConfigDto;
-      search?: string;
-      page?: number;
-      limit?: number;
-    },
-  ) {
-    console.log('[LookupController] searchLookup called with body:', JSON.stringify(body, null, 2));
-    const { config, search = '', page = 0, limit = 20 } = body;
-
-    try {
-      const result = await this.lookupService.search(config, search, { page, limit });
-      console.log('[LookupController] searchLookup success, returning', result.data?.length, 'records');
-      return result;
-    } catch (error) {
-      console.error('[LookupController] searchLookup error:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get a single record for lookup display
-   */
-  @Post('lookup/record')
-  async getLookupRecord(
-    @Body() body: {
-      config: LookupConfigDto;
-      value: string;
-    },
-  ) {
-    return this.lookupService.getRecord(body.config, body.value);
-  }
-
-  /**
-   * Validate a lookup value
-   */
-  @Post('lookup/validate')
-  async validateLookupValue(
-    @Body() body: {
-      config: LookupConfigDto;
-      value: string;
-    },
-  ) {
-    return this.lookupService.validateValue(body.config, body.value);
-  }
-
-  /**
-   * Get allowed tables for lookup (names only)
-   */
-  @Get('lookup/allowed-tables')
-  async getLookupAllowedTables() {
-    return this.lookupService.getAllowedTables();
-  }
-
-  // ==========================================
-  // ALLOWED TABLES MANAGEMENT ENDPOINTS
-  // ==========================================
-
-  /**
-   * Get all allowed tables with details
-   */
-  @Get('allowed-tables')
-  async getAllAllowedTables() {
-    return this.allowedTablesService.findAll();
-  }
-
-  /**
-   * Get active allowed tables only
-   */
-  @Get('allowed-tables/active')
-  async getActiveAllowedTables() {
-    return this.allowedTablesService.findActive();
-  }
-
-  /**
-   * Get a single allowed table by ID
-   */
-  @Get('allowed-tables/:id')
-  async getAllowedTable(@Param('id') id: string) {
-    return this.allowedTablesService.findOne(id);
-  }
-
-  /**
-   * Create a new allowed table
-   */
-  @Post('allowed-tables')
-  async createAllowedTable(
-    @Body() body: { tableName: string; description?: string; isActive?: boolean },
-  ) {
-    return this.allowedTablesService.create(body);
-  }
-
-  /**
-   * Update an allowed table
-   */
-  @Put('allowed-tables/:id')
-  async updateAllowedTable(
-    @Param('id') id: string,
-    @Body() body: { tableName?: string; description?: string; isActive?: boolean },
-  ) {
-    return this.allowedTablesService.update(id, body);
-  }
-
-  /**
-   * Toggle allowed table active status
-   */
-  @Patch('allowed-tables/:id/toggle')
-  async toggleAllowedTable(@Param('id') id: string) {
-    return this.allowedTablesService.toggleActive(id);
-  }
-
-  /**
-   * Delete an allowed table
-   */
-  @Delete('allowed-tables/:id')
-  async deleteAllowedTable(@Param('id') id: string) {
-    return this.allowedTablesService.remove(id);
   }
 }
