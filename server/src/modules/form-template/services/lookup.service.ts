@@ -3,7 +3,6 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import {
   LookupConfigDto,
-  LookupFilterOperator,
   LookupSearchResponseDto,
   LookupRecordResponseDto,
 } from '../dto/lookup-config.dto';
@@ -67,208 +66,57 @@ export class LookupService {
   ) {}
 
   /**
-   * Search records for lookup modal
+   * Search records for lookup modal using SQL query from config
    */
   async search(
     config: LookupConfigDto,
-    filters: Record<string, string>,
+    searchTerm: string,
     pagination: { page: number; limit: number },
   ): Promise<LookupSearchResponseDto> {
-    // Validate source table
-    this.validateTable(config.sourceTable);
-
-    // Build select fields
-    const selectFields = this.buildSelectFields(config);
-
-    // Build base query
-    let baseQuery = `FROM ${config.sourceTable} WHERE D_E_L_E_T_ = ''`;
-
-    // Add fixed filters from config
-    if (config.filters && config.filters.length > 0) {
-      for (const filter of config.filters) {
-        const filterCondition = this.buildFilterCondition(filter.field, filter.operator, filter.value);
-        baseQuery += ` AND ${filterCondition}`;
-      }
+    if (!config.sqlQuery) {
+      throw new BadRequestException('Consulta SQL não configurada para este lookup');
     }
 
-    // Add dynamic filters from search modal
-    if (filters && Object.keys(filters).length > 0) {
-      for (const [field, value] of Object.entries(filters)) {
-        if (value && value.trim()) {
-          // Validate field name
-          if (!/^[a-zA-Z0-9_]+$/.test(field)) {
-            this.logger.warn(`Invalid filter field name: ${field}, skipping`);
-            continue;
+    // Validate the SQL query
+    this.validateCustomQuery(config.sqlQuery);
+
+    // Build query with search filter
+    let baseQuery = config.sqlQuery;
+
+    // Add search filter if user typed something
+    if (searchTerm && searchTerm.trim()) {
+      const escapedSearch = this.escapeValue(searchTerm);
+      const searchConditions: string[] = [];
+
+      // Search in all columns or specific searchable fields
+      if (config.searchableFields && config.searchableFields.length > 0) {
+        for (const field of config.searchableFields) {
+          if (/^[a-zA-Z0-9_]+$/.test(field)) {
+            searchConditions.push(`${field} LIKE '%${escapedSearch}%'`);
           }
-          const escapedValue = this.escapeValue(value);
-          baseQuery += ` AND ${field} LIKE '%${escapedValue}%'`;
+        }
+      } else {
+        // Default: search in valueField and displayField
+        if (config.valueField) {
+          searchConditions.push(`${config.valueField} LIKE '%${escapedSearch}%'`);
+        }
+        if (config.displayField && config.displayField !== config.valueField) {
+          searchConditions.push(`${config.displayField} LIKE '%${escapedSearch}%'`);
+        }
+      }
+
+      if (searchConditions.length > 0) {
+        const searchClause = `(${searchConditions.join(' OR ')})`;
+        if (baseQuery.toUpperCase().includes('WHERE')) {
+          baseQuery += ` AND ${searchClause}`;
+        } else {
+          baseQuery += ` WHERE ${searchClause}`;
         }
       }
     }
 
     // Get total count
-    const countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
-    this.logger.debug(`Executing count query: ${countQuery.substring(0, 200)}...`);
-
-    let total = 0;
-    try {
-      const countResult = await this.executeQuery(countQuery);
-      total = parseInt(countResult[0]?.total || '0', 10);
-    } catch (error) {
-      this.logger.error(`Error executing count query: ${error.message}`);
-      throw new BadRequestException('Erro ao contar registros');
-    }
-
-    // Build paginated query
-    const offset = pagination.page * pagination.limit;
-    const dataQuery = `
-      SELECT ${selectFields}
-      ${baseQuery}
-      ORDER BY ${config.valueField}
-      OFFSET ${offset} ROWS
-      FETCH NEXT ${pagination.limit} ROWS ONLY
-    `;
-
-    this.logger.debug(`Executing search query: ${dataQuery.substring(0, 200)}...`);
-
-    try {
-      const results = await this.executeQuery(dataQuery);
-
-      const data = results.map((row: any) => {
-        const record: Record<string, any> = {};
-        // Trim all string values
-        for (const [key, value] of Object.entries(row)) {
-          record[key] = typeof value === 'string' ? value.trim() : value;
-        }
-        return record;
-      });
-
-      return {
-        data,
-        total,
-        page: pagination.page,
-        limit: pagination.limit,
-      };
-    } catch (error) {
-      this.logger.error(`Error executing search query: ${error.message}`);
-      throw new BadRequestException('Erro ao buscar registros');
-    }
-  }
-
-  /**
-   * Get a single record by value
-   */
-  async getRecord(
-    config: LookupConfigDto,
-    value: string,
-  ): Promise<LookupRecordResponseDto> {
-    // Validate source table
-    this.validateTable(config.sourceTable);
-
-    // Build select fields (include return fields)
-    const selectFields = this.buildSelectFields(config, true);
-
-    // Build query
-    const escapedValue = this.escapeValue(value);
-    const query = `
-      SELECT TOP 1 ${selectFields}
-      FROM ${config.sourceTable}
-      WHERE D_E_L_E_T_ = ''
-      AND ${config.valueField} = '${escapedValue}'
-    `;
-
-    this.logger.debug(`Executing getRecord query: ${query.substring(0, 200)}...`);
-
-    try {
-      const results = await this.executeQuery(query);
-
-      if (results.length === 0) {
-        return { data: null, found: false };
-      }
-
-      const record: Record<string, any> = {};
-      // Trim all string values
-      for (const [key, value] of Object.entries(results[0])) {
-        record[key] = typeof value === 'string' ? value.trim() : value;
-      }
-
-      return { data: record, found: true };
-    } catch (error) {
-      this.logger.error(`Error executing getRecord query: ${error.message}`);
-      throw new BadRequestException('Erro ao buscar registro');
-    }
-  }
-
-  /**
-   * Validate that a value exists in the lookup table
-   */
-  async validateValue(
-    config: LookupConfigDto,
-    value: string,
-  ): Promise<{ valid: boolean; message?: string }> {
-    // Validate source table
-    this.validateTable(config.sourceTable);
-
-    const escapedValue = this.escapeValue(value);
-    const query = `
-      SELECT COUNT(*) as count
-      FROM ${config.sourceTable}
-      WHERE D_E_L_E_T_ = ''
-      AND ${config.valueField} = '${escapedValue}'
-    `;
-
-    this.logger.debug(`Executing validation query: ${query.substring(0, 200)}...`);
-
-    try {
-      const results = await this.executeQuery(query);
-      const count = parseInt(results[0]?.count || '0', 10);
-
-      return {
-        valid: count > 0,
-        message: count > 0 ? undefined : 'Valor não encontrado na tabela de origem',
-      };
-    } catch (error) {
-      this.logger.error(`Error executing validation query: ${error.message}`);
-      return { valid: false, message: 'Erro ao validar valor' };
-    }
-  }
-
-  /**
-   * Execute custom SQL query for lookup (if customQuery is provided)
-   */
-  async executeCustomQuery(
-    customQuery: string,
-    filters: Record<string, string>,
-    pagination: { page: number; limit: number },
-  ): Promise<LookupSearchResponseDto> {
-    // Validate and sanitize query
-    this.validateCustomQuery(customQuery);
-
-    // Add filters to query
-    let query = customQuery;
-    if (filters && Object.keys(filters).length > 0) {
-      const filterConditions: string[] = [];
-      for (const [field, value] of Object.entries(filters)) {
-        if (value && value.trim()) {
-          if (!/^[a-zA-Z0-9_]+$/.test(field)) {
-            continue;
-          }
-          const escapedValue = this.escapeValue(value);
-          filterConditions.push(`${field} LIKE '%${escapedValue}%'`);
-        }
-      }
-
-      if (filterConditions.length > 0) {
-        if (query.toUpperCase().includes('WHERE')) {
-          query += ` AND ${filterConditions.join(' AND ')}`;
-        } else {
-          query += ` WHERE ${filterConditions.join(' AND ')}`;
-        }
-      }
-    }
-
-    // Get count (wrap original query)
-    const countQuery = `SELECT COUNT(*) as total FROM (${query}) as subquery`;
+    const countQuery = `SELECT COUNT(*) as total FROM (${baseQuery}) as countQuery`;
     let total = 0;
     try {
       const countResult = await this.executeQuery(countQuery);
@@ -277,15 +125,18 @@ export class LookupService {
       this.logger.warn(`Could not get total count: ${error.message}`);
     }
 
-    // Add pagination
+    // Add ORDER BY and pagination
     const offset = pagination.page * pagination.limit;
-    const paginatedQuery = `
-      ${query}
-      OFFSET ${offset} ROWS
-      FETCH NEXT ${pagination.limit} ROWS ONLY
-    `;
+    let paginatedQuery = baseQuery;
 
-    this.logger.debug(`Executing custom query: ${paginatedQuery.substring(0, 200)}...`);
+    // Add ORDER BY if not present and we have a valueField
+    if (!baseQuery.toUpperCase().includes('ORDER BY') && config.valueField) {
+      paginatedQuery += ` ORDER BY ${config.valueField}`;
+    }
+
+    paginatedQuery += ` OFFSET ${offset} ROWS FETCH NEXT ${pagination.limit} ROWS ONLY`;
+
+    this.logger.debug(`Executing lookup search: ${paginatedQuery.substring(0, 200)}...`);
 
     try {
       const results = await this.executeQuery(paginatedQuery);
@@ -305,85 +156,80 @@ export class LookupService {
         limit: pagination.limit,
       };
     } catch (error) {
-      this.logger.error(`Error executing custom query: ${error.message}`);
-      throw new BadRequestException('Erro ao executar consulta personalizada');
+      this.logger.error(`Error executing lookup search: ${error.message}`);
+      throw new BadRequestException('Erro ao buscar registros do lookup');
+    }
+  }
+
+  /**
+   * Get a single record by value
+   */
+  async getRecord(
+    config: LookupConfigDto,
+    value: string,
+  ): Promise<LookupRecordResponseDto> {
+    if (!config.sqlQuery || !config.valueField) {
+      throw new BadRequestException('Configuração de lookup incompleta');
+    }
+
+    // Validate the SQL query
+    this.validateCustomQuery(config.sqlQuery);
+
+    // Build query to get single record
+    const escapedValue = this.escapeValue(value);
+    let query = config.sqlQuery;
+
+    // Add WHERE clause to find specific record
+    const valueCondition = `${config.valueField} = '${escapedValue}'`;
+    if (query.toUpperCase().includes('WHERE')) {
+      query += ` AND ${valueCondition}`;
+    } else {
+      query += ` WHERE ${valueCondition}`;
+    }
+
+    this.logger.debug(`Executing getRecord query: ${query.substring(0, 200)}...`);
+
+    try {
+      const results = await this.executeQuery(query);
+
+      if (results.length === 0) {
+        return { data: null, found: false };
+      }
+
+      const record: Record<string, any> = {};
+      for (const [key, val] of Object.entries(results[0])) {
+        record[key] = typeof val === 'string' ? val.trim() : val;
+      }
+
+      return { data: record, found: true };
+    } catch (error) {
+      this.logger.error(`Error executing getRecord query: ${error.message}`);
+      throw new BadRequestException('Erro ao buscar registro');
+    }
+  }
+
+  /**
+   * Validate that a value exists in the lookup
+   */
+  async validateValue(
+    config: LookupConfigDto,
+    value: string,
+  ): Promise<{ valid: boolean; message?: string }> {
+    try {
+      const result = await this.getRecord(config, value);
+      return {
+        valid: result.found,
+        message: result.found ? undefined : 'Valor não encontrado',
+      };
+    } catch (error) {
+      this.logger.error(`Error validating lookup value: ${error.message}`);
+      return { valid: false, message: 'Erro ao validar valor' };
     }
   }
 
   // ==========================================
   // PRIVATE HELPER METHODS
   // ==========================================
-
-  /**
-   * Validate table is in whitelist
-   */
-  private validateTable(tableName: string): void {
-    const normalizedTable = tableName.toUpperCase().trim();
-    if (!this.allowedTables.includes(normalizedTable)) {
-      this.logger.warn(`Table ${tableName} not in whitelist`);
-      throw new BadRequestException(`Tabela ${tableName} não permitida para lookup`);
-    }
-  }
-
-  /**
-   * Build SELECT field list from config
-   */
-  private buildSelectFields(config: LookupConfigDto, includeReturnFields = false): string {
-    const fields = new Set<string>();
-
-    // Always include value and display fields
-    fields.add(config.valueField);
-    fields.add(config.displayField);
-
-    // Add search fields
-    for (const sf of config.searchFields) {
-      fields.add(sf.field);
-    }
-
-    // Add return fields if requested
-    if (includeReturnFields && config.returnFields) {
-      for (const rf of config.returnFields) {
-        fields.add(rf.sourceField);
-      }
-    }
-
-    return Array.from(fields).join(', ');
-  }
-
-  /**
-   * Build filter condition based on operator
-   */
-  private buildFilterCondition(
-    field: string,
-    operator: LookupFilterOperator | string,
-    value: string | string[],
-  ): string {
-    // Validate field name
-    if (!/^[a-zA-Z0-9_]+$/.test(field)) {
-      throw new BadRequestException(`Nome de campo inválido: ${field}`);
-    }
-
-    switch (operator) {
-      case LookupFilterOperator.EQUALS:
-      case 'equals':
-        const escapedEquals = this.escapeValue(String(value));
-        return `${field} = '${escapedEquals}'`;
-
-      case LookupFilterOperator.LIKE:
-      case 'like':
-        const escapedLike = this.escapeValue(String(value));
-        return `${field} LIKE '%${escapedLike}%'`;
-
-      case LookupFilterOperator.IN:
-      case 'in':
-        const values = Array.isArray(value) ? value : [value];
-        const escapedValues = values.map(v => `'${this.escapeValue(v)}'`).join(', ');
-        return `${field} IN (${escapedValues})`;
-
-      default:
-        throw new BadRequestException(`Operador de filtro desconhecido: ${operator}`);
-    }
-  }
 
   /**
    * Escape value for SQL

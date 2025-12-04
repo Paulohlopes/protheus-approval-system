@@ -264,23 +264,14 @@ export class FormTemplateController {
   async searchLookup(
     @Body() body: {
       config: LookupConfigDto;
-      filters?: Record<string, string>;
+      search?: string;
       page?: number;
       limit?: number;
     },
   ) {
-    const { config, filters = {}, page = 0, limit = 20 } = body;
+    const { config, search = '', page = 0, limit = 20 } = body;
 
-    // Use custom query if provided, otherwise use standard search
-    if (config.customQuery) {
-      return this.lookupService.executeCustomQuery(
-        config.customQuery,
-        filters,
-        { page, limit },
-      );
-    }
-
-    return this.lookupService.search(config, filters, { page, limit });
+    return this.lookupService.search(config, search, { page, limit });
   }
 
   /**
