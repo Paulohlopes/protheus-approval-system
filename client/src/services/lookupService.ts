@@ -1,4 +1,4 @@
-import api from './api';
+import { backendApi } from './api';
 import type {
   LookupConfig,
   LookupSearchResponse,
@@ -14,7 +14,7 @@ export const lookupService = {
     searchTerm: string,
     pagination: { page: number; limit: number }
   ): Promise<LookupSearchResponse> {
-    const response = await api.post('/form-templates/lookup/search', {
+    const response = await backendApi.post('/form-templates/lookup/search', {
       config,
       search: searchTerm,
       page: pagination.page,
@@ -27,7 +27,7 @@ export const lookupService = {
    * Get a single record by value
    */
   async getRecord(config: LookupConfig, value: string): Promise<LookupRecordResponse> {
-    const response = await api.post('/form-templates/lookup/record', {
+    const response = await backendApi.post('/form-templates/lookup/record', {
       config,
       value,
     });
@@ -41,7 +41,7 @@ export const lookupService = {
     config: LookupConfig,
     value: string
   ): Promise<{ valid: boolean; message?: string }> {
-    const response = await api.post('/form-templates/lookup/validate', {
+    const response = await backendApi.post('/form-templates/lookup/validate', {
       config,
       value,
     });
@@ -52,7 +52,7 @@ export const lookupService = {
    * Get allowed tables for lookup
    */
   async getAllowedTables(): Promise<string[]> {
-    const response = await api.get('/form-templates/lookup/allowed-tables');
+    const response = await backendApi.get('/form-templates/lookup/allowed-tables');
     return response.data;
   },
 };
