@@ -86,24 +86,29 @@ export class LookupModalConfigDto {
 // ==========================================
 
 export class LookupConfigDto {
+  @IsOptional()
   @IsString()
-  sourceTable: string; // Source table for lookup (e.g., SA1010)
+  sourceTable?: string; // Source table for lookup (e.g., SA1010)
 
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => LookupSearchFieldDto)
-  searchFields: LookupSearchFieldDto[]; // Fields displayed in search modal
+  searchFields?: LookupSearchFieldDto[]; // Fields displayed in search modal
 
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => LookupReturnFieldDto)
-  returnFields: LookupReturnFieldDto[]; // Fields to auto-fill on selection
+  returnFields?: LookupReturnFieldDto[]; // Fields to auto-fill on selection
 
+  @IsOptional()
   @IsString()
-  valueField: string; // Field to store as value (e.g., A1_COD)
+  valueField?: string; // Field to store as value (e.g., A1_COD)
 
+  @IsOptional()
   @IsString()
-  displayField: string; // Field to display in input (e.g., A1_NOME)
+  displayField?: string; // Field to display in input (e.g., A1_NOME)
 
   @IsOptional()
   @IsArray()
@@ -113,7 +118,11 @@ export class LookupConfigDto {
 
   @IsOptional()
   @IsString()
-  customQuery?: string; // Custom SQL query (optional)
+  baseFilter?: string; // SQL WHERE clause to pre-filter data (e.g., "D_E_L_E_T_ = '' AND A1_MSBLQL <> '1'")
+
+  @IsOptional()
+  @IsString()
+  customQuery?: string; // Custom SQL query (optional, replaces default query)
 
   @IsOptional()
   @ValidateNested()

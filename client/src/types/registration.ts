@@ -197,13 +197,14 @@ export interface LookupModalConfig {
 }
 
 export interface LookupConfig {
-  sourceTable: string; // Source table for lookup (e.g., SA1010)
-  searchFields: LookupSearchField[]; // Fields displayed in search modal
-  returnFields: LookupReturnField[]; // Fields to auto-fill on selection
-  valueField: string; // Field to store as value (e.g., A1_COD)
-  displayField: string; // Field to display in input (e.g., A1_NOME)
+  sourceTable?: string; // Source table for lookup (e.g., SA1010)
+  searchFields?: LookupSearchField[]; // Fields displayed in search modal
+  returnFields?: LookupReturnField[]; // Fields to auto-fill on selection
+  valueField?: string; // Field to store as value (e.g., A1_COD)
+  displayField?: string; // Field to display in input (e.g., A1_NOME)
   filters?: LookupFilter[]; // Fixed filters for the query
-  customQuery?: string; // Custom SQL query (optional)
+  baseFilter?: string; // SQL WHERE clause to pre-filter data (e.g., "D_E_L_E_T_ = '' AND A1_MSBLQL <> '1'")
+  customQuery?: string; // Custom SQL query (optional, replaces default query)
   modalConfig?: LookupModalConfig; // Modal configuration
 }
 

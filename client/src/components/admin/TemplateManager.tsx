@@ -122,6 +122,7 @@ interface CustomFieldFormData {
   lookupDisplayField: string;
   lookupSearchFields: string; // JSON string of searchFields array
   lookupReturnFields: string; // JSON string of returnFields array
+  lookupBaseFilter: string; // SQL WHERE clause to pre-filter data
 }
 
 // Memoized Field List Item component to prevent unnecessary re-renders
@@ -319,6 +320,7 @@ const TemplateManager: React.FC = () => {
     lookupDisplayField: '',
     lookupSearchFields: '',
     lookupReturnFields: '',
+    lookupBaseFilter: '',
   });
 
   const resetCustomFieldForm = () => {
@@ -348,6 +350,7 @@ const TemplateManager: React.FC = () => {
       lookupDisplayField: '',
       lookupSearchFields: '',
       lookupReturnFields: '',
+      lookupBaseFilter: '',
     });
   };
 
@@ -501,6 +504,7 @@ const TemplateManager: React.FC = () => {
       lookupDisplayField: field.lookupConfig?.displayField || '',
       lookupSearchFields: field.lookupConfig?.searchFields ? JSON.stringify(field.lookupConfig.searchFields, null, 2) : '',
       lookupReturnFields: field.lookupConfig?.returnFields ? JSON.stringify(field.lookupConfig.returnFields, null, 2) : '',
+      lookupBaseFilter: field.lookupConfig?.baseFilter || '',
     });
 
     // Load SX5 tables if field uses sx5 data source
@@ -602,6 +606,7 @@ const TemplateManager: React.FC = () => {
           displayField: customFieldData.lookupDisplayField,
           searchFields: searchFields.length > 0 ? searchFields : [{ field: customFieldData.lookupValueField, label: 'Código' }],
           returnFields: returnFields.length > 0 ? returnFields : [],
+          baseFilter: customFieldData.lookupBaseFilter || undefined,
         };
       }
 
@@ -718,6 +723,7 @@ const TemplateManager: React.FC = () => {
           displayField: customFieldData.lookupDisplayField,
           searchFields: searchFields.length > 0 ? searchFields : [{ field: customFieldData.lookupValueField, label: 'Código' }],
           returnFields: returnFields.length > 0 ? returnFields : [],
+          baseFilter: customFieldData.lookupBaseFilter || undefined,
         };
       }
 
@@ -1431,6 +1437,16 @@ const TemplateManager: React.FC = () => {
                   onChange={(e) => setCustomFieldData({ ...customFieldData, lookupReturnFields: e.target.value })}
                   helperText="Campos preenchidos automaticamente ao selecionar (formato JSON)"
                 />
+                <TextField
+                  label="Filtro Base (SQL WHERE)"
+                  fullWidth
+                  multiline
+                  rows={2}
+                  placeholder="Ex: D_E_L_E_T_ = '' AND A1_MSBLQL <> '1'"
+                  value={customFieldData.lookupBaseFilter}
+                  onChange={(e) => setCustomFieldData({ ...customFieldData, lookupBaseFilter: e.target.value })}
+                  helperText="Condição SQL aplicada antes da pesquisa do usuário (opcional)"
+                />
               </>
             )}
 
@@ -1794,6 +1810,16 @@ const TemplateManager: React.FC = () => {
                   value={customFieldData.lookupReturnFields}
                   onChange={(e) => setCustomFieldData({ ...customFieldData, lookupReturnFields: e.target.value })}
                   helperText="Campos preenchidos automaticamente ao selecionar (formato JSON)"
+                />
+                <TextField
+                  label="Filtro Base (SQL WHERE)"
+                  fullWidth
+                  multiline
+                  rows={2}
+                  placeholder="Ex: D_E_L_E_T_ = '' AND A1_MSBLQL <> '1'"
+                  value={customFieldData.lookupBaseFilter}
+                  onChange={(e) => setCustomFieldData({ ...customFieldData, lookupBaseFilter: e.target.value })}
+                  helperText="Condição SQL aplicada antes da pesquisa do usuário (opcional)"
                 />
               </>
             )}
