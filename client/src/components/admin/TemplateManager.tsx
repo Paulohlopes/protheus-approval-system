@@ -116,6 +116,12 @@ interface CustomFieldFormData {
   allowedTypes: string[];
   maxSize: string; // MB
   maxFiles: string;
+  // Lookup config
+  lookupSourceTable: string;
+  lookupValueField: string;
+  lookupDisplayField: string;
+  lookupSearchFields: string; // JSON string of searchFields array
+  lookupReturnFields: string; // JSON string of returnFields array
 }
 
 // Memoized Field List Item component to prevent unnecessary re-renders
@@ -307,6 +313,12 @@ const TemplateManager: React.FC = () => {
     allowedTypes: ['application/pdf', 'image/jpeg', 'image/png'],
     maxSize: '10',
     maxFiles: '5',
+    // Lookup
+    lookupSourceTable: '',
+    lookupValueField: '',
+    lookupDisplayField: '',
+    lookupSearchFields: '',
+    lookupReturnFields: '',
   });
 
   const resetCustomFieldForm = () => {
@@ -331,6 +343,11 @@ const TemplateManager: React.FC = () => {
       allowedTypes: ['application/pdf', 'image/jpeg', 'image/png'],
       maxSize: '10',
       maxFiles: '5',
+      lookupSourceTable: '',
+      lookupValueField: '',
+      lookupDisplayField: '',
+      lookupSearchFields: '',
+      lookupReturnFields: '',
     });
   };
 
@@ -478,6 +495,12 @@ const TemplateManager: React.FC = () => {
       allowedTypes: field.attachmentConfig?.allowedTypes || ['application/pdf', 'image/jpeg', 'image/png'],
       maxSize: field.attachmentConfig?.maxSize ? String(field.attachmentConfig.maxSize / (1024 * 1024)) : '10',
       maxFiles: field.attachmentConfig?.maxFiles?.toString() || '5',
+      // Lookup
+      lookupSourceTable: field.lookupConfig?.sourceTable || '',
+      lookupValueField: field.lookupConfig?.valueField || '',
+      lookupDisplayField: field.lookupConfig?.displayField || '',
+      lookupSearchFields: field.lookupConfig?.searchFields ? JSON.stringify(field.lookupConfig.searchFields, null, 2) : '',
+      lookupReturnFields: field.lookupConfig?.returnFields ? JSON.stringify(field.lookupConfig.returnFields, null, 2) : '',
     });
 
     // Load SX5 tables if field uses sx5 data source
@@ -551,6 +574,37 @@ const TemplateManager: React.FC = () => {
         };
       }
 
+      // Build lookup config
+      let lookupConfig: any = undefined;
+      if (customFieldData.fieldType === 'lookup' && customFieldData.lookupSourceTable) {
+        let searchFields: any[] = [];
+        let returnFields: any[] = [];
+
+        try {
+          if (customFieldData.lookupSearchFields) {
+            searchFields = JSON.parse(customFieldData.lookupSearchFields);
+          }
+        } catch (e) {
+          console.warn('Invalid lookupSearchFields JSON');
+        }
+
+        try {
+          if (customFieldData.lookupReturnFields) {
+            returnFields = JSON.parse(customFieldData.lookupReturnFields);
+          }
+        } catch (e) {
+          console.warn('Invalid lookupReturnFields JSON');
+        }
+
+        lookupConfig = {
+          sourceTable: customFieldData.lookupSourceTable,
+          valueField: customFieldData.lookupValueField,
+          displayField: customFieldData.lookupDisplayField,
+          searchFields: searchFields.length > 0 ? searchFields : [{ field: customFieldData.lookupValueField, label: 'Código' }],
+          returnFields: returnFields.length > 0 ? returnFields : [],
+        };
+      }
+
       await adminService.updateTemplateField(selectedTemplate.id, selectedField.id, {
         fieldType: customFieldData.fieldType,
         fieldGroup: customFieldData.fieldGroup || undefined,
@@ -559,6 +613,7 @@ const TemplateManager: React.FC = () => {
         dataSourceType,
         dataSourceConfig: dataSourceConfig || undefined,
         validationRules: Object.keys(validationRules).length > 0 ? validationRules : undefined,
+        lookupConfig,
         attachmentConfig,
       });
 
@@ -635,6 +690,37 @@ const TemplateManager: React.FC = () => {
         };
       }
 
+      // Build lookup config for lookup type
+      let lookupConfig: any = undefined;
+      if (customFieldData.fieldType === 'lookup' && customFieldData.lookupSourceTable) {
+        let searchFields: any[] = [];
+        let returnFields: any[] = [];
+
+        try {
+          if (customFieldData.lookupSearchFields) {
+            searchFields = JSON.parse(customFieldData.lookupSearchFields);
+          }
+        } catch (e) {
+          console.warn('Invalid lookupSearchFields JSON');
+        }
+
+        try {
+          if (customFieldData.lookupReturnFields) {
+            returnFields = JSON.parse(customFieldData.lookupReturnFields);
+          }
+        } catch (e) {
+          console.warn('Invalid lookupReturnFields JSON');
+        }
+
+        lookupConfig = {
+          sourceTable: customFieldData.lookupSourceTable,
+          valueField: customFieldData.lookupValueField,
+          displayField: customFieldData.lookupDisplayField,
+          searchFields: searchFields.length > 0 ? searchFields : [{ field: customFieldData.lookupValueField, label: 'Código' }],
+          returnFields: returnFields.length > 0 ? returnFields : [],
+        };
+      }
+
       await adminService.createCustomField(selectedTemplate.id, {
         fieldName: customFieldData.fieldName,
         label: customFieldData.label,
@@ -647,6 +733,7 @@ const TemplateManager: React.FC = () => {
         dataSourceConfig: dataSourceConfig ? dataSourceConfig : undefined,
         validationRules: Object.keys(validationRules).length > 0 ? validationRules : undefined,
         attachmentConfig,
+        lookupConfig,
       });
 
       setCustomFieldDialogOpen(false);
@@ -1289,6 +1376,64 @@ const TemplateManager: React.FC = () => {
               </>
             )}
 
+            {/* Lookup Config Section */}
+            {customFieldData.fieldType === 'lookup' && (
+              <>
+                <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
+                  Configuração de Lookup (Pesquisa F3)
+                </Typography>
+                <TextField
+                  label="Tabela de Origem"
+                  fullWidth
+                  required
+                  placeholder="Ex: SA1010"
+                  value={customFieldData.lookupSourceTable}
+                  onChange={(e) => setCustomFieldData({ ...customFieldData, lookupSourceTable: e.target.value.toUpperCase() })}
+                  helperText="Nome da tabela no banco do Protheus (ex: SA1010, SB1010)"
+                />
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    label="Campo de Valor"
+                    fullWidth
+                    required
+                    placeholder="Ex: A1_COD"
+                    value={customFieldData.lookupValueField}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, lookupValueField: e.target.value.toUpperCase() })}
+                    helperText="Campo que será armazenado"
+                  />
+                  <TextField
+                    label="Campo de Exibição"
+                    fullWidth
+                    required
+                    placeholder="Ex: A1_NOME"
+                    value={customFieldData.lookupDisplayField}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, lookupDisplayField: e.target.value.toUpperCase() })}
+                    helperText="Campo exibido na tela"
+                  />
+                </Box>
+                <TextField
+                  label="Campos de Pesquisa (JSON)"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  placeholder='[{"field": "A1_COD", "label": "Código"}, {"field": "A1_NOME", "label": "Nome"}]'
+                  value={customFieldData.lookupSearchFields}
+                  onChange={(e) => setCustomFieldData({ ...customFieldData, lookupSearchFields: e.target.value })}
+                  helperText="Colunas exibidas no modal de pesquisa (formato JSON)"
+                />
+                <TextField
+                  label="Campos de Retorno (JSON)"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  placeholder='[{"sourceField": "A1_NOME", "targetField": "CLIENTE_NOME"}]'
+                  value={customFieldData.lookupReturnFields}
+                  onChange={(e) => setCustomFieldData({ ...customFieldData, lookupReturnFields: e.target.value })}
+                  helperText="Campos preenchidos automaticamente ao selecionar (formato JSON)"
+                />
+              </>
+            )}
+
             {/* Validation Rules Section */}
             {['string', 'text', 'textarea'].includes(customFieldData.fieldType) && (
               <>
@@ -1592,6 +1737,64 @@ const TemplateManager: React.FC = () => {
                     inputProps={{ min: 1, max: 20 }}
                   />
                 </Box>
+              </>
+            )}
+
+            {/* Lookup Config Section */}
+            {customFieldData.fieldType === 'lookup' && (
+              <>
+                <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
+                  Configuração de Lookup (Pesquisa F3)
+                </Typography>
+                <TextField
+                  label="Tabela de Origem"
+                  fullWidth
+                  required
+                  placeholder="Ex: SA1010"
+                  value={customFieldData.lookupSourceTable}
+                  onChange={(e) => setCustomFieldData({ ...customFieldData, lookupSourceTable: e.target.value.toUpperCase() })}
+                  helperText="Nome da tabela no banco do Protheus (ex: SA1010, SB1010)"
+                />
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <TextField
+                    label="Campo de Valor"
+                    fullWidth
+                    required
+                    placeholder="Ex: A1_COD"
+                    value={customFieldData.lookupValueField}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, lookupValueField: e.target.value.toUpperCase() })}
+                    helperText="Campo que será armazenado"
+                  />
+                  <TextField
+                    label="Campo de Exibição"
+                    fullWidth
+                    required
+                    placeholder="Ex: A1_NOME"
+                    value={customFieldData.lookupDisplayField}
+                    onChange={(e) => setCustomFieldData({ ...customFieldData, lookupDisplayField: e.target.value.toUpperCase() })}
+                    helperText="Campo exibido na tela"
+                  />
+                </Box>
+                <TextField
+                  label="Campos de Pesquisa (JSON)"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  placeholder='[{"field": "A1_COD", "label": "Código"}, {"field": "A1_NOME", "label": "Nome"}]'
+                  value={customFieldData.lookupSearchFields}
+                  onChange={(e) => setCustomFieldData({ ...customFieldData, lookupSearchFields: e.target.value })}
+                  helperText="Colunas exibidas no modal de pesquisa (formato JSON)"
+                />
+                <TextField
+                  label="Campos de Retorno (JSON)"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  placeholder='[{"sourceField": "A1_NOME", "targetField": "CLIENTE_NOME"}]'
+                  value={customFieldData.lookupReturnFields}
+                  onChange={(e) => setCustomFieldData({ ...customFieldData, lookupReturnFields: e.target.value })}
+                  helperText="Campos preenchidos automaticamente ao selecionar (formato JSON)"
+                />
               </>
             )}
 

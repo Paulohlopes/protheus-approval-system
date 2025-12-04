@@ -180,6 +180,11 @@ export const adminService = {
       placeholder?: string;
       helpText?: string;
       metadata?: any;
+      dataSourceType?: string;
+      dataSourceConfig?: any;
+      validationRules?: any;
+      attachmentConfig?: any;
+      lookupConfig?: any;
     }
   ): Promise<FormTemplate> {
     const response = await backendApi.post(`/form-templates/${templateId}/custom-fields`, data);

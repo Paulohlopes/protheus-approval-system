@@ -219,6 +219,9 @@ export class FormTemplateService {
     if (dto.attachmentConfig) {
       updateData.attachmentConfig = JSON.parse(JSON.stringify(dto.attachmentConfig));
     }
+    if (dto.lookupConfig) {
+      updateData.lookupConfig = JSON.parse(JSON.stringify(dto.lookupConfig));
+    }
 
     return this.prisma.formField.update({
       where: { id: fieldId },
@@ -373,6 +376,8 @@ export class FormTemplateService {
         validationRules: dto.validationRules as any,
         // Attachment config
         attachmentConfig: dto.attachmentConfig as any,
+        // Lookup config
+        lookupConfig: dto.lookupConfig as any,
         // Additional metadata
         metadata: dto.metadata,
       },

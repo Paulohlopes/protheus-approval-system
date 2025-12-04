@@ -11,6 +11,7 @@ import { Type } from 'class-transformer';
 import { DataSourceType, DataSourceConfigDto } from './data-source.dto';
 import { ValidationRulesDto } from './validation-rules.dto';
 import { AttachmentConfigDto } from './attachment-config.dto';
+import { LookupConfigDto } from './lookup-config.dto';
 
 // Supported field types
 export enum FieldType {
@@ -26,6 +27,7 @@ export enum FieldType {
   AUTOCOMPLETE = 'autocomplete',
   MULTISELECT = 'multiselect',
   ATTACHMENT = 'attachment',
+  LOOKUP = 'lookup',
 }
 
 export class UpdateFormFieldDto {
@@ -71,6 +73,12 @@ export class UpdateFormFieldDto {
   @ValidateNested()
   @Type(() => AttachmentConfigDto)
   attachmentConfig?: AttachmentConfigDto;
+
+  // Lookup configuration (for lookup type)
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LookupConfigDto)
+  lookupConfig?: LookupConfigDto;
 
   // Other field properties
   @IsOptional()

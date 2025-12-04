@@ -12,6 +12,7 @@ import { FieldType } from './update-form-field.dto';
 import { DataSourceType, DataSourceConfigDto } from './data-source.dto';
 import { ValidationRulesDto } from './validation-rules.dto';
 import { AttachmentConfigDto } from './attachment-config.dto';
+import { LookupConfigDto } from './lookup-config.dto';
 
 export class CreateCustomFieldDto {
   @IsString()
@@ -62,6 +63,12 @@ export class CreateCustomFieldDto {
   @ValidateNested()
   @Type(() => AttachmentConfigDto)
   attachmentConfig?: AttachmentConfigDto;
+
+  // Lookup configuration (for lookup type)
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LookupConfigDto)
+  lookupConfig?: LookupConfigDto;
 
   // Additional metadata
   @IsOptional()
