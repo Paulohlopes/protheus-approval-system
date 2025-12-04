@@ -50,6 +50,7 @@ import {
   Public,
   Download,
   Upload,
+  UploadFile,
 } from '@mui/icons-material';
 import { MultiTableConfig } from './MultiTableConfig';
 import { adminService } from '../../services/adminService';
@@ -993,6 +994,24 @@ const TemplateManager: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        <Tooltip title={template.allowBulkImport ? "Desabilitar importação em lote" : "Habilitar importação em lote"}>
+                          <IconButton
+                            size="small"
+                            color={template.allowBulkImport ? "success" : "default"}
+                            onClick={async () => {
+                              try {
+                                await adminService.updateTemplate(template.id, {
+                                  allowBulkImport: !template.allowBulkImport,
+                                });
+                                loadTemplates();
+                              } catch (err: any) {
+                                setError(err.message || 'Erro ao atualizar template');
+                              }
+                            }}
+                          >
+                            <UploadFile />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Exportar template">
                           <IconButton
                             size="small"
