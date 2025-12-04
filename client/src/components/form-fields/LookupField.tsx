@@ -49,7 +49,7 @@ export const LookupField: React.FC<LookupFieldProps> = ({
       try {
         const response = await lookupService.getRecord(lookupConfig, value);
         if (response.found && response.data) {
-          setDisplayValue(response.data[lookupConfig.displayField] || value);
+          setDisplayValue(response.data[lookupConfig.displayField || ''] || value);
         } else {
           setDisplayValue(value);
         }
@@ -68,16 +68,16 @@ export const LookupField: React.FC<LookupFieldProps> = ({
     if (!lookupConfig) return;
 
     // Set main value
-    const newValue = record[lookupConfig.valueField];
+    const newValue = record[lookupConfig.valueField || ''];
     onChange(newValue);
-    setDisplayValue(record[lookupConfig.displayField] || newValue);
+    setDisplayValue(record[lookupConfig.displayField || ''] || newValue);
 
-    // Fill return fields
+    // Fill return fields (format: { "sourceColumn": "targetFieldName" })
     if (onReturnFieldsChange && lookupConfig.returnFields) {
       const returnData: Record<string, any> = {};
-      lookupConfig.returnFields.forEach((rf) => {
-        returnData[rf.targetField] = record[rf.sourceField];
-      });
+      for (const [sourceColumn, targetField] of Object.entries(lookupConfig.returnFields)) {
+        returnData[targetField] = record[sourceColumn];
+      }
       onReturnFieldsChange(returnData);
     }
 
@@ -91,9 +91,9 @@ export const LookupField: React.FC<LookupFieldProps> = ({
     // Clear return fields
     if (onReturnFieldsChange && lookupConfig?.returnFields) {
       const clearedData: Record<string, any> = {};
-      lookupConfig.returnFields.forEach((rf) => {
-        clearedData[rf.targetField] = null;
-      });
+      for (const targetField of Object.values(lookupConfig.returnFields)) {
+        clearedData[targetField] = null;
+      }
       onReturnFieldsChange(clearedData);
     }
   };
@@ -163,6 +163,7 @@ export const LookupField: React.FC<LookupFieldProps> = ({
         onClose={() => setModalOpen(false)}
         config={lookupConfig}
         onSelect={handleSelect}
+        title={lookupConfig.modalTitle || field.label}
       />
     </FormControl>
   );

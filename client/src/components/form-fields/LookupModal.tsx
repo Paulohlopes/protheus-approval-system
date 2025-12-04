@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -6,7 +6,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  Grid,
   Table,
   TableBody,
   TableCell,
@@ -20,6 +19,7 @@ import {
   Box,
   Typography,
   Alert,
+  InputAdornment,
 } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import SearchIcon from '@mui/icons-material/Search';
@@ -31,6 +31,7 @@ interface LookupModalProps {
   onClose: () => void;
   config: LookupConfig;
   onSelect: (record: Record<string, any>) => void;
+  title?: string;
 }
 
 export const LookupModal: React.FC<LookupModalProps> = ({
@@ -38,9 +39,11 @@ export const LookupModal: React.FC<LookupModalProps> = ({
   onClose,
   config,
   onSelect,
+  title,
 }) => {
-  const [searchFilters, setSearchFilters] = useState<Record<string, string>>({});
+  const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState<Record<string, any>[]>([]);
+  const [columns, setColumns] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
@@ -50,24 +53,55 @@ export const LookupModal: React.FC<LookupModalProps> = ({
   });
   const [hasSearched, setHasSearched] = useState(false);
 
+  // Reset state when modal opens
+  useEffect(() => {
+    if (open) {
+      setSearchTerm('');
+      setResults([]);
+      setColumns([]);
+      setError(null);
+      setHasSearched(false);
+      setPagination({ page: 0, limit: 10, total: 0 });
+    }
+  }, [open]);
+
   const handleSearch = useCallback(async (page = 0) => {
+    if (!config.sqlQuery) {
+      setError('Consulta SQL não configurada para este lookup');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
       const response = await lookupService.search(
         config,
-        searchFilters,
+        searchTerm,
         { page, limit: pagination.limit }
       );
 
-      setResults(response.data);
+      setResults(response.data || []);
       setPagination((prev) => ({
         ...prev,
         page: response.page,
         total: response.total,
       }));
       setHasSearched(true);
+
+      // Extract columns from first result
+      if (response.data && response.data.length > 0) {
+        const cols = Object.keys(response.data[0]);
+        setColumns(cols);
+      } else if (!columns.length) {
+        // If no results and no columns yet, try to infer from config
+        const inferredCols: string[] = [];
+        if (config.valueField) inferredCols.push(config.valueField);
+        if (config.displayField && config.displayField !== config.valueField) {
+          inferredCols.push(config.displayField);
+        }
+        setColumns(inferredCols);
+      }
     } catch (err: any) {
       console.error('Error searching lookup:', err);
       setError(err.message || 'Erro ao buscar registros');
@@ -75,14 +109,7 @@ export const LookupModal: React.FC<LookupModalProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [config, searchFilters, pagination.limit]);
-
-  const handleFilterChange = (field: string, value: string) => {
-    setSearchFilters((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  }, [config, searchTerm, pagination.limit, columns.length]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -95,13 +122,12 @@ export const LookupModal: React.FC<LookupModalProps> = ({
   };
 
   const handleRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newLimit = parseInt(event.target.value, 10);
     setPagination((prev) => ({
       ...prev,
-      limit: parseInt(event.target.value, 10),
+      limit: newLimit,
       page: 0,
     }));
-    // Re-search with new limit
-    setTimeout(() => handleSearch(0), 0);
   };
 
   const handleRowClick = (row: Record<string, any>) => {
@@ -109,59 +135,65 @@ export const LookupModal: React.FC<LookupModalProps> = ({
   };
 
   const handleClose = () => {
-    // Reset state when closing
-    setSearchFilters({});
-    setResults([]);
-    setError(null);
-    setHasSearched(false);
-    setPagination({ page: 0, limit: 10, total: 0 });
     onClose();
   };
 
-  // Determine modal width
-  const modalWidth = config.modalConfig?.width || 'md';
+  // Get display columns - either all columns or specific ones
+  const displayColumns = config.showAllColumns
+    ? columns
+    : columns.filter(col =>
+        col === config.valueField ||
+        col === config.displayField ||
+        (config.searchableFields && config.searchableFields.includes(col))
+      );
+
+  // If no specific columns, show all
+  const columnsToShow = displayColumns.length > 0 ? displayColumns : columns;
+
+  // Modal title
+  const modalTitle = title || config.modalTitle || 'Pesquisar';
 
   return (
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth={modalWidth}
+      maxWidth="md"
       fullWidth
       PaperProps={{
         sx: { minHeight: '60vh' },
       }}
     >
-      <DialogTitle>
-        {config.modalConfig?.title || `Pesquisar em ${config.sourceTable}`}
-      </DialogTitle>
+      <DialogTitle>{modalTitle}</DialogTitle>
 
       <DialogContent dividers>
-        {/* Search Filters */}
+        {/* Search Input */}
         <Box sx={{ mb: 3 }}>
-          <Grid container spacing={2} alignItems="flex-end">
-            {config.searchFields.map((sf) => (
-              <Grid item xs={12} sm={6} md={4} key={sf.field}>
-                <TextField
-                  label={sf.label}
-                  value={searchFilters[sf.field] || ''}
-                  onChange={(e) => handleFilterChange(sf.field, e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  fullWidth
-                  size="small"
-                />
-              </Grid>
-            ))}
-            <Grid item xs={12} sm={6} md={4}>
-              <Button
-                variant="contained"
-                onClick={() => handleSearch(0)}
-                disabled={loading}
-                startIcon={loading ? <CircularProgress size={20} /> : <SearchIcon />}
-              >
-                Pesquisar
-              </Button>
-            </Grid>
-          </Grid>
+          <TextField
+            label="Pesquisar"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
+            fullWidth
+            size="small"
+            placeholder="Digite para pesquisar..."
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => handleSearch(0)}
+                    disabled={loading}
+                    edge="end"
+                  >
+                    {loading ? <CircularProgress size={20} /> : <SearchIcon />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            autoFocus
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+            Pressione Enter ou clique na lupa para pesquisar
+          </Typography>
         </Box>
 
         {/* Error Alert */}
@@ -178,12 +210,9 @@ export const LookupModal: React.FC<LookupModalProps> = ({
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    {config.searchFields.map((sf) => (
-                      <TableCell
-                        key={sf.field}
-                        style={sf.width ? { width: sf.width } : undefined}
-                      >
-                        {sf.label}
+                    {columnsToShow.map((col) => (
+                      <TableCell key={col}>
+                        {col}
                       </TableCell>
                     ))}
                     <TableCell width={60} align="center">
@@ -195,7 +224,7 @@ export const LookupModal: React.FC<LookupModalProps> = ({
                   {loading ? (
                     <TableRow>
                       <TableCell
-                        colSpan={config.searchFields.length + 1}
+                        colSpan={columnsToShow.length + 1}
                         align="center"
                         sx={{ py: 4 }}
                       >
@@ -205,7 +234,7 @@ export const LookupModal: React.FC<LookupModalProps> = ({
                   ) : results.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={config.searchFields.length + 1}
+                        colSpan={columnsToShow.length + 1}
                         align="center"
                         sx={{ py: 4 }}
                       >
@@ -222,9 +251,9 @@ export const LookupModal: React.FC<LookupModalProps> = ({
                         onClick={() => handleRowClick(row)}
                         sx={{ cursor: 'pointer' }}
                       >
-                        {config.searchFields.map((sf) => (
-                          <TableCell key={sf.field}>
-                            {row[sf.field] ?? '-'}
+                        {columnsToShow.map((col) => (
+                          <TableCell key={col}>
+                            {row[col] ?? '-'}
                           </TableCell>
                         ))}
                         <TableCell align="center">
@@ -275,7 +304,7 @@ export const LookupModal: React.FC<LookupModalProps> = ({
             }}
           >
             <Typography color="text.secondary">
-              Preencha os filtros e clique em Pesquisar
+              Digite um termo de pesquisa e pressione Enter
             </Typography>
           </Box>
         )}

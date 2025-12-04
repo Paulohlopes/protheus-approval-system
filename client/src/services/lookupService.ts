@@ -11,12 +11,12 @@ export const lookupService = {
    */
   async search(
     config: LookupConfig,
-    filters: Record<string, string>,
+    searchTerm: string,
     pagination: { page: number; limit: number }
   ): Promise<LookupSearchResponse> {
     const response = await api.post('/form-templates/lookup/search', {
       config,
-      filters,
+      search: searchTerm,
       page: pagination.page,
       limit: pagination.limit,
     });
