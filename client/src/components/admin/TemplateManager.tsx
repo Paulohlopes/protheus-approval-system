@@ -47,10 +47,12 @@ import {
   KeyboardArrowDown,
   VerticalAlignTop,
   TableChart,
+  Public,
 } from '@mui/icons-material';
 import { MultiTableConfig } from './MultiTableConfig';
 import { adminService } from '../../services/adminService';
 import { dataSourceService } from '../../services/dataSourceService';
+import { useCountry } from '../../contexts/CountryContext';
 import type { FormTemplate, FormField, DataSourceOption, FieldType, DataSourceType } from '../../types/registration';
 import type { CreateFormTemplateDto } from '../../types/admin';
 
@@ -260,6 +262,7 @@ const FieldListItem = memo(({
 FieldListItem.displayName = 'FieldListItem';
 
 const TemplateManager: React.FC = () => {
+  const { countries, activeCountry } = useCountry();
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -280,6 +283,7 @@ const TemplateManager: React.FC = () => {
     label: '',
     description: '',
     tableName: '',
+    countryId: '',
     isActive: true,
     isMultiTable: false,
   });
@@ -379,10 +383,11 @@ const TemplateManager: React.FC = () => {
       label: '',
       description: '',
       tableName: '',
+      countryId: activeCountry?.id || '',
       isActive: true,
       isMultiTable: false,
     });
-  }, []);
+  }, [activeCountry]);
 
   // Load templates on mount
   useEffect(() => {
@@ -400,7 +405,9 @@ const TemplateManager: React.FC = () => {
           tables: [], // User will add tables after creation
         });
       } else {
-        await adminService.createTemplate(formData);
+        // Create regular template - send only valid fields (not isMultiTable)
+        const { isMultiTable, ...templateData } = formData;
+        await adminService.createTemplate(templateData);
       }
       setCreateDialogOpen(false);
       resetForm();
@@ -847,6 +854,7 @@ const TemplateManager: React.FC = () => {
               <TableCell width={50}></TableCell>
               <TableCell>Nome</TableCell>
               <TableCell>Tabela</TableCell>
+              <TableCell>País</TableCell>
               <TableCell>Descrição</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Campos</TableCell>
@@ -856,7 +864,7 @@ const TemplateManager: React.FC = () => {
           <TableBody>
             {templates.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                     Nenhum template encontrado. Clique em "Novo Template" para criar um.
                   </Typography>
@@ -895,6 +903,19 @@ const TemplateManager: React.FC = () => {
                         </Box>
                       ) : (
                         <Chip label={template.tableName || 'N/A'} size="small" variant="outlined" />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {template.country ? (
+                        <Chip
+                          icon={<Public fontSize="small" />}
+                          label={template.country.code}
+                          size="small"
+                          variant="outlined"
+                          color="info"
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">—</Typography>
                       )}
                     </TableCell>
                     <TableCell>
@@ -1043,15 +1064,31 @@ const TemplateManager: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, label: e.target.value })}
             />
             {!formData.isMultiTable && (
-              <TextField
-                label="Nome da Tabela SX3"
-                fullWidth
-                required
-                placeholder="Ex: SB1 (Produtos), SA1 (Clientes)"
-                value={formData.tableName}
-                onChange={(e) => setFormData({ ...formData, tableName: e.target.value.toUpperCase() })}
-                helperText="Para múltiplas tabelas, use o botão 'Multi-Tabela'"
-              />
+              <>
+                <FormControl fullWidth required>
+                  <InputLabel>País / Conexão</InputLabel>
+                  <Select
+                    value={formData.countryId}
+                    label="País / Conexão"
+                    onChange={(e) => setFormData({ ...formData, countryId: e.target.value })}
+                  >
+                    {countries.map((country) => (
+                      <MenuItem key={country.id} value={country.id}>
+                        {country.name} ({country.code})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  label="Nome da Tabela SX3"
+                  fullWidth
+                  required
+                  placeholder="Ex: SB1 (Produtos), SA1 (Clientes)"
+                  value={formData.tableName}
+                  onChange={(e) => setFormData({ ...formData, tableName: e.target.value.toUpperCase() })}
+                  helperText="Para múltiplas tabelas, use o botão 'Multi-Tabela'"
+                />
+              </>
             )}
             <TextField
               label="Descrição"
@@ -1077,7 +1114,7 @@ const TemplateManager: React.FC = () => {
           <Button
             variant="contained"
             onClick={handleCreateTemplate}
-            disabled={!formData.label || (!formData.isMultiTable && !formData.tableName)}
+            disabled={!formData.label || (!formData.isMultiTable && (!formData.tableName || !formData.countryId))}
           >
             {formData.isMultiTable ? 'Criar Template Multi-Tabela' : 'Criar Template'}
           </Button>

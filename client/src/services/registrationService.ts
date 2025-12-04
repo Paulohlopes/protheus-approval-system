@@ -143,6 +143,7 @@ export const registrationService = {
   async createRegistration(data: {
     templateId: string;
     formData: Record<string, any>;
+    countryId?: string;
   }): Promise<RegistrationRequest> {
     const response = await backendApi.post('/registrations', data);
     return response.data;

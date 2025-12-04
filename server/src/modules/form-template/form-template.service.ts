@@ -109,6 +109,13 @@ export class FormTemplateService {
             parentTable: true,
           },
         },
+        country: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
         _count: {
           select: {
             fields: true,
@@ -881,6 +888,13 @@ export class FormTemplateService {
           orderBy: { fieldOrder: 'asc' },
         },
         workflows: true,
+        country: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
       },
     });
 

@@ -630,6 +630,13 @@ export class RegistrationService {
             },
           },
         },
+        country: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
         requestedBy: {
           select: {
             id: true,
@@ -740,6 +747,13 @@ export class RegistrationService {
               where: { isVisible: true },
               orderBy: { fieldOrder: 'asc' },
             },
+          },
+        },
+        country: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
           },
         },
         requestedBy: {
@@ -1630,6 +1644,13 @@ export class RegistrationService {
                   where: { isVisible: true },
                   orderBy: { fieldOrder: 'asc' },
                 },
+              },
+            },
+            country: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
               },
             },
             requestedBy: {

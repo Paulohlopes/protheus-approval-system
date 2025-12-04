@@ -50,6 +50,7 @@ import {
   Undo,
   AddCircle,
   EditNote,
+  Public,
 } from '@mui/icons-material';
 import { useAuthStore } from '../../stores/authStore';
 import { registrationService } from '../../services/registrationService';
@@ -381,6 +382,7 @@ export const ApprovalQueuePage = () => {
                 <TableRow sx={{ bgcolor: 'grey.50' }}>
                   <TableCell sx={{ fontWeight: 600, width: 120 }}>{t.registration.tableNumber || 'Nº'}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableType}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>País</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableOperation}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableRequester}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableDate}</TableCell>
@@ -415,6 +417,20 @@ export const ApprovalQueuePage = () => {
                       <Typography variant="body2" fontWeight={500}>
                         {request.template?.label || request.tableName}
                       </Typography>
+                    </TableCell>
+                    <TableCell>
+                      {request.country ? (
+                        <Chip
+                          icon={<Public sx={{ fontSize: 16 }} />}
+                          label={request.country.code}
+                          size="small"
+                          variant="outlined"
+                          color="info"
+                          sx={{ borderRadius: 1 }}
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">—</Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Chip

@@ -10,6 +10,7 @@ export interface CreateFormTemplateDto {
   description?: string;
   tableName: string;
   isActive?: boolean;
+  countryId?: string; // Country for SX3 lookup
 }
 
 export interface UpdateFormTemplateDto {

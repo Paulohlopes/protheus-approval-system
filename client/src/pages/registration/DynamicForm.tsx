@@ -677,6 +677,7 @@ export const DynamicFormPage = () => {
       const registration = await registrationService.createRegistration({
         templateId,
         formData: preparedData,
+        countryId: template?.countryId, // Use template's country
       });
 
       // Store registrationId for subsequent attachment uploads
@@ -701,6 +702,7 @@ export const DynamicFormPage = () => {
     const registration = await registrationService.createRegistration({
       templateId,
       formData: {},
+      countryId: template?.countryId, // Use template's country
     });
 
     setRegistrationId(registration.id);
@@ -730,6 +732,7 @@ export const DynamicFormPage = () => {
         const registration = await registrationService.createRegistration({
           templateId,
           formData: preparedData,
+          countryId: template?.countryId, // Use template's country
         });
         regId = registration.id;
       }

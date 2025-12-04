@@ -14,6 +14,7 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import {
   AddBox,
@@ -21,10 +22,12 @@ import {
   ArrowForward,
   Edit,
   Search,
+  Public,
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useCountry } from '../../contexts/CountryContext';
 import type { FormTemplate } from '../../types/registration';
 import { EmptyState } from '../../components/EmptyState';
 
@@ -33,19 +36,29 @@ type OperationType = 'NEW' | 'ALTERATION';
 export const SelectRegistrationTypePage = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { activeCountry } = useCountry();
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [operationType, setOperationType] = useState<OperationType>('NEW');
 
   useEffect(() => {
     loadTemplates();
-  }, []);
+  }, [activeCountry]);
 
   const loadTemplates = async () => {
     try {
       setLoading(true);
       const data = await registrationService.getTemplates(false);
-      setTemplates(data.filter((t) => t.isActive));
+      // Filter by active templates and optionally by country
+      const filtered = data.filter((t) => {
+        if (!t.isActive) return false;
+        // If template has countryId and activeCountry is set, filter by country
+        if (activeCountry && t.countryId && t.countryId !== activeCountry.id) {
+          return false;
+        }
+        return true;
+      });
+      setTemplates(filtered);
     } catch (error) {
       console.error('Error loading templates:', error);
       toast.error(t.registration.errorLoadTemplates);
@@ -104,6 +117,17 @@ export const SelectRegistrationTypePage = () => {
             : t.registration.alteration.selectTypeSubtitle}
         </Typography>
       </Box>
+
+      {/* Country Alert */}
+      {activeCountry && (
+        <Alert
+          severity="info"
+          icon={<Public />}
+          sx={{ mb: 3, borderRadius: 2 }}
+        >
+          Exibindo templates do país: <strong>{activeCountry.name} ({activeCountry.code})</strong>
+        </Alert>
+      )}
 
       {/* Operation Type Toggle */}
       <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
@@ -206,6 +230,16 @@ export const SelectRegistrationTypePage = () => {
                         color={template.isMultiTable ? 'primary' : 'default'}
                         sx={{ borderRadius: 1 }}
                       />
+                      {template.country && (
+                        <Chip
+                          icon={<Public sx={{ fontSize: 16 }} />}
+                          label={template.country.code}
+                          size="small"
+                          variant="outlined"
+                          color="info"
+                          sx={{ borderRadius: 1 }}
+                        />
+                      )}
                       {operationType === 'ALTERATION' && (
                         <Chip
                           icon={<Search sx={{ fontSize: 16 }} />}

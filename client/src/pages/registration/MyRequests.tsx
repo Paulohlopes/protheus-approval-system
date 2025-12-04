@@ -48,6 +48,7 @@ import {
   Send,
   AddCircle,
   EditNote,
+  Public,
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
@@ -324,6 +325,7 @@ export const MyRequestsPage = () => {
                 <TableRow sx={{ bgcolor: 'grey.50' }}>
                   <TableCell sx={{ fontWeight: 600, width: 120 }}>{t.registration.tableNumber || 'Nº'}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableType}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>País</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableOperation}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableDate}</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>{t.registration.tableStatus}</TableCell>
@@ -362,6 +364,20 @@ export const MyRequestsPage = () => {
                           {t.registration.level} {request.currentLevel}
                         </Typography>
                       </Box>
+                    </TableCell>
+                    <TableCell>
+                      {request.country ? (
+                        <Chip
+                          icon={<Public sx={{ fontSize: 16 }} />}
+                          label={request.country.code}
+                          size="small"
+                          variant="outlined"
+                          color="info"
+                          sx={{ borderRadius: 1 }}
+                        />
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">—</Typography>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Chip

@@ -28,6 +28,12 @@ export interface FormTemplate {
   isMultiTable?: boolean; // true = uses TemplateTable, false = uses tableName
   tables?: TemplateTable[]; // Multi-table configuration
   fields?: FormField[];
+  countryId?: string; // Country associated with the template
+  country?: {
+    id: string;
+    code: string;
+    name: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -311,6 +317,12 @@ export type RegistrationRequest = {
   templateId: string;
   template?: FormTemplate;
   tableName: string;
+  countryId?: string; // Country associated with the registration
+  country?: {
+    id: string;
+    code: string;
+    name: string;
+  };
   requestedById: string;
   requestedBy?: {
     id: string;
