@@ -8,9 +8,15 @@ import {
   Param,
   Query,
   Headers,
+  Res,
   UnauthorizedException,
   ForbiddenException,
+  UseInterceptors,
+  UploadedFile,
+  StreamableFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { RegistrationService } from './registration.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
@@ -21,15 +27,20 @@ import { SendBackRegistrationDto } from './dto/send-back-registration.dto';
 import { CreateWorkflowSimpleDto } from './dto/create-workflow-simple.dto';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { CreateAlterationDto } from './dto/create-alteration.dto';
+import { CreateBulkRegistrationDto, BulkSubmitDto } from './dto/bulk-import.dto';
 import { RegistrationStatus } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserInfo } from '../auth/interfaces/auth.interface';
+import { BulkImportService } from './services/bulk-import.service';
 
 @ApiTags('registrations')
 @ApiBearerAuth('JWT-auth')
 @Controller('registrations')
 export class RegistrationController {
-  constructor(private readonly registrationService: RegistrationService) {}
+  constructor(
+    private readonly registrationService: RegistrationService,
+    private readonly bulkImportService: BulkImportService,
+  ) {}
 
   // ==========================================
   // WORKFLOW CONFIGURATION
@@ -56,6 +67,124 @@ export class RegistrationController {
   @ApiResponse({ status: 404, description: 'Workflow não encontrado' })
   getActiveWorkflow(@Param('templateId') templateId: string) {
     return this.registrationService.getActiveWorkflow(templateId);
+  }
+
+  // ==========================================
+  // BULK IMPORT
+  // ==========================================
+
+  @Get('bulk/template/:templateId')
+  @ApiOperation({
+    summary: 'Baixar modelo para importação em lote',
+    description: 'Gera e retorna um arquivo Excel ou CSV para preenchimento em lote',
+  })
+  @ApiParam({ name: 'templateId', description: 'ID do template' })
+  @ApiQuery({ name: 'format', enum: ['xlsx', 'csv'], required: false, description: 'Formato do arquivo (padrão: xlsx)' })
+  @ApiResponse({ status: 200, description: 'Arquivo modelo gerado' })
+  @ApiResponse({ status: 403, description: 'Template não permite importação em lote' })
+  @ApiResponse({ status: 404, description: 'Template não encontrado' })
+  async downloadBulkTemplate(
+    @Param('templateId') templateId: string,
+    @Query('format') format: 'xlsx' | 'csv' = 'xlsx',
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const buffer = await this.bulkImportService.generateTemplate(templateId, format);
+
+    const contentType = format === 'xlsx'
+      ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      : 'text/csv';
+    const extension = format === 'xlsx' ? 'xlsx' : 'csv';
+
+    res.set({
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="template-bulk-${templateId}.${extension}"`,
+    });
+
+    return new StreamableFile(buffer);
+  }
+
+  @Post('bulk/validate')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({
+    summary: 'Validar arquivo para importação em lote',
+    description: 'Valida o arquivo antes de criar a solicitação. Retorna erros e preview dos dados.',
+  })
+  @ApiResponse({ status: 200, description: 'Validação concluída' })
+  @ApiResponse({ status: 400, description: 'Arquivo inválido' })
+  async validateBulkImport(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('templateId') templateId: string,
+  ) {
+    const parsedData = await this.bulkImportService.parseFile(file);
+    return this.bulkImportService.validateBulkData(templateId, parsedData);
+  }
+
+  @Post('bulk/import')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({
+    summary: 'Criar solicitação de cadastro em lote',
+    description: 'Cria uma solicitação com múltiplos itens a partir do arquivo importado',
+  })
+  @ApiResponse({ status: 201, description: 'Solicitação criada com sucesso' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 403, description: 'Template não permite importação em lote' })
+  async createBulkRegistration(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: CreateBulkRegistrationDto,
+    @CurrentUser() user: UserInfo,
+    @Headers('x-country-id') countryIdHeader?: string,
+  ) {
+    if (!user?.id || !user?.email) {
+      throw new UnauthorizedException('User not authenticated properly');
+    }
+
+    // Use country from header if not in body
+    if (!dto.countryId && countryIdHeader) {
+      dto.countryId = countryIdHeader;
+    }
+
+    return this.bulkImportService.createBulkRegistration(dto, file, user.id, user.email);
+  }
+
+  @Post('bulk/submit')
+  @ApiOperation({
+    summary: 'Submeter múltiplas solicitações',
+    description: 'Submete várias solicitações em rascunho para aprovação de uma vez',
+  })
+  @ApiResponse({ status: 200, description: 'Solicitações submetidas' })
+  async submitBulkRegistrations(
+    @Body() dto: BulkSubmitDto,
+    @CurrentUser() user: UserInfo,
+  ) {
+    if (!user?.id) {
+      throw new UnauthorizedException('User not authenticated properly');
+    }
+
+    // For each registration, call the submit method
+    const results = [];
+    for (const id of dto.registrationIds) {
+      try {
+        const result = await this.registrationService.submit(id, user.id);
+        results.push({
+          registrationId: id,
+          success: true,
+          trackingNumber: result?.trackingNumber,
+        });
+      } catch (error: any) {
+        results.push({
+          registrationId: id,
+          success: false,
+          error: error.message || 'Unknown error',
+        });
+      }
+    }
+
+    return {
+      totalRequested: dto.registrationIds.length,
+      successful: results.filter((r) => r.success).length,
+      failed: results.filter((r) => !r.success).length,
+      results,
+    };
   }
 
   // ==========================================

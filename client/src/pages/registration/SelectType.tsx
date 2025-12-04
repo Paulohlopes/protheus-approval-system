@@ -15,6 +15,7 @@ import {
   ToggleButtonGroup,
   Tooltip,
   Alert,
+  Button,
 } from '@mui/material';
 import {
   AddBox,
@@ -23,6 +24,7 @@ import {
   Edit,
   Search,
   Public,
+  UploadFile,
 } from '@mui/icons-material';
 import { registrationService } from '../../services/registrationService';
 import { toast } from '../../utils/toast';
@@ -99,17 +101,30 @@ export const SelectRegistrationTypePage = () => {
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-          {operationType === 'NEW' ? (
-            <AddBox fontSize="large" color="primary" />
-          ) : (
-            <Edit fontSize="large" color="secondary" />
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {operationType === 'NEW' ? (
+              <AddBox fontSize="large" color="primary" />
+            ) : (
+              <Edit fontSize="large" color="secondary" />
+            )}
+            <Typography variant="h4" component="h1" fontWeight={600}>
+              {operationType === 'NEW'
+                ? t.registration.selectTypeTitle
+                : t.registration.alteration.selectTypeTitle}
+            </Typography>
+          </Box>
+          {operationType === 'NEW' && templates.some((t) => t.allowBulkImport) && (
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<UploadFile />}
+              onClick={() => navigate('/registration/bulk-import')}
+              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+            >
+              Importação em Lote
+            </Button>
           )}
-          <Typography variant="h4" component="h1" fontWeight={600}>
-            {operationType === 'NEW'
-              ? t.registration.selectTypeTitle
-              : t.registration.alteration.selectTypeTitle}
-          </Typography>
         </Box>
         <Typography variant="body1" color="text.secondary">
           {operationType === 'NEW'
@@ -237,6 +252,15 @@ export const SelectRegistrationTypePage = () => {
                           size="small"
                           variant="outlined"
                           color="info"
+                          sx={{ borderRadius: 1 }}
+                        />
+                      )}
+                      {template.allowBulkImport && operationType === 'NEW' && (
+                        <Chip
+                          icon={<UploadFile sx={{ fontSize: 16 }} />}
+                          label="Bulk"
+                          size="small"
+                          color="success"
                           sx={{ borderRadius: 1 }}
                         />
                       )}

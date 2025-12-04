@@ -319,6 +319,17 @@ export class FormTemplateController {
   }
 
   /**
+   * Toggle bulk import permission for a template
+   */
+  @Patch(':id/bulk-import')
+  toggleBulkImport(
+    @Param('id') id: string,
+    @Body('allowBulkImport') allowBulkImport: boolean,
+  ) {
+    return this.formTemplateService.update(id, { allowBulkImport });
+  }
+
+  /**
    * Update a specific field in the template
    */
   @Put(':id/fields/:fieldId')

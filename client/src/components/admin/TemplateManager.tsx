@@ -970,11 +970,21 @@ const TemplateManager: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={template.isActive ? 'Ativo' : 'Inativo'}
-                        color={template.isActive ? 'success' : 'default'}
-                        size="small"
-                      />
+                      <Stack direction="row" spacing={0.5}>
+                        <Chip
+                          label={template.isActive ? 'Ativo' : 'Inativo'}
+                          color={template.isActive ? 'success' : 'default'}
+                          size="small"
+                        />
+                        {template.allowBulkImport && (
+                          <Chip
+                            label="Bulk"
+                            color="info"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </Stack>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
@@ -1027,6 +1037,37 @@ const TemplateManager: React.FC = () => {
                     <TableCell colSpan={7} sx={{ py: 0, borderBottom: 'none' }}>
                       <Collapse in={expandedTemplates.has(template.id)} timeout="auto">
                         <Box sx={{ p: 2, bgcolor: 'grey.50' }}>
+                          {/* Template Settings */}
+                          <Box sx={{ mb: 2, p: 1.5, bgcolor: 'background.paper', borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                            <Typography variant="subtitle2" sx={{ mb: 1 }}>Configurações</Typography>
+                            <FormControlLabel
+                              control={
+                                <Switch
+                                  checked={template.allowBulkImport || false}
+                                  onChange={async (e) => {
+                                    try {
+                                      await adminService.updateTemplate(template.id, {
+                                        allowBulkImport: e.target.checked,
+                                      });
+                                      loadTemplates();
+                                    } catch (err: any) {
+                                      setError(err.message || 'Erro ao atualizar template');
+                                    }
+                                  }}
+                                  size="small"
+                                />
+                              }
+                              label={
+                                <Box>
+                                  <Typography variant="body2">Permitir Importação em Lote</Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Habilita upload de Excel/CSV para criar solicitações com múltiplos itens
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+                          </Box>
+
                           {/* Multi-Table Configuration Section */}
                           {template.isMultiTable && (
                             <Box sx={{ mb: 3 }}>

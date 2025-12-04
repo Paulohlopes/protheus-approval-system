@@ -21,6 +21,7 @@ const DynamicFormPage = lazy(() => import('./pages/registration/DynamicForm').th
 const EditDraftPage = lazy(() => import('./pages/registration/EditDraft').then(m => ({ default: m.EditDraftPage })));
 const ApprovalQueuePage = lazy(() => import('./pages/registration/ApprovalQueue').then(m => ({ default: m.ApprovalQueuePage })));
 const SearchRecordPage = lazy(() => import('./pages/registration/SearchRecord').then(m => ({ default: m.SearchRecordPage })));
+const BulkImportPage = lazy(() => import('./pages/registration/BulkImport').then(m => ({ default: m.BulkImportPage })));
 
 // Componente de loading para Suspense
 const LoadingFallback = () => (
@@ -197,6 +198,19 @@ function App() {
                     <ProtectedRoute>
                       <MainLayout>
                         <SearchRecordPage />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+
+              <Route
+                path="/registration/bulk-import"
+                element={
+                  <ErrorBoundary level="page">
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <BulkImportPage />
                       </MainLayout>
                     </ProtectedRoute>
                   </ErrorBoundary>

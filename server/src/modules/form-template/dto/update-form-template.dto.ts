@@ -12,4 +12,8 @@ export class UpdateFormTemplateDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  allowBulkImport?: boolean;
 }

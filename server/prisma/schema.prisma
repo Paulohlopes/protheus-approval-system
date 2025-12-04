@@ -90,6 +90,9 @@ model FormTemplate {
   // Multi-table configuration
   isMultiTable Boolean    @default(false)  // true = uses TemplateTable, false = uses tableName
 
+  // Bulk import configuration
+  allowBulkImport Boolean @default(false)  // true = allows bulk import via Excel/CSV
+
   // Country association (optional - null means available for all countries)
   countryId   String?
   country     Country?    @relation(fields: [countryId], references: [id])

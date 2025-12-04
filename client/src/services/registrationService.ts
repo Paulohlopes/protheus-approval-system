@@ -3,6 +3,9 @@ import type {
   FormTemplate,
   RegistrationRequest,
   RegistrationWorkflow,
+  BulkValidationResult,
+  BulkImportResult,
+  BulkSubmitResult,
 } from '../types/registration';
 import type { RegistrationStatus } from '../types/registration';
 
@@ -311,6 +314,77 @@ export const registrationService = {
   }> {
     const response = await backendApi.get(`/registrations/${registrationId}/editable-fields`);
     return response.data;
+  },
+
+  // ==========================================
+  // BULK IMPORT
+  // ==========================================
+
+  /**
+   * Download bulk import template (Excel/CSV)
+   */
+  async downloadBulkTemplate(templateId: string, format: 'xlsx' | 'csv' = 'xlsx'): Promise<Blob> {
+    const response = await backendApi.get(`/registrations/bulk/template/${templateId}`, {
+      params: { format },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  /**
+   * Validate bulk import file before creating registration
+   */
+  async validateBulkFile(templateId: string, file: File): Promise<BulkValidationResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('templateId', templateId);
+
+    const response = await backendApi.post('/registrations/bulk/validate', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  /**
+   * Create bulk registration from file
+   */
+  async createBulkRegistration(
+    templateId: string,
+    file: File,
+    countryId?: string,
+  ): Promise<BulkImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('templateId', templateId);
+    if (countryId) {
+      formData.append('countryId', countryId);
+    }
+
+    const response = await backendApi.post('/registrations/bulk/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  /**
+   * Submit multiple registrations at once
+   */
+  async submitBulkRegistrations(registrationIds: string[]): Promise<BulkSubmitResult> {
+    const response = await backendApi.post('/registrations/bulk/submit', {
+      registrationIds,
+    });
+    return response.data;
+  },
+
+  /**
+   * Get templates that allow bulk import
+   */
+  async getBulkEnabledTemplates(): Promise<FormTemplate[]> {
+    const response = await backendApi.get('/form-templates', {
+      params: { includeFields: false },
+    });
+    // Filter only templates with allowBulkImport = true
+    return response.data.filter((t: FormTemplate) => t.allowBulkImport);
   },
 };
 

@@ -26,6 +26,7 @@ export interface FormTemplate {
   description?: string;
   isActive: boolean;
   isMultiTable?: boolean; // true = uses TemplateTable, false = uses tableName
+  allowBulkImport?: boolean; // true = allows bulk import via Excel/CSV
   tables?: TemplateTable[]; // Multi-table configuration
   fields?: FormField[];
   countryId?: string; // Country associated with the template
@@ -471,4 +472,71 @@ export interface CreateMultiTableTemplateDto {
   description?: string;
   isActive?: boolean;
   tables: CreateTemplateTableDto[];
+}
+
+// ==========================================
+// BULK IMPORT TYPES
+// ==========================================
+
+/**
+ * Error detail for a specific row in bulk import
+ */
+export interface BulkImportError {
+  row: number;
+  field: string;
+  fieldLabel?: string;
+  value?: any;
+  message: string;
+}
+
+/**
+ * Warning for bulk import (non-blocking)
+ */
+export interface BulkImportWarning {
+  type: 'info' | 'warning';
+  message: string;
+  row?: number;
+  field?: string;
+}
+
+/**
+ * Result of bulk import validation
+ */
+export interface BulkValidationResult {
+  valid: boolean;
+  totalRows: number;
+  validRows: number;
+  errors: BulkImportError[];
+  warnings: BulkImportWarning[];
+  preview?: {
+    headers: string[];
+    rows: Record<string, any>[];
+  };
+}
+
+/**
+ * Result of bulk import creation
+ */
+export interface BulkImportResult {
+  success: boolean;
+  registrationId?: string;
+  trackingNumber?: string;
+  itemCount: number;
+  errors: BulkImportError[];
+  warnings: BulkImportWarning[];
+}
+
+/**
+ * Result of bulk submit
+ */
+export interface BulkSubmitResult {
+  totalRequested: number;
+  successful: number;
+  failed: number;
+  results: {
+    registrationId: string;
+    success: boolean;
+    trackingNumber?: string;
+    error?: string;
+  }[];
 }
