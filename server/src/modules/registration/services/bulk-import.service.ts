@@ -545,51 +545,90 @@ export class BulkImportService {
         data.rows,
       );
 
-      for (const result of existenceResults) {
-        const row = data.rows[result.index];
+      // Check if ALL results have errors (authentication failure)
+      const allHaveErrors = existenceResults.every(r => r.error);
+      if (allHaveErrors && existenceResults.length > 0) {
+        const firstError = existenceResults[0].error;
+        this.logger.warn(`All Protheus checks failed: ${firstError}`);
 
-        // Extract key values for display
-        const keyValues: Record<string, any> = {};
-        for (const field of keyFields) {
-          keyValues[field] = row[field];
-        }
-
-        // Check if any key field is empty (error)
-        const hasEmptyKey = keyFields.some(f => {
-          const val = row[f];
-          return val === undefined || val === null || val === '';
-        });
-
-        if (hasEmptyKey) {
+        // Treat all as NEW with warning
+        for (let i = 0; i < data.rows.length; i++) {
+          const keyValues: Record<string, any> = {};
+          for (const field of keyFields) {
+            keyValues[field] = data.rows[i][field];
+          }
           records.push({
-            index: result.index,
-            rowNumber: result.index + 5,
-            operationType: 'ERROR',
-            exists: false,
-            keyValues,
-            error: 'Campo(s) chave vazio(s)',
-          });
-          errorCount++;
-        } else if (result.exists) {
-          records.push({
-            index: result.index,
-            rowNumber: result.index + 5,
-            operationType: 'ALTERATION',
-            exists: true,
-            recno: result.recno,
-            originalData: result.data,
-            keyValues,
-          });
-          alterationCount++;
-        } else {
-          records.push({
-            index: result.index,
-            rowNumber: result.index + 5,
+            index: i,
+            rowNumber: i + 5,
             operationType: 'NEW',
             exists: false,
             keyValues,
           });
           newCount++;
+        }
+        baseValidation.warnings.push({
+          type: 'warning',
+          message: `Não foi possível verificar registros existentes no Protheus: ${firstError}. Todos os registros serão tratados como INCLUSÃO (novos).`,
+        });
+      } else {
+        // Process individual results
+        for (const result of existenceResults) {
+          const row = data.rows[result.index];
+
+          // Extract key values for display
+          const keyValues: Record<string, any> = {};
+          for (const field of keyFields) {
+            keyValues[field] = row[field];
+          }
+
+          // Check if any key field is empty (error)
+          const hasEmptyKey = keyFields.some(f => {
+            const val = row[f];
+            return val === undefined || val === null || val === '';
+          });
+
+          if (hasEmptyKey) {
+            records.push({
+              index: result.index,
+              rowNumber: result.index + 5,
+              operationType: 'ERROR',
+              exists: false,
+              keyValues,
+              error: 'Campo(s) chave vazio(s)',
+            });
+            errorCount++;
+          } else if (result.error) {
+            // Individual record check failed - treat as NEW with note
+            records.push({
+              index: result.index,
+              rowNumber: result.index + 5,
+              operationType: 'NEW',
+              exists: false,
+              keyValues,
+              error: `Verificação falhou: ${result.error}`,
+            });
+            newCount++;
+          } else if (result.exists) {
+            records.push({
+              index: result.index,
+              rowNumber: result.index + 5,
+              operationType: 'ALTERATION',
+              exists: true,
+              recno: result.recno,
+              originalData: result.data,
+              keyValues,
+            });
+            alterationCount++;
+          } else {
+            records.push({
+              index: result.index,
+              rowNumber: result.index + 5,
+              operationType: 'NEW',
+              exists: false,
+              keyValues,
+            });
+            newCount++;
+          }
         }
       }
     } catch (error) {
@@ -611,7 +650,7 @@ export class BulkImportService {
       }
       baseValidation.warnings.push({
         type: 'warning',
-        message: `Não foi possível verificar registros existentes no Protheus: ${error.message}. Todos os registros serão tratados como novos.`,
+        message: `Não foi possível verificar registros existentes no Protheus: ${error.message}. Todos os registros serão tratados como INCLUSÃO (novos).`,
       });
     }
 

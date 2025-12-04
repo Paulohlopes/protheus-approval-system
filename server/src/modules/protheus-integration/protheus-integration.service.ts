@@ -379,18 +379,33 @@ export class ProtheusIntegrationService {
     tableName: string,
     keyFieldNames: string[],
     records: Record<string, any>[],
-  ): Promise<Array<{ index: number; exists: boolean; recno?: string; data?: Record<string, any> }>> {
+  ): Promise<Array<{ index: number; exists: boolean; recno?: string; data?: Record<string, any>; error?: string }>> {
     this.logger.log(`Checking ${records.length} records existence in Protheus table ${tableName}`);
 
-    const results: Array<{ index: number; exists: boolean; recno?: string; data?: Record<string, any> }> = [];
+    // Pre-fetch token to avoid multiple concurrent token requests
+    try {
+      await this.getToken();
+      this.logger.log('Token obtained successfully, starting record checks');
+    } catch (error) {
+      this.logger.error('Failed to get Protheus token for batch check', error.message);
+      // Return all records with error flag so caller knows verification failed
+      return records.map((_, index) => ({
+        index,
+        exists: false,
+        error: `Authentication failed: ${error.message}`,
+      }));
+    }
+
+    const results: Array<{ index: number; exists: boolean; recno?: string; data?: Record<string, any>; error?: string }> = [];
 
     // Process in batches to avoid overwhelming the API
-    const batchSize = 10;
+    const batchSize = 5; // Reduced batch size for better reliability
     for (let i = 0; i < records.length; i += batchSize) {
       const batch = records.slice(i, i + batchSize);
 
-      // Process batch in parallel
-      const batchPromises = batch.map(async (record, batchIndex) => {
+      // Process batch sequentially to avoid token race conditions
+      for (let batchIndex = 0; batchIndex < batch.length; batchIndex++) {
+        const record = batch[batchIndex];
         const index = i + batchIndex;
 
         // Extract key field values from record
@@ -401,27 +416,28 @@ export class ProtheusIntegrationService {
           }
         }
 
+        this.logger.log(`Checking record ${index + 1}/${records.length}: ${JSON.stringify(keyFields)}`);
+
         // Skip if no key fields have values
         if (Object.keys(keyFields).length === 0) {
-          return { index, exists: false };
+          results.push({ index, exists: false, error: 'No key fields provided' });
+          continue;
         }
 
         try {
           const result = await this.findRecordByKeys(tableName, keyFields);
-          return { index, ...result };
+          results.push({ index, ...result });
         } catch (error) {
-          this.logger.warn(`Error checking record at index ${index}`, error.message);
-          // Return as not found on error (will be treated as new)
-          return { index, exists: false };
+          this.logger.warn(`Error checking record at index ${index}: ${error.message}`);
+          // Include error info so caller can decide how to handle
+          results.push({ index, exists: false, error: error.message });
         }
-      });
-
-      const batchResults = await Promise.all(batchPromises);
-      results.push(...batchResults);
+      }
     }
 
     const existingCount = results.filter(r => r.exists).length;
-    this.logger.log(`Found ${existingCount} existing records out of ${records.length}`);
+    const errorCount = results.filter(r => r.error).length;
+    this.logger.log(`Found ${existingCount} existing records out of ${records.length} (${errorCount} errors)`);
 
     return results;
   }
