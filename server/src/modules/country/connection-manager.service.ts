@@ -52,11 +52,11 @@ export class ConnectionManagerService implements OnModuleDestroy {
         encrypt: credentials.dbOptions?.encrypt ?? false,
         trustServerCertificate: credentials.dbOptions?.trustServerCertificate ?? true,
         connectTimeout: 30000,
-        requestTimeout: 60000,
       },
       extra: {
         validateConnection: true,
         connectionTimeout: 30000,
+        requestTimeout: 60000,
       },
     };
 
@@ -99,6 +99,8 @@ export class ConnectionManagerService implements OnModuleDestroy {
         encrypt: dto.dbOptions?.encrypt ?? false,
         trustServerCertificate: dto.dbOptions?.trustServerCertificate ?? true,
         connectTimeout: 15000,
+      },
+      extra: {
         requestTimeout: 15000,
       },
     };

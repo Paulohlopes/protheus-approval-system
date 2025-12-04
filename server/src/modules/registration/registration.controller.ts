@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Headers,
   UnauthorizedException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -65,9 +66,17 @@ export class RegistrationController {
   @ApiOperation({ summary: 'Criar rascunho de cadastro', description: 'Cria uma nova solicitação de cadastro em modo rascunho' })
   @ApiResponse({ status: 201, description: 'Cadastro criado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  create(@Body() dto: CreateRegistrationDto, @CurrentUser() user: UserInfo) {
+  create(
+    @Body() dto: CreateRegistrationDto,
+    @CurrentUser() user: UserInfo,
+    @Headers('x-country-id') countryIdHeader?: string,
+  ) {
     if (!user?.id || !user?.email) {
       throw new UnauthorizedException('User not authenticated properly');
+    }
+    // Use country from header if not in body
+    if (!dto.countryId && countryIdHeader) {
+      dto.countryId = countryIdHeader;
     }
     return this.registrationService.create(dto, user.id, user.email);
   }
@@ -77,9 +86,17 @@ export class RegistrationController {
   @ApiResponse({ status: 201, description: 'Rascunho de alteração criado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 404, description: 'Registro não encontrado no Protheus' })
-  createAlteration(@Body() dto: CreateAlterationDto, @CurrentUser() user: UserInfo) {
+  createAlteration(
+    @Body() dto: CreateAlterationDto,
+    @CurrentUser() user: UserInfo,
+    @Headers('x-country-id') countryIdHeader?: string,
+  ) {
     if (!user?.id || !user?.email) {
       throw new UnauthorizedException('User not authenticated properly');
+    }
+    // Use country from header if not in body
+    if (!dto.countryId && countryIdHeader) {
+      dto.countryId = countryIdHeader;
     }
     return this.registrationService.createAlterationDraft(dto, user.id, user.email);
   }

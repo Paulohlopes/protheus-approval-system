@@ -25,4 +25,12 @@ export class CreateAlterationDto {
   @IsOptional()
   @IsObject()
   formData?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description: 'ID do país (pode vir do header X-Country-Id)',
+    example: 'uuid-do-pais',
+  })
+  @IsOptional()
+  @IsString()
+  countryId?: string;
 }

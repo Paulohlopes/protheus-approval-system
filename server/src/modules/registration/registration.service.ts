@@ -12,6 +12,7 @@ import { CreateAlterationDto } from './dto/create-alteration.dto';
 import { ProtheusIntegrationService } from '../protheus-integration/protheus-integration.service';
 import { ApprovalGroupsService } from '../approval-groups/approval-groups.service';
 import { ProtheusDataService } from '../protheus-data/protheus-data.service';
+import { CountryService } from '../country/country.service';
 
 // ==========================================
 // LOG-08: STATE MACHINE - Valid Status Transitions
@@ -56,7 +57,27 @@ export class RegistrationService {
     private readonly protheusIntegrationService: ProtheusIntegrationService,
     private readonly approvalGroupsService: ApprovalGroupsService,
     private readonly protheusDataService: ProtheusDataService,
+    private readonly countryService: CountryService,
   ) {}
+
+  /**
+   * Get country ID - from DTO, header, or default
+   */
+  private async resolveCountryId(countryIdFromDto?: string): Promise<string> {
+    if (countryIdFromDto) {
+      return countryIdFromDto;
+    }
+
+    // Try to get default country
+    const defaultCountry = await this.countryService.getDefault();
+    if (defaultCountry) {
+      return defaultCountry.id;
+    }
+
+    throw new BadRequestException(
+      'Country ID is required. Please select a country or configure a default country.',
+    );
+  }
 
   // ==========================================
   // WORKFLOW CONFIGURATION
@@ -352,6 +373,9 @@ export class RegistrationService {
       throw new BadRequestException('User information is missing. Please re-authenticate.');
     }
 
+    // Resolve country ID (from DTO or default)
+    const countryId = await this.resolveCountryId(dto.countryId);
+
     // Get template with fields for validation
     const template = await this.prisma.formTemplate.findUnique({
       where: { id: dto.templateId },
@@ -384,6 +408,7 @@ export class RegistrationService {
         templateId: dto.templateId,
         tableName: template.tableName,
         trackingNumber,
+        countryId, // Country for ERP sync
         requestedById: userId, // From JWT - secure
         requestedByEmail: userEmail,
         formData: dto.formData,
@@ -409,6 +434,9 @@ export class RegistrationService {
     if (!userId || !userEmail) {
       throw new BadRequestException('User information is missing. Please re-authenticate.');
     }
+
+    // Resolve country ID (from DTO or default)
+    const countryId = await this.resolveCountryId(dto.countryId);
 
     // Get template with fields and tables for validation
     const template = await this.prisma.formTemplate.findUnique({
@@ -451,10 +479,11 @@ export class RegistrationService {
       fieldsToValidate = template.fields;
     }
 
-    // Fetch original record from Protheus
+    // Fetch original record from Protheus (using countryId for correct DB connection)
     const originalRecord = await this.protheusDataService.getRecordByRecno(
       primaryTableName,
       dto.originalRecno,
+      countryId,
     );
 
     // Use provided formData or original data
@@ -480,6 +509,7 @@ export class RegistrationService {
         templateId: dto.templateId,
         tableName: primaryTableName,
         trackingNumber,
+        countryId, // Country for ERP sync
         requestedById: userId,
         requestedByEmail: userEmail,
         formData,
