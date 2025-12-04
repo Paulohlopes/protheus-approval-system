@@ -14,4 +14,8 @@ export class CreateFormTemplateDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  countryId?: string; // Country ID for SX3 lookup (uses default if not provided)
 }

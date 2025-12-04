@@ -233,7 +233,14 @@ export class FormTemplateController {
    * Create new form template from SX3 structure
    */
   @Post()
-  create(@Body() dto: CreateFormTemplateDto) {
+  create(
+    @Body() dto: CreateFormTemplateDto,
+    @Headers('x-country-id') countryIdHeader?: string,
+  ) {
+    // Use country from header if not in body
+    if (!dto.countryId && countryIdHeader) {
+      dto.countryId = countryIdHeader;
+    }
     return this.formTemplateService.create(dto);
   }
 

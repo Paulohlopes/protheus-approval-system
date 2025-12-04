@@ -40,8 +40,8 @@ export class FormTemplateService {
       throw new BadRequestException(`Template for table ${dto.tableName} already exists`);
     }
 
-    // Get structure from SX3
-    const structure = await this.sx3Service.getTableStructure(dto.tableName);
+    // Get structure from SX3 (using countryId if provided)
+    const structure = await this.sx3Service.getTableStructure(dto.tableName, dto.countryId);
 
     // Create template
     const template = await this.prisma.formTemplate.create({
@@ -50,6 +50,7 @@ export class FormTemplateService {
         label: dto.label,
         description: dto.description,
         isActive: dto.isActive ?? true,
+        countryId: dto.countryId || null, // Associate template with country
         fields: {
           create: structure.fields.map((field, index) => ({
             fieldName: field.fieldName, // Use SX3 field name as fieldName
