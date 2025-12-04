@@ -12,6 +12,7 @@ const MainLayout = lazy(() => import('./components/MainLayout'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const DocumentsTablePage = lazy(() => import('./pages/DocumentsTablePage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
+const AllowedTablesPage = lazy(() => import('./pages/admin/AllowedTablesPage'));
 const SelectRegistrationTypePage = lazy(() => import('./pages/registration/SelectType').then(m => ({ default: m.SelectRegistrationTypePage })));
 const MyRequestsPage = lazy(() => import('./pages/registration/MyRequests').then(m => ({ default: m.MyRequestsPage })));
 const DynamicFormPage = lazy(() => import('./pages/registration/DynamicForm').then(m => ({ default: m.DynamicFormPage })));
@@ -88,6 +89,19 @@ function App() {
                     <ProtectedRoute>
                       <MainLayout>
                         <AdminPage />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                }
+              />
+
+              <Route
+                path="/admin/allowed-tables"
+                element={
+                  <ErrorBoundary level="page">
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <AllowedTablesPage />
                       </MainLayout>
                     </ProtectedRoute>
                   </ErrorBoundary>

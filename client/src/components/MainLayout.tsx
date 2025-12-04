@@ -42,6 +42,8 @@ import {
   Language,
   ShoppingCart,
   AccountTree,
+  Description,
+  Storage,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
@@ -58,6 +60,7 @@ interface MainLayoutProps {
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const [approvalMenuOpen, setApprovalMenuOpen] = useState(true);
   const [registrationMenuOpen, setRegistrationMenuOpen] = useState(true);
+  const [adminMenuOpen, setAdminMenuOpen] = useState(true);
   const [profileMenuAnchor, setProfileMenuAnchor] = useState<null | HTMLElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const navigate = useNavigate();
@@ -128,8 +131,22 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       id: 'admin',
       title: t?.menu?.admin || 'Administração',
       icon: <Settings />,
-      path: '/admin',
+      expandable: true,
       adminOnly: true,
+      submenu: [
+        {
+          id: 'admin-templates',
+          title: t?.menu?.adminTemplates || 'Templates e Workflows',
+          icon: <Description />,
+          path: '/admin',
+        },
+        {
+          id: 'admin-allowed-tables',
+          title: t?.menu?.adminAllowedTables || 'Tabelas Permitidas',
+          icon: <Storage />,
+          path: '/admin/allowed-tables',
+        },
+      ],
     },
   ];
 
@@ -229,6 +246,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                           setApprovalMenuOpen(!approvalMenuOpen);
                         } else if (item.id === 'registrations') {
                           setRegistrationMenuOpen(!registrationMenuOpen);
+                        } else if (item.id === 'admin') {
+                          setAdminMenuOpen(!adminMenuOpen);
                         }
                       }}
                       sx={{
@@ -252,10 +271,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                           fontSize: '0.9rem',
                         }}
                       />
-                      {(item.id === 'approvals' ? approvalMenuOpen : registrationMenuOpen) ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                      {(item.id === 'approvals' ? approvalMenuOpen : item.id === 'registrations' ? registrationMenuOpen : adminMenuOpen) ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
                     </ListItemButton>
                   </ListItem>
-                  <Collapse in={item.id === 'approvals' ? approvalMenuOpen : registrationMenuOpen} timeout="auto" unmountOnExit>
+                  <Collapse in={item.id === 'approvals' ? approvalMenuOpen : item.id === 'registrations' ? registrationMenuOpen : adminMenuOpen} timeout="auto" unmountOnExit>
                     <List component="div" disablePadding>
                       {item.submenu?.map((subItem) => (
                         <ListItem key={subItem.id} disablePadding sx={{ mb: 0.5 }}>
