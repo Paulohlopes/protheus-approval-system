@@ -985,9 +985,15 @@ export class RegistrationService {
         },
       });
 
-      // Create approval records for first level
+      // Delete any existing approval records (in case of re-submission)
+      await tx.registrationApproval.deleteMany({
+        where: { requestId: id },
+      });
+
+      // Create approval records for first level (ensure unique approvers)
+      const uniqueApproverIds = [...new Set(firstLevelApproverIds)];
       await tx.registrationApproval.createMany({
-        data: firstLevelApproverIds.map((approverId) => ({
+        data: uniqueApproverIds.map((approverId) => ({
           requestId: id,
           level: 1,
           approverId,
@@ -1315,9 +1321,10 @@ export class RegistrationService {
         },
       });
 
-      // Create approval records for next level
+      // Create approval records for next level (ensure unique approvers)
+      const uniqueApproverIds = [...new Set(approverIds)];
       await tx.registrationApproval.createMany({
-        data: approverIds.map((approverId: string) => ({
+        data: uniqueApproverIds.map((approverId: string) => ({
           requestId: id,
           level: nextLevel.levelOrder,
           approverId,
@@ -1567,9 +1574,19 @@ export class RegistrationService {
         if (targetLevelConfig) {
           // Resolve approvers for the target level
           const approverIds = await this.resolveApproversForLevel(targetLevelConfig, tx);
+          const uniqueApproverIds = [...new Set(approverIds)];
+
+          // Delete existing pending approvals for target level (if any)
+          await tx.registrationApproval.deleteMany({
+            where: {
+              requestId: id,
+              level: targetLevel,
+              action: ApprovalAction.PENDING,
+            },
+          });
 
           // Create approval records for target level
-          for (const approverIdItem of approverIds) {
+          for (const approverIdItem of uniqueApproverIds) {
             await tx.registrationApproval.create({
               data: {
                 requestId: id,
