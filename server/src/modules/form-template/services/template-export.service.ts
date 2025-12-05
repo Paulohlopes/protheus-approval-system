@@ -54,6 +54,9 @@ export interface TemplateExportData {
   isMultiTable: boolean;
   countryCode?: string; // Country code instead of ID for portability
   metadata?: any;
+  // Bulk import settings
+  allowBulkImport?: boolean;
+  bulkKeyFields?: string[];
 }
 
 export interface TemplateExportDto {
@@ -141,6 +144,9 @@ export class TemplateExportService {
         isMultiTable: template.isMultiTable,
         countryCode: template.country?.code || undefined,
         metadata: template.metadata || undefined,
+        // Bulk import settings
+        allowBulkImport: template.allowBulkImport || false,
+        bulkKeyFields: template.bulkKeyFields || [],
       },
       tables: [],
       fields: [],
@@ -324,6 +330,9 @@ export class TemplateExportService {
           isMultiTable: data.template.isMultiTable,
           countryId,
           metadata: data.template.metadata || null,
+          // Bulk import settings
+          allowBulkImport: data.template.allowBulkImport || false,
+          bulkKeyFields: data.template.bulkKeyFields || [],
         },
       });
 

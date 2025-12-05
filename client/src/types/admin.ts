@@ -191,6 +191,9 @@ export interface TemplateExportData {
   isMultiTable: boolean;
   countryCode?: string;
   metadata?: any;
+  // Bulk import settings
+  allowBulkImport?: boolean;
+  bulkKeyFields?: string[];
 }
 
 export interface TemplateExportDto {
