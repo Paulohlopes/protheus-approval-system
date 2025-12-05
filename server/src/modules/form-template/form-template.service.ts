@@ -173,8 +173,10 @@ export class FormTemplateService {
 
   /**
    * Delete template
+   * @param id Template ID
+   * @param force If true, deletes workflows too. Requests still block deletion.
    */
-  async remove(id: string) {
+  async remove(id: string, force = false) {
     // Single query to check existence and get counts
     const template = await this.prisma.formTemplate.findUnique({
       where: { id },
@@ -192,14 +194,37 @@ export class FormTemplateService {
       throw new NotFoundException(`Template ${id} not found`);
     }
 
-    if (template._count.workflows > 0 || template._count.requests > 0) {
+    // Requests always block deletion (they contain user data)
+    if (template._count.requests > 0) {
       throw new BadRequestException(
-        'Cannot delete template with existing workflows or requests',
+        `Não é possível excluir template com ${template._count.requests} solicitação(ões) vinculada(s). Exclua as solicitações primeiro.`,
       );
     }
 
-    return this.prisma.formTemplate.delete({
-      where: { id },
+    // Workflows can be deleted with force=true
+    if (template._count.workflows > 0 && !force) {
+      throw new BadRequestException(
+        `Template possui ${template._count.workflows} workflow(s) vinculado(s). Use force=true para excluir também os workflows.`,
+      );
+    }
+
+    // Delete in transaction
+    return this.prisma.$transaction(async (tx) => {
+      // Delete workflows first (if any)
+      if (template._count.workflows > 0) {
+        await tx.registrationWorkflow.deleteMany({
+          where: { templateId: id },
+        });
+        this.logger.log(`Deleted ${template._count.workflows} workflow(s) from template ${id}`);
+      }
+
+      // Delete template (fields are deleted via cascade in Prisma schema)
+      const deleted = await tx.formTemplate.delete({
+        where: { id },
+      });
+
+      this.logger.log(`Template ${id} deleted`);
+      return deleted;
     });
   }
 

@@ -312,10 +312,15 @@ export class FormTemplateController {
 
   /**
    * Delete form template
+   * @param id Template ID
+   * @param force If true, deletes workflows too
    */
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.formTemplateService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @Query('force') force?: string,
+  ) {
+    return this.formTemplateService.remove(id, force === 'true');
   }
 
   /**

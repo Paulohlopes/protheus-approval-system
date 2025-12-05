@@ -65,9 +65,13 @@ export const adminService = {
 
   /**
    * Delete a form template
+   * @param id Template ID
+   * @param force If true, also deletes associated workflows
    */
-  async deleteTemplate(id: string): Promise<void> {
-    await backendApi.delete(`/form-templates/${id}`);
+  async deleteTemplate(id: string, force = false): Promise<void> {
+    await backendApi.delete(`/form-templates/${id}`, {
+      params: { force: force ? 'true' : undefined },
+    });
   },
 
   /**

@@ -429,10 +429,26 @@ const TemplateManager: React.FC = () => {
     }
 
     try {
-      await adminService.deleteTemplate(id);
+      // First try without force
+      await adminService.deleteTemplate(id, false);
       await loadTemplates();
     } catch (err: any) {
-      setError(err.message || 'Erro ao deletar template');
+      const errorMessage = err.response?.data?.message || err.message || '';
+
+      // Check if the error is about workflows
+      if (errorMessage.includes('workflow')) {
+        // Ask user if they want to force delete (including workflows)
+        if (window.confirm(`${errorMessage}\n\nDeseja excluir o template e seus workflows?`)) {
+          try {
+            await adminService.deleteTemplate(id, true);
+            await loadTemplates();
+          } catch (forceErr: any) {
+            setError(forceErr.response?.data?.message || forceErr.message || 'Erro ao deletar template');
+          }
+        }
+      } else {
+        setError(errorMessage || 'Erro ao deletar template');
+      }
     }
   }, [loadTemplates]);
 
