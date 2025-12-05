@@ -34,9 +34,8 @@ export const CountryProvider: React.FC<CountryProviderProps> = ({ children }) =>
       setIsLoading(true);
       setError(null);
       // Use direct axios call to bypass auth interceptors (this is a public endpoint)
-      const response = await axios.get<Country[]>(`${BACKEND_API_URL}/countries`, {
-        params: { activeOnly: true },
-      });
+      // Load all countries, not just active ones - admin needs to see all
+      const response = await axios.get<Country[]>(`${BACKEND_API_URL}/countries`);
       setCountries(response.data);
       return response.data;
     } catch (err: any) {

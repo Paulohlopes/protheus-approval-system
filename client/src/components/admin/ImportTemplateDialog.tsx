@@ -187,7 +187,8 @@ const ImportTemplateDialog: React.FC<ImportTemplateDialogProps> = ({
   };
 
   const canImport = importData && validation?.valid && !loading && !validating;
-  const needsCountry = importData && !importData.template.isMultiTable;
+  // Always show country selector - all templates need a database connection
+  const needsCountry = !!importData;
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -370,13 +371,25 @@ const ImportTemplateDialog: React.FC<ImportTemplateDialogProps> = ({
                       value={selectedCountryId}
                       label="País / Conexão de Destino"
                       onChange={(e) => setSelectedCountryId(e.target.value)}
+                      disabled={countries.length === 0}
                     >
-                      {countries.map((country) => (
-                        <MenuItem key={country.id} value={country.id}>
-                          {country.name} ({country.code})
+                      {countries.length === 0 ? (
+                        <MenuItem value="" disabled>
+                          Nenhum país/conexão cadastrado
                         </MenuItem>
-                      ))}
+                      ) : (
+                        countries.map((country) => (
+                          <MenuItem key={country.id} value={country.id}>
+                            {country.name} ({country.code})
+                          </MenuItem>
+                        ))
+                      )}
                     </Select>
+                    {countries.length === 0 && (
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                        Cadastre um país/conexão em Administração → Países antes de importar
+                      </Typography>
+                    )}
                   </FormControl>
                 )}
 
